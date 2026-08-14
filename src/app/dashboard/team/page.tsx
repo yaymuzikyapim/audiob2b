@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import InviteButton from "@/components/dashboard/InviteButton";
+import MemberActions from "@/components/dashboard/MemberActions";
 
 function formatDate(d: Date) {
   return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));
@@ -81,8 +82,8 @@ export default async function TeamPage() {
                   <div className="text-gray-500 text-xs">{u.email}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-gray-500 text-xs">
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 text-xs hidden lg:block">
                   {u.lastLoginAt ? `Son giriş: ${formatDate(u.lastLoginAt)}` : "Henüz giriş yapmadı"}
                 </span>
                 <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
@@ -93,6 +94,7 @@ export default async function TeamPage() {
                 <span className={`text-xs px-2 py-0.5 rounded-full ${u.isActive ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
                   {u.isActive ? "Aktif" : "Pasif"}
                 </span>
+                <MemberActions userId={u.id} isActive={u.isActive} isSelf={u.id === session.id} />
               </div>
             </div>
           ))}
