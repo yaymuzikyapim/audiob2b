@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── KULLANICI VE YETKİ ────────────────────────────────────────────
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  name        String?
+  password    String?   // Super Admin için
+  role        UserRole  @default(EMPLOYEE)
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  company     Company?  @relation(fields: [companyId], references: [id])
+  companyId   String?
+
+  pushToken    String?
+
+  playHistory  PlayHistory[]
+  bookmarks    Bookmark[]
+  playerStates PlayerState[]
+  favorites    UserFavorite[]
+}
+
+enum UserRole {
+  SUPER_ADMIN    // Sesle yöneticisi
+  COMPANY_ADMIN  // İK / Şirket yöneticisi
+  EMPLOYEE       // Çalışan / dinleyici
+}
+
+// ─── ŞİRKET / KURUMSAL MÜŞTERİ ────────────────────────────────────
+
+model Company {
+  id           String      @id @default(cuid())
+  name         String
+  slug         String      @unique  // örn: "acme" → acme.audiob2b.com veya /c/acme
+  logoUrl      String?
+  brandColor   String?     @default("#2563eb")
+  licenseType  LicenseType @default(PER_SEAT)
+  maxSeats     Int         @default(10)
+  packageId    String?
+  startDate    DateTime
+  endDate      DateTime
+  isActive     Boolean     @default(true)
+  notes        String?     // Sesle'nin iç notu
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  package      Package?    @relation(fields: [packageId], references: [id])
+  users        User[]
+  inviteTokens InviteToken[]
+}
+
+enum LicenseType {
+  PER_SEAT    // Koltuk başına - sabit lisans sayısı
+  FLEX_POOL   // Esnek havuz - kullanım oranına göre
+}
+
+// ─── KATEGORİ, PAKET, KİTAP ────────────────────────────────────────
+
+model Category {
+  id    String @id @default(cuid())
+  name  String @unique
+  slug  String @unique
+  books Book[]
+}
+
+model Package {
+  id          String        @id @default(cuid())
+  name        String        // "Starter", "Pro", "Enterprise"
+  description String?
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+
+  books       PackageBook[]
+  companies   Company[]
+}
+
+model Book {
+  id          String    @id @default(cuid())
+  title       String
+  author      String
+  narrator    String?
+  duration    Int       // toplam süre (saniye)
+  coverUrl    String?
+  description String?
+  isbn        String?
+  isActive    Boolean   @default(true)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+
+  chapters    Chapter[]
+  packages    PackageBook[]
+  playHistory PlayHistory[]
+  bookmarks   Bookmark[]
+  playerStates PlayerState[]
+  favorites   UserFavorite[]
+}
+
+model Chapter {
+  id       String @id @default(cuid())
+  bookId   String
+  title    String
+  order    Int
+  duration Int    // saniye
+  s3Key    String // S3'teki dosya yolu
+
+  book     Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+model PackageBook {
+  packageId String
+  bookId    String
+
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  book      Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@id([packageId, bookId])
+}
+
+// ─── DİNLEME & OYNATICI ────────────────────────────────────────────
+
+model PlayerState {
+  id          String   @id @default(cuid())
+  userId      String
+  bookId      String
+  chapterId   String?
+  positionSec Int      @default(0)  // kaldığı yer (saniye)
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+}
+
+model PlayHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  bookId       String
+  listenedSec  Int      @default(0)  // bu oturumda dinlenen süre (saniye)
+  completedPct Float    @default(0)  // tamamlanma yüzdesi (0-100)
+  playedAt     DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book         Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+model Bookmark {
+  id         String   @id @default(cuid())
+  userId     String
+  bookId     String
+  chapterId  String?
+  positionSec Int
+  note       String?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+// ─── DAVET & AUTH ─────────────────────────────────────────────────
+
+model InviteToken {
+  id        String    @id @default(cuid())
+  email     String
+  companyId String
+  role      UserRole  @default(EMPLOYEE)
+  token     String    @unique @default(cuid())
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model UserFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+}
