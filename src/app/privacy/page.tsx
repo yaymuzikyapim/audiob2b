@@ -45,7 +45,7 @@ export default function PrivacyPage() {
 
           <div>
             <h2 className="text-white font-semibold text-base mb-2">7. İletişim</h2>
-            <p>Sorularınız için: <a href="mailto:yay@yayyapim.com" className="text-blue-400 hover:underline">yay@yayyapim.com</a></p>
+            <p>Sorularınız için: <a href="mailto:satis@audiob2b.com.tr" className="text-blue-400 hover:underline">satis@audiob2b.com.tr</a></p>
           </div>
         </section>
       </div>
