@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
         { source: "/tpao-teklif.html", destination: "/tpao-teklif" },
         { source: "/katalog.html", destination: "/katalog" },
       ],
+      afterFiles: [],
+      fallback: [],
     };
   },
 };
