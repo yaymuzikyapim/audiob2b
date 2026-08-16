@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/session";
 
-const PUBLIC_EXACT = ["/", "/privacy", "/tpao-teklif.html", "/katalog.html"];
+const PUBLIC_EXACT = ["/", "/privacy"];
 const PUBLIC_PREFIXES = ["/login", "/invite", "/api/auth/login", "/api/invite", "/api/mobile/auth/login", "/api/covers"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // /public klasöründeki statik HTML sayfaları — auth kontrolü yapma
+  if (pathname.endsWith(".html")) {
+    return NextResponse.next();
+  }
 
   const isPublic =
     PUBLIC_EXACT.includes(pathname) ||
