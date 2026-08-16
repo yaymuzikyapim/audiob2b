@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/session";
 
-const PUBLIC_PATHS = ["/login", "/invite", "/api/auth/login", "/api/invite", "/api/mobile/auth/login", "/api/covers"];
+const PUBLIC_EXACT = ["/", "/privacy", "/tpao-teklif.html", "/katalog.html"];
+const PUBLIC_PREFIXES = ["/login", "/invite", "/api/auth/login", "/api/invite", "/api/mobile/auth/login", "/api/covers"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isPublic =
+    PUBLIC_EXACT.includes(pathname) ||
+    PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
   const session = await getSessionFromRequest(req);
 
   // Davet sayfaları her zaman erişilebilir — oturum açık olsa bile yönlendirme yok
@@ -15,7 +18,8 @@ export async function proxy(req: NextRequest) {
   }
 
   if (isPublic) {
-    if (session) {
+    // API route'larını hiçbir zaman yönlendirme
+    if (!pathname.startsWith("/api") && session) {
       const dest = session.role === "SUPER_ADMIN" ? "/admin" : "/dashboard";
       return NextResponse.redirect(new URL(dest, req.url));
     }
