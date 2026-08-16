@@ -7,11 +7,6 @@ const PUBLIC_PREFIXES = ["/login", "/invite", "/api/auth/login", "/api/invite", 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // /public klasöründeki statik HTML sayfaları — auth kontrolü yapma
-  if (pathname.endsWith(".html")) {
-    return NextResponse.next();
-  }
-
   const isPublic =
     PUBLIC_EXACT.includes(pathname) ||
     PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
@@ -47,5 +42,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.html$).*)"],
 };
