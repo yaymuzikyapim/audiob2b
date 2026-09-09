@@ -6,6 +6,7 @@ import CoverUploader from "@/components/admin/CoverUploader";
 import EditableDescription from "@/components/admin/EditableDescription";
 import EditableField from "@/components/admin/EditableField";
 import EditableCategoryField from "@/components/admin/EditableCategoryField";
+import DeleteBookButton from "@/components/admin/DeleteBookButton";
 
 function formatDuration(sec: number) {
   const h = Math.floor(sec / 3600);
@@ -48,9 +49,12 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
               <EditableField bookId={book.id} field="author" label="Yazan:" initial={book.author} placeholder="Yazar adı" />
               <EditableField bookId={book.id} field="narrator" label="Seslendiren:" initial={book.narrator} placeholder="Seslendiren adı" />
             </div>
-            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${book.isActive ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
-              {book.isActive ? "Aktif" : "Pasif"}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${book.isActive ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
+                {book.isActive ? "Aktif" : "Pasif"}
+              </span>
+              <DeleteBookButton bookId={book.id} />
+            </div>
           </div>
           <EditableCategoryField
             bookId={book.id}
