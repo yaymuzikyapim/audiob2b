@@ -1,0 +1,5 @@
+node_modules
+.next
+*.env
+prisma/create-test-admin.ts
+audiob2b-icon-11.png

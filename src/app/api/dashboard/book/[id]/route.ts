@@ -53,5 +53,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     isFavorite = !!fav;
   } catch {}
 
-  return NextResponse.json({ book: { ...book, isFavorite }, playerState });
+  const chapters = book.chapters.map((ch) => ({ ...ch, title: `Bölüm ${ch.order}` }));
+
+  return NextResponse.json({ book: { ...book, chapters, isFavorite }, playerState });
 }

@@ -2,8 +2,8 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "audiob2b-dev",
-      "runtimeExecutable": "/Users/aliye/.nvm/versions/node/v20.20.2/bin/npm",
+      "name": "audiob2b",
+      "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
     }

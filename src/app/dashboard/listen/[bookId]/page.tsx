@@ -89,7 +89,7 @@ export default async function ListenPage({ params }: { params: Promise<{ bookId:
           title: book.title,
           author: book.author,
           coverUrl: book.coverUrl,
-          chapters: book.chapters,
+          chapters: book.chapters.map((ch) => ({ ...ch, title: `Bölüm ${ch.order}` })),
         }}
         initialPositionSec={playerState?.positionSec ?? 0}
         initialChapterId={playerState?.chapterId ?? null}

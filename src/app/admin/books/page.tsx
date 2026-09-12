@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
@@ -24,12 +25,20 @@ export default async function BooksPage() {
           <h1 className="text-2xl font-bold text-white">Kitaplar</h1>
           <p className="text-gray-400 mt-1 text-sm">{books.length} sesli kitap kütüphanede</p>
         </div>
-        <Link
-          href="/admin/books/new"
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-colors"
-        >
-          + Kitap Ekle
-        </Link>
+        <div className="flex gap-3">
+          <Link
+            href="/admin/books/import"
+            className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-white text-sm font-semibold rounded-xl transition-colors"
+          >
+            CSV İçe Aktar
+          </Link>
+          <Link
+            href="/admin/books/new"
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-colors"
+          >
+            + Kitap Ekle
+          </Link>
+        </div>
       </div>
 
       <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
@@ -56,10 +65,19 @@ export default async function BooksPage() {
               {books.map((b) => (
                 <tr key={b.id} className="hover:bg-gray-800/40 transition-colors">
                   <td className="px-6 py-4">
-                    <Link href={`/admin/books/${b.id}`} className="text-white font-medium hover:text-emerald-400 transition-colors text-sm">
-                      {b.title}
+                    <Link href={`/admin/books/${b.id}`} className="flex items-center gap-3 group">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
+                        {b.coverUrl ? (
+                          <Image src={b.coverUrl} alt={b.title} width={40} height={40} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-600 text-lg">🎧</div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-white font-medium group-hover:text-emerald-400 transition-colors text-sm">{b.title}</div>
+                        <div className="text-gray-500 text-xs mt-0.5">{b.author}{b.narrator ? ` · ${b.narrator}` : ""}</div>
+                      </div>
                     </Link>
-                    <div className="text-gray-500 text-xs mt-0.5">{b.author}{b.narrator ? ` · ${b.narrator}` : ""}</div>
                   </td>
                   <td className="px-6 py-4 text-gray-400 text-sm">{b.category?.name || "—"}</td>
                   <td className="px-6 py-4 text-gray-400 text-sm">{formatDuration(b.duration)}</td>
