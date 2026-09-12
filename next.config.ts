@@ -2,6 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["pg", "@prisma/adapter-pg", "@prisma/client"],
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "audiob2b-audio-files.s3.eu-central-1.amazonaws.com",
+        pathname: "/covers/**",
+      },
+    ],
+  },
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
   async rewrites() {
