@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import CompanyActions from "@/components/admin/CompanyActions";
 import AdminInviteButton from "@/components/admin/AdminInviteButton";
+import AddUserButton from "@/components/admin/AddUserButton";
 import CompanyBranding from "@/components/admin/CompanyBranding";
 
 function formatDate(d: Date) {
@@ -30,6 +31,16 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
+
+  const userIds = company.users.map((u) => u.id);
+  const playerStates = await prisma.playerState.findMany({
+    where: { userId: { in: userIds } },
+    select: { userId: true, positionSec: true },
+  });
+  const listeningMap: Record<string, number> = {};
+  for (const ps of playerStates) {
+    listeningMap[ps.userId] = (listeningMap[ps.userId] ?? 0) + ps.positionSec;
+  }
 
   const pendingInvites = await prisma.inviteToken.findMany({
     where: { companyId: id, usedAt: null, expiresAt: { gt: new Date() } },
@@ -133,26 +144,41 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
       <div className="bg-gray-900 border border-gray-800 rounded-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
           <h2 className="text-white font-semibold">Kullanıcılar ({company._count.users})</h2>
-          <AdminInviteButton companyId={company.id} />
+          <div className="flex items-center gap-3">
+            <AddUserButton companyId={company.id} />
+            <AdminInviteButton companyId={company.id} />
+          </div>
         </div>
         <div className="divide-y divide-gray-800">
           {company.users.length === 0 && (
             <div className="px-6 py-8 text-center text-gray-500 text-sm">Henüz kullanıcı yok. Davet göndererek başlayın.</div>
           )}
-          {company.users.map((u) => (
-            <div key={u.id} className="flex items-center justify-between px-6 py-4">
-              <div>
-                <div className="text-white text-sm font-medium">{u.name || "—"}</div>
-                <div className="text-gray-500 text-xs mt-0.5">{u.email}</div>
+          {company.users.map((u) => {
+            const totalSec = listeningMap[u.id] ?? 0;
+            const hours = Math.floor(totalSec / 3600);
+            const mins = Math.floor((totalSec % 3600) / 60);
+            const listeningLabel = totalSec === 0 ? "Hiç dinlemedi" : hours > 0 ? `${hours}s ${mins}dk dinledi` : `${mins}dk dinledi`;
+            return (
+              <div key={u.id} className="flex items-center justify-between px-6 py-4">
+                <div>
+                  <div className="text-white text-sm font-medium">{u.name || "—"}</div>
+                  <div className="text-gray-500 text-xs mt-0.5">{u.email}</div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-gray-400 text-xs">{listeningLabel}</span>
+                  <span className="text-gray-500 text-xs">
+                    {u.lastLoginAt
+                      ? `Son giriş: ${new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(u.lastLoginAt))}`
+                      : "Henüz giriş yapmadı"}
+                  </span>
+                  <span className="text-gray-500 text-xs">{u.role === "COMPANY_ADMIN" ? "Yönetici" : "Çalışan"}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${u.isActive ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
+                    {u.isActive ? "Aktif" : "Pasif"}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-gray-500 text-xs">{u.role === "COMPANY_ADMIN" ? "Yönetici" : "Çalışan"}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${u.isActive ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
-                  {u.isActive ? "Aktif" : "Pasif"}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

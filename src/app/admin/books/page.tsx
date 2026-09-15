@@ -1,6 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
+import BooksFilter from "@/components/admin/BooksFilter";
+import ToggleActiveButton from "@/components/admin/ToggleActiveButton";
 
 function formatDuration(sec: number) {
   const h = Math.floor(sec / 3600);
@@ -9,21 +12,45 @@ function formatDuration(sec: number) {
   return `${m}dk`;
 }
 
-export default async function BooksPage() {
-  const books = await prisma.book.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      category: { select: { name: true } },
-      _count: { select: { chapters: true, packages: true } },
-    },
-  });
+export default async function BooksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string; status?: string; q?: string }>;
+}) {
+  const { category, status, q } = await searchParams;
+
+  const where: Record<string, unknown> = {};
+  if (category) where.category = { name: category };
+  if (status === "active")  where.isActive = true;
+  if (status === "passive") where.isActive = false;
+  if (q) where.OR = [
+    { title:    { contains: q, mode: "insensitive" } },
+    { author:   { contains: q, mode: "insensitive" } },
+    { narrator: { contains: q, mode: "insensitive" } },
+  ];
+
+  const [books, total, categories] = await Promise.all([
+    prisma.book.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: {
+        category: { select: { name: true } },
+        _count: { select: { chapters: true, packages: true } },
+      },
+    }),
+    prisma.book.count(),
+    prisma.category.findMany({
+      where: { books: { some: {} } },
+      orderBy: { name: "asc" },
+      select: { name: true },
+    }),
+  ]);
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Kitaplar</h1>
-          <p className="text-gray-400 mt-1 text-sm">{books.length} sesli kitap kütüphanede</p>
         </div>
         <div className="flex gap-3">
           <Link
@@ -41,12 +68,16 @@ export default async function BooksPage() {
         </div>
       </div>
 
+      <Suspense>
+        <BooksFilter categories={categories} total={total} filtered={books.length} />
+      </Suspense>
+
       <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
         {books.length === 0 && (
           <div className="px-6 py-16 text-center text-gray-500">
-            <div className="text-4xl mb-3">🎧</div>
-            <div className="font-medium text-white mb-1">Henüz kitap yok</div>
-            <div className="text-sm">İlk sesli kitabı eklemek için butona tıklayın.</div>
+            <div className="text-4xl mb-3">🔍</div>
+            <div className="font-medium text-white mb-1">Sonuç bulunamadı</div>
+            <div className="text-sm">Farklı bir filtre deneyin.</div>
           </div>
         )}
         {books.length > 0 && (
@@ -84,9 +115,7 @@ export default async function BooksPage() {
                   <td className="px-6 py-4 text-gray-400 text-sm">{b._count.chapters}</td>
                   <td className="px-6 py-4 text-gray-400 text-sm">{b._count.packages}</td>
                   <td className="px-6 py-4">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${b.isActive ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
-                      {b.isActive ? "Aktif" : "Pasif"}
-                    </span>
+                    <ToggleActiveButton bookId={b.id} isActive={b.isActive} />
                   </td>
                 </tr>
               ))}

@@ -6,6 +6,8 @@ import CoverUploader from "@/components/admin/CoverUploader";
 import EditableDescription from "@/components/admin/EditableDescription";
 import EditableField from "@/components/admin/EditableField";
 import EditableCategoryField from "@/components/admin/EditableCategoryField";
+import EditableSeriesField from "@/components/admin/EditableSeriesField";
+import ToggleActiveButton from "@/components/admin/ToggleActiveButton";
 import DeleteBookButton from "@/components/admin/DeleteBookButton";
 
 function formatDuration(sec: number) {
@@ -18,16 +20,18 @@ function formatDuration(sec: number) {
 
 export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [book, categories] = await Promise.all([
+  const [book, categories, seriesList] = await Promise.all([
     prisma.book.findUnique({
       where: { id },
       include: {
         category: true,
+        series: true,
         chapters: { orderBy: { order: "asc" } },
         packages: { include: { package: { select: { id: true, name: true } } } },
       },
     }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
+    prisma.series.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   if (!book) notFound();
@@ -50,9 +54,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
               <EditableField bookId={book.id} field="narrator" label="Seslendiren:" initial={book.narrator} placeholder="Seslendiren adı" />
             </div>
             <div className="flex items-center gap-3">
-              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${book.isActive ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
-                {book.isActive ? "Aktif" : "Pasif"}
-              </span>
+              <ToggleActiveButton bookId={book.id} isActive={book.isActive} />
               <DeleteBookButton bookId={book.id} />
             </div>
           </div>
@@ -61,6 +63,13 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
             initialCategoryId={book.categoryId}
             initialCategoryName={book.category?.name ?? null}
             categories={categories}
+          />
+          <EditableSeriesField
+            bookId={book.id}
+            initialSeriesId={book.seriesId ?? null}
+            initialSeriesName={book.series?.name ?? null}
+            initialSeriesOrder={book.seriesOrder ?? null}
+            seriesList={seriesList}
           />
           <EditableDescription bookId={book.id} initial={book.description} />
           <div className="flex gap-4 mt-4 text-sm text-gray-500">

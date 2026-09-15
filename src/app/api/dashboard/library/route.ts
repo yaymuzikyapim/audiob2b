@@ -29,6 +29,7 @@ export async function GET() {
         select: {
           name: true,
           books: {
+            where: { book: { isActive: true } },
             include: {
               book: {
                 select: {
@@ -39,7 +40,10 @@ export async function GET() {
                   duration: true,
                   coverUrl: true,
                   description: true,
+                  isActive: true,
                   category: { select: { name: true } },
+                  series: { select: { id: true, name: true, slug: true } },
+                  seriesOrder: true,
                 },
               },
             },
@@ -53,7 +57,9 @@ export async function GET() {
     return NextResponse.json({ books: [], company: null });
   }
 
-  const books = company.package?.books.map((pb) => pb.book) ?? [];
+  const books = (company.package?.books ?? [])
+    .map((pb) => pb.book)
+    .filter((b): b is NonNullable<typeof b> => b != null && b.isActive === true);
   const bookIds = books.map((b) => b.id);
 
   const playerStates = await prisma.playerState.findMany({
@@ -72,7 +78,7 @@ export async function GET() {
   const stateMap = Object.fromEntries(playerStates.map((ps) => [ps.bookId, ps]));
   const favoriteSet = new Set(userFavorites.map((f) => f.bookId));
 
-  const booksWithProgress = books.map((b) => ({
+  const booksWithProgress = books.map(({ isActive: _active, ...b }) => ({
     ...b,
     progressPct: stateMap[b.id]
       ? Math.min(100, Math.round((stateMap[b.id].positionSec / b.duration) * 100))
