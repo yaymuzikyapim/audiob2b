@@ -44,6 +44,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(body.description !== undefined && { description: body.description }),
       ...(body.isbn !== undefined && { isbn: body.isbn }),
       ...(body.categoryId !== undefined && { categoryId: body.categoryId || null }),
+      ...(body.seriesId !== undefined && { seriesId: body.seriesId || null }),
+      ...(body.seriesOrder !== undefined && { seriesOrder: body.seriesOrder === "" ? null : parseInt(body.seriesOrder) }),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
     },
   });

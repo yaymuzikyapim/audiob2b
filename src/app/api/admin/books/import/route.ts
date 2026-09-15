@@ -1,6 +1,15 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
+
+function toSlug(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i")
+    .replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
@@ -27,66 +36,73 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Geçersiz veri." }, { status: 400 });
   }
 
-  // Mevcut kategorileri çek
+  // 1. Mevcut ISBN'leri tek sorguda al
+  const existingBooks = await prisma.book.findMany({
+    where: { isbn: { not: null } },
+    select: { isbn: true },
+  });
+  const existingIsbns = new Set(existingBooks.map((b) => b.isbn!));
+
+  // 2. Kategorileri tek sorguda al, hem isim hem slug ile eşleştir
   const categories = await prisma.category.findMany();
   const categoryMap = new Map(categories.map((c) => [c.name.toLowerCase().trim(), c.id]));
+  const categorySlugMap = new Map(categories.map((c) => [c.slug, c.id]));
 
-  const results = { created: 0, skipped: 0, errors: [] as string[] };
-
-  for (const row of rows) {
-    if (!row.title?.trim() || !row.author?.trim()) {
-      results.skipped++;
-      continue;
-    }
-
-    // ISBN ile mükerrer kontrolü
-    if (row.isbn?.trim()) {
-      const existing = await prisma.book.findFirst({ where: { isbn: row.isbn.trim() } });
-      if (existing) {
-        results.skipped++;
-        continue;
-      }
-    }
-
-    // Kategori eşleştir (case-insensitive)
-    let categoryId: string | null = null;
-    if (row.category?.trim()) {
-      const key = row.category.trim().toLowerCase();
-      categoryId = categoryMap.get(key) ?? null;
-
-      // Yoksa yeni kategori oluştur
-      if (!categoryId) {
-        const newCat = await prisma.category.create({ data: { name: row.category.trim() } });
-        categoryId = newCat.id;
-        categoryMap.set(key, newCat.id);
-      }
-    }
-
-    // Süre: dakika → saniye
-    let duration = 0;
-    if (row.duration_minutes?.trim()) {
-      const mins = parseFloat(row.duration_minutes.trim());
-      if (!isNaN(mins)) duration = Math.round(mins * 60);
-    }
-
-    try {
-      await prisma.book.create({
-        data: {
-          title: row.title.trim(),
-          author: row.author.trim(),
-          narrator: row.narrator?.trim() || null,
-          duration,
-          description: row.description?.trim() || null,
-          isbn: row.isbn?.trim() || null,
-          categoryId,
-          publishedAt: row.publish_date?.trim() ? new Date(row.publish_date.trim()) : null,
-        },
-      });
-      results.created++;
-    } catch {
-      results.errors.push(row.title);
-    }
+  const uniqueNewCats = [
+    ...new Set(
+      rows
+        .map((r) => r.category?.trim())
+        .filter((n): n is string => !!n && !categoryMap.has(n.toLowerCase()) && !categorySlugMap.has(toSlug(n)))
+    ),
+  ];
+  for (const name of uniqueNewCats) {
+    const slug = toSlug(name);
+    const cat = await prisma.category.upsert({
+      where: { slug },
+      create: { name, slug },
+      update: {},
+    });
+    categoryMap.set(name.toLowerCase(), cat.id);
   }
 
-  return NextResponse.json(results);
+  // 3. Geçersiz ve mükerrer satırları filtrele
+  let skipped = 0;
+  const toCreate = rows
+    .filter((r) => {
+      if (!r.title?.trim() || !r.author?.trim()) { skipped++; return false; }
+      if (r.isbn?.trim() && existingIsbns.has(r.isbn.trim())) { skipped++; return false; }
+      return true;
+    })
+    .map((r) => {
+      const mins = parseFloat(r.duration_minutes?.trim() || "");
+      return {
+        title: r.title.trim(),
+        author: r.author.trim(),
+        narrator: r.narrator?.trim() || null,
+        duration: isNaN(mins) ? 0 : Math.round(mins * 60),
+        description: r.description?.trim() || null,
+        isbn: r.isbn?.trim() || null,
+        categoryId: r.category?.trim()
+          ? (categoryMap.get(r.category.trim().toLowerCase()) ?? categorySlugMap.get(toSlug(r.category.trim())) ?? null)
+          : null,
+        publishedAt: r.publish_date?.trim() ? new Date(r.publish_date.trim()) : null,
+      };
+    });
+
+  // 4. Toplu insert
+  let result;
+  try {
+    result = await prisma.book.createMany({
+      data: toCreate,
+      skipDuplicates: true,
+    });
+  } catch (err) {
+    console.error("createMany error:", err);
+    return NextResponse.json(
+      { error: String(err), created: 0, skipped, errors: [] },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ created: result.count, skipped, errors: [] });
 }

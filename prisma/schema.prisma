@@ -68,10 +68,23 @@ enum LicenseType {
 // ─── KATEGORİ, PAKET, KİTAP ────────────────────────────────────────
 
 model Category {
-  id    String @id @default(cuid())
-  name  String @unique
-  slug  String @unique
-  books Book[]
+  id     String   @id @default(cuid())
+  name   String   @unique
+  slug   String   @unique
+  books  Book[]
+  series Series[]
+}
+
+model Series {
+  id         String  @id @default(cuid())
+  name       String
+  slug       String  @unique
+  categoryId String
+  coverUrl   String?
+  order      Int     @default(0)
+
+  category   Category @relation(fields: [categoryId], references: [id])
+  books      Book[]
 }
 
 model Package {
@@ -101,6 +114,10 @@ model Book {
 
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id])
+
+  seriesId    String?
+  seriesOrder Int?
+  series      Series?   @relation(fields: [seriesId], references: [id])
 
   chapters    Chapter[]
   packages    PackageBook[]
