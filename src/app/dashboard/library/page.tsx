@@ -18,7 +18,7 @@ export default async function LibraryPage() {
           name: true,
           books: {
             where: { book: { isActive: true } },
-            include: {
+            select: {
               book: {
                 select: {
                   id: true, title: true, author: true, narrator: true,
