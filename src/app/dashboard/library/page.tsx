@@ -26,7 +26,7 @@ export default async function LibraryPage() {
                   category: { select: { name: true } },
                   series: { select: { id: true, name: true, coverUrl: true } },
                   seriesOrder: true,
-                  _count: { select: { chapters: true } },
+                  chapters: { select: { id: true }, take: 1 },
                 },
               },
             },
@@ -62,7 +62,7 @@ export default async function LibraryPage() {
     duration: b!.duration,
     coverUrl: b!.coverUrl,
     description: b!.description ?? null,
-    hasAudio: b!._count.chapters > 0,
+    hasAudio: b!.chapters.length > 0,
     progressPct: stateMap[b!.id]
       ? Math.min(100, Math.round((stateMap[b!.id] / b!.duration) * 100))
       : 0,
