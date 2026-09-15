@@ -45,10 +45,10 @@ function MiniBookCard({ book, color }: { book: Book; color: string }) {
           <img
             src={book.coverUrl}
             alt={book.title}
-            className={`w-24 h-36 object-cover rounded-xl ${!book.hasAudio ? "opacity-55" : ""}`}
+            className={`w-24 h-24 object-cover rounded-xl ${!book.hasAudio ? "opacity-55" : ""}`}
           />
         ) : (
-          <div className="w-24 h-36 bg-gray-800 rounded-xl flex items-center justify-center text-2xl">🎧</div>
+          <div className="w-24 h-24 bg-gray-800 rounded-xl flex items-center justify-center text-2xl">🎧</div>
         )}
         {!book.hasAudio && (
           <span className="absolute top-1.5 right-1.5 bg-black/70 text-gray-400 text-[9px] px-1 py-0.5 rounded-full">Yakında</span>
@@ -76,10 +76,10 @@ function BookCard({ book, color }: { book: Book; color: string }) {
             <img
               src={book.coverUrl}
               alt={book.title}
-              className={`w-full aspect-[2/3] object-cover rounded-xl border border-gray-800 group-hover:border-gray-600 transition-colors ${!book.hasAudio ? "opacity-55" : ""}`}
+              className={`w-full aspect-square object-cover rounded-xl border border-gray-800 group-hover:border-gray-600 transition-colors ${!book.hasAudio ? "opacity-55" : ""}`}
             />
           ) : (
-            <div className="w-full aspect-[2/3] bg-gray-800 rounded-xl border border-gray-800 flex items-center justify-center text-3xl">🎧</div>
+            <div className="w-full aspect-square bg-gray-800 rounded-xl border border-gray-800 flex items-center justify-center text-3xl">🎧</div>
           )}
           {!book.hasAudio && (
             <span className="absolute top-1.5 right-1.5 bg-black/70 text-gray-400 text-[9px] px-1.5 py-0.5 rounded-full">Yakında</span>
