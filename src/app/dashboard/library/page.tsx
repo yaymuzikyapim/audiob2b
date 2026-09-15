@@ -45,14 +45,14 @@ export default async function LibraryPage() {
       where: { userId: session.id, bookId: { in: bookIds } },
       select: { bookId: true, positionSec: true },
     }),
-    (prisma as any).userFavorite.findMany({
+    prisma.userFavorite.findMany({
       where: { userId: session.id, bookId: { in: bookIds } },
       select: { bookId: true },
-    }).catch(() => []),
+    }),
   ]);
 
-  const stateMap = Object.fromEntries(playerStates.map((ps: any) => [ps.bookId, ps.positionSec]));
-  const favoriteSet = new Set((userFavorites as any[]).map((f) => f.bookId));
+  const stateMap = Object.fromEntries(playerStates.map((ps) => [ps.bookId, ps.positionSec]));
+  const favoriteSet = new Set(userFavorites.map((f) => f.bookId));
 
   const books = rawBooks.map((b) => ({
     id: b!.id,
