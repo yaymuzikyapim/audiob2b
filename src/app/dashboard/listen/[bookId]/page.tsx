@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import AudioPlayer from "@/components/dashboard/AudioPlayer";
+import NoAudioPlayer from "@/components/dashboard/NoAudioPlayer";
 
 function formatDuration(sec: number) {
   const h = Math.floor(sec / 3600);
@@ -83,22 +84,26 @@ export default async function ListenPage({ params }: { params: Promise<{ bookId:
       </div>
 
       {/* Audio Player */}
-      <AudioPlayer
-        book={{
-          id: book.id,
-          title: book.title,
-          author: book.author,
-          coverUrl: book.coverUrl,
-          chapters: book.chapters.map((ch) => ({ ...ch, title: `Bölüm ${ch.order}` })),
-        }}
-        initialPositionSec={playerState?.positionSec ?? 0}
-        initialChapterId={playerState?.chapterId ?? null}
-        initialBookmarks={bookmarksRaw.map((b) => ({
-          ...b,
-          createdAt: b.createdAt.toISOString(),
-        }))}
-        brandColor={brandColor}
-      />
+      {book.chapters.length === 0 ? (
+        <NoAudioPlayer color={brandColor} />
+      ) : (
+        <AudioPlayer
+          book={{
+            id: book.id,
+            title: book.title,
+            author: book.author,
+            coverUrl: book.coverUrl,
+            chapters: book.chapters.map((ch) => ({ ...ch, title: `Bölüm ${ch.order}` })),
+          }}
+          initialPositionSec={playerState?.positionSec ?? 0}
+          initialChapterId={playerState?.chapterId ?? null}
+          initialBookmarks={bookmarksRaw.map((b) => ({
+            ...b,
+            createdAt: b.createdAt.toISOString(),
+          }))}
+          brandColor={brandColor}
+        />
+      )}
     </div>
   );
 }

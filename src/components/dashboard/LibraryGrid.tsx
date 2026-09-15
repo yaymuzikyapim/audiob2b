@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+// NoAudioModal artık listen sayfasında kullanılıyor
 
 type Book = {
   id: string;
@@ -53,44 +54,33 @@ function NoAudioModal({ color, onClose }: { color: string; onClose: () => void }
 }
 
 function BookCard({ book, color }: { book: Book; color: string }) {
-  const [showModal, setShowModal] = useState(false);
-
-  const inner = (
-    <div className="group bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-700 transition-colors cursor-pointer relative">
-      {!book.hasAudio && (
-        <div className="absolute top-2 right-2 z-10 bg-gray-900/80 text-gray-400 text-[10px] px-1.5 py-0.5 rounded-full">Yakında</div>
-      )}
-      {book.coverUrl ? (
-        <img src={book.coverUrl} alt={book.title} className={`w-full aspect-square object-cover ${!book.hasAudio ? "opacity-60" : ""}`} />
-      ) : (
-        <div className="w-full aspect-square bg-gray-800 flex items-center justify-center text-4xl">🎧</div>
-      )}
-      <div className="p-3">
-        <h3 className="text-white font-semibold text-xs line-clamp-2">{book.title}</h3>
-        <p className="text-gray-500 text-xs mt-0.5">{book.author}</p>
-        <div className="flex items-center justify-between mt-2">
-          {book.category && <span className="text-[10px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded-full truncate max-w-[80px]">{book.category}</span>}
-          <span className="text-gray-600 text-[10px]">{formatDuration(book.duration)}</span>
-        </div>
-        {book.progressPct > 0 && (
-          <div className="mt-2 w-full bg-gray-800 rounded-full h-0.5">
-            <div className="h-0.5 rounded-full" style={{ width: `${book.progressPct}%`, backgroundColor: color }} />
-          </div>
+  return (
+    <Link href={`/dashboard/listen/${book.id}`}>
+      <div className="group bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-700 transition-colors cursor-pointer relative">
+        {!book.hasAudio && (
+          <div className="absolute top-2 right-2 z-10 bg-gray-900/80 text-gray-400 text-[10px] px-1.5 py-0.5 rounded-full">Yakında</div>
         )}
+        {book.coverUrl ? (
+          <img src={book.coverUrl} alt={book.title} className={`w-full aspect-square object-cover ${!book.hasAudio ? "opacity-60" : ""}`} />
+        ) : (
+          <div className="w-full aspect-square bg-gray-800 flex items-center justify-center text-4xl">🎧</div>
+        )}
+        <div className="p-3">
+          <h3 className="text-white font-semibold text-xs line-clamp-2">{book.title}</h3>
+          <p className="text-gray-500 text-xs mt-0.5">{book.author}</p>
+          <div className="flex items-center justify-between mt-2">
+            {book.category && <span className="text-[10px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded-full truncate max-w-[80px]">{book.category}</span>}
+            <span className="text-gray-600 text-[10px]">{formatDuration(book.duration)}</span>
+          </div>
+          {book.progressPct > 0 && (
+            <div className="mt-2 w-full bg-gray-800 rounded-full h-0.5">
+              <div className="h-0.5 rounded-full" style={{ width: `${book.progressPct}%`, backgroundColor: color }} />
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </Link>
   );
-
-  if (!book.hasAudio) {
-    return (
-      <>
-        <div onClick={() => setShowModal(true)}>{inner}</div>
-        {showModal && <NoAudioModal color={color} onClose={() => setShowModal(false)} />}
-      </>
-    );
-  }
-
-  return <Link href={`/dashboard/listen/${book.id}`}>{inner}</Link>;
 }
 
 function SeriesCard({ series, color }: { series: SeriesGroup; color: string }) {
@@ -126,37 +116,26 @@ function SeriesCard({ series, color }: { series: SeriesGroup; color: string }) {
 }
 
 function SeriesBookRow({ book, color }: { book: Book; color: string }) {
-  const [showModal, setShowModal] = useState(false);
-
-  const inner = (
-    <div className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-800/50 transition-colors cursor-pointer">
-      {book.coverUrl ? (
-        <img src={book.coverUrl} alt={book.title} className={`w-10 h-10 object-cover rounded-lg flex-shrink-0 ${!book.hasAudio ? "opacity-50" : ""}`} />
-      ) : (
-        <div className="w-10 h-10 bg-gray-800 rounded-lg flex-shrink-0" />
-      )}
-      <div className="flex-1 min-w-0">
-        <div className="text-white text-xs font-medium line-clamp-1">{book.seriesOrder ? `${book.seriesOrder}. ` : ""}{book.title}</div>
-        <div className="text-gray-500 text-[10px] mt-0.5">{formatDuration(book.duration)}</div>
+  return (
+    <Link href={`/dashboard/listen/${book.id}`}>
+      <div className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-800/50 transition-colors cursor-pointer">
+        {book.coverUrl ? (
+          <img src={book.coverUrl} alt={book.title} className={`w-10 h-10 object-cover rounded-lg flex-shrink-0 ${!book.hasAudio ? "opacity-50" : ""}`} />
+        ) : (
+          <div className="w-10 h-10 bg-gray-800 rounded-lg flex-shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="text-white text-xs font-medium line-clamp-1">{book.seriesOrder ? `${book.seriesOrder}. ` : ""}{book.title}</div>
+          <div className="text-gray-500 text-[10px] mt-0.5">{formatDuration(book.duration)}</div>
+        </div>
+        {!book.hasAudio
+          ? <span className="text-gray-500 text-[10px] flex-shrink-0">Yakında</span>
+          : book.progressPct > 0
+            ? <span className="text-[10px] flex-shrink-0" style={{ color }}>%{book.progressPct}</span>
+            : null}
       </div>
-      {!book.hasAudio
-        ? <span className="text-gray-500 text-[10px] flex-shrink-0">Yakında</span>
-        : book.progressPct > 0
-          ? <span className="text-[10px] flex-shrink-0" style={{ color }}>%{book.progressPct}</span>
-          : null}
-    </div>
+    </Link>
   );
-
-  if (!book.hasAudio) {
-    return (
-      <>
-        <div onClick={() => setShowModal(true)}>{inner}</div>
-        {showModal && <NoAudioModal color={color} onClose={() => setShowModal(false)} />}
-      </>
-    );
-  }
-
-  return <Link href={`/dashboard/listen/${book.id}`}>{inner}</Link>;
 }
 
 function Section({ title, items, color }: { title: string; items: (Book | SeriesGroup)[]; color: string }) {
