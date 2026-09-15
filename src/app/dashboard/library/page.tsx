@@ -1,14 +1,7 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-
-function formatDuration(sec: number) {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  if (h > 0) return `${h}s ${m}dk`;
-  return `${m}dk`;
-}
+import LibraryGrid from "@/components/dashboard/LibraryGrid";
 
 export default async function LibraryPage() {
   const session = await getSession();
@@ -24,12 +17,14 @@ export default async function LibraryPage() {
         select: {
           name: true,
           books: {
+            where: { book: { isActive: true } },
             include: {
               book: {
                 select: {
                   id: true, title: true, author: true, narrator: true,
                   duration: true, coverUrl: true, description: true,
                   category: { select: { name: true } },
+                  _count: { select: { chapters: true } },
                 },
               },
             },
@@ -39,68 +34,49 @@ export default async function LibraryPage() {
     },
   });
 
-  const books = company?.package?.books.map((pb) => pb.book) ?? [];
   const color = company?.brandColor ?? "#2563eb";
+  const rawBooks = company?.package?.books.map((pb) => pb.book).filter(Boolean) ?? [];
+  const bookIds = rawBooks.map((b) => b!.id);
 
-  const playerStates = await prisma.playerState.findMany({
-    where: { userId: session.id, bookId: { in: books.map((b) => b.id) } },
-    select: { bookId: true, positionSec: true },
-  });
-  const stateMap = Object.fromEntries(playerStates.map((ps) => [ps.bookId, ps.positionSec]));
+  const [playerStates, userFavorites] = await Promise.all([
+    prisma.playerState.findMany({
+      where: { userId: session.id, bookId: { in: bookIds } },
+      select: { bookId: true, positionSec: true },
+    }),
+    (prisma as any).userFavorite.findMany({
+      where: { userId: session.id, bookId: { in: bookIds } },
+      select: { bookId: true },
+    }).catch(() => []),
+  ]);
+
+  const stateMap = Object.fromEntries(playerStates.map((ps: any) => [ps.bookId, ps.positionSec]));
+  const favoriteSet = new Set((userFavorites as any[]).map((f) => f.bookId));
+
+  const books = rawBooks.map((b) => ({
+    id: b!.id,
+    title: b!.title,
+    author: b!.author,
+    narrator: b!.narrator,
+    duration: b!.duration,
+    coverUrl: b!.coverUrl,
+    description: b!.description ?? null,
+    hasAudio: b!._count.chapters > 0,
+    progressPct: stateMap[b!.id]
+      ? Math.min(100, Math.round((stateMap[b!.id] / b!.duration) * 100))
+      : 0,
+    isFavorite: favoriteSet.has(b!.id),
+    category: b!.category?.name ?? null,
+  }));
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-white">Kütüphane</h1>
         <p className="text-gray-400 mt-1 text-sm">
-          {company?.package?.name ? `${company.package.name} paketi` : "Paket atanmamış"} · {books.length} kitap
+          {company?.package?.name ?? "Demo"} · {books.length} kitap
         </p>
       </div>
-
-      {books.length === 0 && (
-        <div className="text-center py-20">
-          <div className="text-4xl mb-3">📭</div>
-          <h3 className="text-white font-semibold mb-2">Kütüphane boş</h3>
-          <p className="text-gray-400 text-sm">Şirketinizin paketinde henüz kitap bulunmuyor.</p>
-        </div>
-      )}
-
-      <div className="grid grid-cols-4 gap-5">
-        {books.map((book) => {
-          const pos = stateMap[book.id] ?? 0;
-          const pct = pos > 0 ? Math.min(100, Math.round((pos / book.duration) * 100)) : 0;
-
-          return (
-            <Link key={book.id} href={`/dashboard/listen/${book.id}`}
-              className="group bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-700 transition-colors">
-              {book.coverUrl ? (
-                <img src={book.coverUrl} alt={book.title} className="w-full aspect-square object-cover" />
-              ) : (
-                <div className="w-full aspect-square bg-gray-800 flex items-center justify-center text-4xl">🎧</div>
-              )}
-              <div className="p-4">
-                <h3 className="text-white font-semibold text-sm line-clamp-2 transition-colors group-hover:opacity-80">{book.title}</h3>
-                <p className="text-gray-500 text-xs mt-1">{book.author}</p>
-                {book.narrator && <p className="text-gray-600 text-xs mt-0.5">Seslendiren: {book.narrator}</p>}
-                <div className="flex items-center justify-between mt-3">
-                  {book.category && (
-                    <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{book.category.name}</span>
-                  )}
-                  <span className="text-gray-500 text-xs">{formatDuration(book.duration)}</span>
-                </div>
-                {pct > 0 && (
-                  <div className="mt-3">
-                    <div className="w-full bg-gray-800 rounded-full h-1">
-                      <div className="h-1 rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
-                    </div>
-                    <span className="text-xs mt-1 block" style={{ color }}>%{pct} tamamlandı</span>
-                  </div>
-                )}
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+      <LibraryGrid books={books} color={color} />
     </div>
   );
 }

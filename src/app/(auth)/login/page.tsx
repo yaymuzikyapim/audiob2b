@@ -29,7 +29,7 @@ function LoginForm() {
     if (!res.ok) {
       setError(data.error || "Giriş başarısız.");
     } else {
-      router.push(data.role === "SUPER_ADMIN" ? "/admin" : "/dashboard");
+      router.push(data.role === "SUPER_ADMIN" ? "/admin" : "/dashboard/library");
     }
   }
 
