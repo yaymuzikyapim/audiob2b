@@ -168,6 +168,13 @@ function CategorySection({
   );
 }
 
+const CATEGORY_ORDER = [
+  "Roman", "İş/Gelişim", "Anı/Biyografi", "Tarih/Mitoloji", "Öykü/Hikâye",
+  "Din/Tasavvuf", "Polisiye", "Felsefe", "Bilim/Bilimkurgu", "Çocuk",
+  "Genç Okurlar", "Dünya Klasikleri", "Şiir", "Radyo Tiyatrosu", "Dil Öğrenme",
+];
+const CATEGORY_LAST = ["İngilizce Kitaplar"];
+
 export default function LibraryGrid({ books, color }: { books: Book[]; color: string }) {
   const favorites = books.filter((b) => b.isFavorite);
   const nonFavorites = books.filter((b) => !b.isFavorite);
@@ -229,10 +236,14 @@ export default function LibraryGrid({ books, color }: { books: Book[]; color: st
         </div>
       )}
 
-      {/* Kategoriler */}
-      {Object.entries(byCategory)
-        .sort(([a], [b]) => a.localeCompare(b, "tr"))
-        .map(([cat, { series, solo }]) => (
+      {/* Kategoriler — mobil uygulamayla aynı sıra */}
+      {[
+        ...CATEGORY_ORDER.filter((k) => byCategory[k]),
+        ...Object.keys(byCategory).filter((k) => !CATEGORY_ORDER.includes(k) && !CATEGORY_LAST.includes(k)),
+        ...CATEGORY_LAST.filter((k) => byCategory[k]),
+      ].map((cat) => {
+        const { series, solo } = byCategory[cat];
+        return (
           <CategorySection
             key={cat}
             title={cat}
@@ -240,7 +251,8 @@ export default function LibraryGrid({ books, color }: { books: Book[]; color: st
             soloBooks={solo}
             color={color}
           />
-        ))}
+        );
+      })}
     </div>
   );
 }
