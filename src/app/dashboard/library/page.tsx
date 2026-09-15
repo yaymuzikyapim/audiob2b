@@ -24,6 +24,8 @@ export default async function LibraryPage() {
                   id: true, title: true, author: true, narrator: true,
                   duration: true, coverUrl: true, description: true,
                   category: { select: { name: true } },
+                  series: { select: { id: true, name: true, coverUrl: true } },
+                  seriesOrder: true,
                   _count: { select: { chapters: true } },
                 },
               },
@@ -66,6 +68,10 @@ export default async function LibraryPage() {
       : 0,
     isFavorite: favoriteSet.has(b!.id),
     category: b!.category?.name ?? null,
+    seriesId: b!.series?.id ?? null,
+    seriesName: b!.series?.name ?? null,
+    seriesCoverUrl: b!.series?.coverUrl ?? null,
+    seriesOrder: b!.seriesOrder ?? null,
   }));
 
   return (
