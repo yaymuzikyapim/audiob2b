@@ -507,6 +507,62 @@ body {
   margin-top: 7px;
 }
 
+/* ── Infra grid ─────────────────────────────────────────────────────── */
+.infra-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.infra-card {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+}
+.infra-icon {
+  font-size: 22px;
+  margin-bottom: 10px;
+  display: block;
+}
+.infra-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.infra-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+.infra-badge {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+.infra-note {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.7;
+  background: var(--bg-alt);
+  border-left: 3px solid var(--border);
+  padding: 12px 16px;
+  border-radius: 0 6px 6px 0;
+}
+@media (max-width: 700px) {
+  .infra-grid { grid-template-columns: 1fr; }
+}
+@media (min-width: 701px) and (max-width: 900px) {
+  .infra-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ── Demo block ─────────────────────────────────────────────────────── */
 .demo-block {
   background: var(--bg-alt);
@@ -1070,6 +1126,64 @@ body {
         <a href="https://www.audiob2b.com.tr" target="_blank">www.audiob2b.com.tr</a>
         <a href="mailto:satis@audiob2b.com.tr?subject=Demo%20Eri%C5%9Fim%20Talebi&body=Merhaba%2C%0A%0AY%C3%B6netici%20paneli%20demosu%20i%C3%A7in%20eri%C5%9Fim%20bilgilerini%20almak%20istiyorum.%0A%0A%C5%9Eirket%3A%0A%0A%C4%B0leti%C5%9Fim%3A" class="demo-mailto">Demo bilgileri için bize yazın</a>
       </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ── Teknik Altyapı ── -->
+  <section class="section">
+    <div class="section-label">Teknik</div>
+    <h2>Altyapı &amp; Erişilebilirlik</h2>
+
+    <div class="infra-grid">
+
+      <div class="infra-card">
+        <span class="infra-icon">⚡</span>
+        <div class="infra-title">Eş Zamanlı Kullanıcı Kapasitesi</div>
+        <div class="infra-desc">Platform, AWS üzerinde çalışır ve talebe göre otomatik olarak ölçeklenir. 3.000 kullanıcının tamamı aynı anda bağlansa bile sistem ek yük almaz — kapasite, gerçek kullanım değil lisans adedi değil, anlık trafike göre ayarlanır.</div>
+        <span class="infra-badge">Otomatik ölçekleme (auto-scaling)</span>
+      </div>
+
+      <div class="infra-card">
+        <span class="infra-icon">🔊</span>
+        <div class="infra-title">Ses Akışı ve CDN</div>
+        <div class="infra-desc">Ses dosyaları tek bir sunucudan değil, Amazon CloudFront CDN üzerinden iletilir. Kullanıcı nerede olursa olsun içerik en yakın dağıtım noktasından gelir. Kısa süreli bağlantı dalgalanması dinlemeyi kesmez; uygulama tampon bellek kullanır.</div>
+        <span class="infra-badge">CloudFront CDN · Küresel dağıtım</span>
+      </div>
+
+      <div class="infra-card">
+        <span class="infra-icon">📶</span>
+        <div class="infra-title">Çevrimdışı (Offline) Mod</div>
+        <div class="infra-desc">Mobil uygulama üzerinden kitaplar cihaza indirilebilir. İnternet bağlantısı olmayan ortamlarda (saha, uçak, düşük sinyal) dinleme kesintisiz devam eder. İndirilen içerik şifreli olarak saklanır.</div>
+        <span class="infra-badge">iOS &amp; Android · Şifreli indirme</span>
+      </div>
+
+      <div class="infra-card">
+        <span class="infra-icon">🟢</span>
+        <div class="infra-title">Servis Sürekliliği</div>
+        <div class="infra-desc">Sistem günün 24 saati, haftanın 7 günü çalışır. Güncellemeler sıfır kesinti ile (zero-downtime deployment) yayınlanır; planlı bakım için servis durdurma yapılmaz. Enterprise pakette SLA taahhüdü yazılı olarak yer alır.</div>
+        <span class="infra-badge">%99,9 uptime SLA</span>
+      </div>
+
+      <div class="infra-card">
+        <span class="infra-icon">🏗️</span>
+        <div class="infra-title">Altyapı Bileşenleri</div>
+        <div class="infra-desc">Uygulama sunucuları ve veritabanı Amazon Web Services (AWS) üzerinde çalışır. Web arayüzü Vercel CDN ile dağıtılır. Ses depolama için Amazon S3 kullanılır; yedekler farklı coğrafi bölgelerde tutulur.</div>
+        <span class="infra-badge">AWS · Vercel · S3</span>
+      </div>
+
+      <div class="infra-card">
+        <span class="infra-icon">🔄</span>
+        <div class="infra-title">Bizden Kaynaklı Kesinti Riski</div>
+        <div class="infra-desc">Platform dağıtık mimaride çalıştığı için tek bir sunucu arızası hizmeti etkilemez. Olası bir bölgesel sorun durumunda trafik otomatik olarak yedek bölgeye yönlendirilir. Geçmişte yaşanan ortalama kesinti süresi: &lt;15 dakika/yıl.</div>
+        <span class="infra-badge">Çok bölgeli yedeklilik</span>
+      </div>
+
+    </div>
+
+    <div class="infra-note">
+      TPAO altyapı ekibinin teknik sorularına (güvenlik duvarı yapılandırması, izin verilmesi gereken domain/IP listesi, SSO entegrasyonu vb.) yazılı olarak yanıt verilir. Talep için: <strong>destek@audiob2b.com.tr</strong>
     </div>
   </section>
 
