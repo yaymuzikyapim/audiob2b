@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
         hostname: "audiob2b-audio-files.s3.eu-central-1.amazonaws.com",
         pathname: "/covers/**",
       },
+      {
+        protocol: "https",
+        hostname: "dj37r9f1t56v.cloudfront.net",
+      },
     ],
   },
   typescript: { ignoreBuildErrors: true },
