@@ -81,7 +81,7 @@ export default function NewBookForm({ categories }: { categories: Category[] }) 
     // Kapak görseli seçildiyse önce S3'e yükle
     if (coverFile) {
       const urlRes = await fetch(`/api/admin/cover-upload-url?ext=jpg`);
-      const { uploadUrl, key } = await urlRes.json();
+      const { uploadUrl, key, cdnUrl } = await urlRes.json();
 
       const uploadRes = await fetch(uploadUrl, {
         method: "PUT",
@@ -96,7 +96,7 @@ export default function NewBookForm({ categories }: { categories: Category[] }) 
         return;
       }
 
-      coverUrl = `/api/covers/${key.replace("covers/", "")}`;
+      coverUrl = cdnUrl ?? `/api/covers/${key.replace("covers/", "")}`;
     }
 
     const res = await fetch("/api/admin/books", {

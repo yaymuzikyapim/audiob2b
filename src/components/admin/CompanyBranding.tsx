@@ -47,7 +47,7 @@ export default function CompanyBranding({
       const squareBlob = await cropToSquare(file);
 
       const res = await fetch(`/api/admin/logo-upload-url?contentType=image/jpeg`);
-      const { uploadUrl, key } = await res.json();
+      const { uploadUrl, key, cdnUrl } = await res.json();
 
       await fetch(uploadUrl, {
         method: "PUT",
@@ -55,7 +55,7 @@ export default function CompanyBranding({
         body: squareBlob,
       });
 
-      setLogoUrl(`/api/logos/${key.replace("logos/", "")}`);
+      setLogoUrl(cdnUrl ?? `/api/logos/${key.replace("logos/", "")}`);
     } catch {
       alert("Logo yüklenirken hata oluştu.");
     } finally {

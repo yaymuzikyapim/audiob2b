@@ -39,7 +39,7 @@ export default function CoverUploader({ bookId, currentCoverUrl }: { bookId: str
     setPreview(URL.createObjectURL(squareBlob));
 
     const urlRes = await fetch(`/api/admin/cover-upload-url?ext=jpg`);
-    const { uploadUrl, key } = await urlRes.json();
+    const { uploadUrl, key, cdnUrl } = await urlRes.json();
 
     const uploadRes = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: squareBlob });
 
@@ -49,7 +49,7 @@ export default function CoverUploader({ bookId, currentCoverUrl }: { bookId: str
       return;
     }
 
-    const coverUrl = `/api/covers/${key.replace("covers/", "")}`;
+    const coverUrl = cdnUrl ?? `/api/covers/${key.replace("covers/", "")}`;
     const patchRes = await fetch(`/api/admin/books/${bookId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

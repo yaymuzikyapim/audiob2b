@@ -46,3 +46,10 @@ export async function getPlayUrl(key: string) {
 export async function deleteFile(key: string) {
   await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
+
+// CloudFront public URL — covers/ ve logos/ için (books/ değil, o signed URL'de kalır)
+export function cdnPublicUrl(key: string): string | null {
+  const base = process.env.CLOUDFRONT_URL;
+  if (!base) return null;
+  return `${base.replace(/\/$/, "")}/${key}`;
+}

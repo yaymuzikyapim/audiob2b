@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { getUploadUrl, logoS3Key } from "@/lib/s3";
+import { getUploadUrl, logoS3Key, cdnPublicUrl } from "@/lib/s3";
 import { randomUUID } from "crypto";
 
 const ALLOWED = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
@@ -29,5 +29,5 @@ export async function GET(req: NextRequest) {
   const key = logoS3Key(uid, ext);
   const uploadUrl = await getUploadUrl(key, contentType);
 
-  return NextResponse.json({ uploadUrl, key });
+  return NextResponse.json({ uploadUrl, key, cdnUrl: cdnPublicUrl(key) });
 }
