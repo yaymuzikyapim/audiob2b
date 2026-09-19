@@ -12,25 +12,12 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
   const { id } = await params;
 
-  // Kitabın şirketin paketinde olduğunu doğrula
-  const company = await prisma.company.findUnique({
-    where: { id: session.companyId },
-    select: { packageId: true, isActive: true },
-  });
-
-  if (!company?.isActive || !company.packageId) {
-    return NextResponse.json({ error: "Erişim yok." }, { status: 403 });
-  }
-
-  const packageBook = await prisma.packageBook.findUnique({
-    where: { packageId_bookId: { packageId: company.packageId, bookId: id } },
-  });
-
-  if (!packageBook) {
-    return NextResponse.json({ error: "Bu kitap paketinizde yok." }, { status: 403 });
-  }
-
-  const [book, playerState] = await Promise.all([
+  // Tüm sorgular paralel — 5 ardışık yerine 1 round-trip
+  const [company, book, playerState, favorite] = await Promise.all([
+    prisma.company.findUnique({
+      where: { id: session.companyId },
+      select: { packageId: true, isActive: true },
+    }),
     prisma.book.findUnique({
       where: { id },
       include: {
@@ -41,18 +28,27 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     prisma.playerState.findUnique({
       where: { userId_bookId: { userId: session.id, bookId: id } },
     }),
+    (prisma as any).userFavorite.findUnique({
+      where: { userId_bookId: { userId: session.id, bookId: id } },
+    }).catch(() => null),
   ]);
+
+  if (!company?.isActive || !company.packageId) {
+    return NextResponse.json({ error: "Erişim yok." }, { status: 403 });
+  }
 
   if (!book) return NextResponse.json({ error: "Bulunamadı." }, { status: 404 });
 
-  let isFavorite = false;
-  try {
-    const fav = await (prisma as any).userFavorite.findUnique({
-      where: { userId_bookId: { userId: session.id, bookId: id } },
-    });
-    isFavorite = !!fav;
-  } catch {}
+  // Paket kontrolü — company.packageId kesin var artık
+  const packageBook = await prisma.packageBook.findUnique({
+    where: { packageId_bookId: { packageId: company.packageId, bookId: id } },
+  });
 
+  if (!packageBook) {
+    return NextResponse.json({ error: "Bu kitap paketinizde yok." }, { status: 403 });
+  }
+
+  const isFavorite = !!favorite;
   const chapters = book.chapters.map((ch) => ({ ...ch, title: `Bölüm ${ch.order}` }));
 
   return NextResponse.json({ book: { ...book, chapters, isFavorite }, playerState });
