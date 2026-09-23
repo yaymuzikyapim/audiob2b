@@ -1,0 +1,49 @@
+import { NextResponse } from "next/server";
+import { prisma } from "./prisma";
+
+export interface ActiveAccess {
+  userId: string;
+  companyId: string;
+  packageId: string;
+}
+
+/**
+ * Kullanıcı aktifliği, şirket aktifliği ve lisans süresini tek sorguda doğrular.
+ * companyId token'dan değil, veritabanından okunur.
+ */
+export async function getActiveAccess(
+  userId: string | undefined
+): Promise<{ ok: true; data: ActiveAccess } | { ok: false; response: ReturnType<typeof NextResponse.json> }> {
+  if (!userId) {
+    return { ok: false, response: NextResponse.json({ error: "Oturum gerekli." }, { status: 401 }) };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      isActive: true,
+      company: {
+        select: { id: true, packageId: true, isActive: true, endDate: true },
+      },
+    },
+  });
+
+  if (!user?.isActive) {
+    return { ok: false, response: NextResponse.json({ error: "Hesap pasif." }, { status: 403 }) };
+  }
+
+  const co = user.company;
+  if (!co?.isActive) {
+    return { ok: false, response: NextResponse.json({ error: "Erişim yok." }, { status: 403 }) };
+  }
+
+  if (co.endDate && co.endDate < new Date()) {
+    return { ok: false, response: NextResponse.json({ error: "Lisans süresi doldu." }, { status: 403 }) };
+  }
+
+  if (!co.packageId) {
+    return { ok: false, response: NextResponse.json({ error: "Aktif paket yok." }, { status: 403 }) };
+  }
+
+  return { ok: true, data: { userId, companyId: co.id, packageId: co.packageId } };
+}

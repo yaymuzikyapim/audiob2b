@@ -27,6 +27,9 @@ export async function proxy(req: NextRequest) {
   }
 
   if (!session) {
+    if (pathname.startsWith("/api")) {
+      return NextResponse.json({ error: "Oturum gerekli." }, { status: 401 });
+    }
     return NextResponse.redirect(new URL(`/login?from=${pathname}`, req.url));
   }
 
