@@ -8,8 +8,9 @@ const adapter = new PrismaPg({
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const email = "aliye@sesle.com.tr";
-  const password = "sesle2026";
+  const email = process.env.SEED_ADMIN_EMAIL ?? "aliye@sesle.com.tr";
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  if (!password) { console.error("SEED_ADMIN_PASSWORD env değişkeni gerekli."); process.exit(1); }
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -17,7 +18,7 @@ async function main() {
     return;
   }
 
-  const hashed = await bcrypt.hash(password, 12);
+  const hashed = await bcrypt.hash(password!, 12);
 
   await prisma.user.create({
     data: {
@@ -28,10 +29,7 @@ async function main() {
     },
   });
 
-  console.log("✅ Süper admin oluşturuldu:");
-  console.log("   E-posta:", email);
-  console.log("   Şifre  :", password);
-  console.log("\n⚠️  Giriş yaptıktan sonra şifrenizi değiştirin!");
+  console.log("✅ Süper admin oluşturuldu:", email);
 }
 
 main()

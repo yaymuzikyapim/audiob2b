@@ -48,3 +48,14 @@ next-env.d.ts
 
 # Yedek klasörü — git'e girmesin
 /backups/
+
+# Tek seferlik çalıştırma scriptleri — git'e girmesin
+prisma/create-*.ts
+prisma/create-*.mjs
+prisma/fix-*.mjs
+prisma/rename-*.mjs
+prisma/seed-demo-*.ts
+prisma/upload-from-drive.ts
+prisma/verify-uploads.ts
+prisma/check-logins.mjs
+prisma/reset-passwords.mjs
