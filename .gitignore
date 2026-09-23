@@ -43,8 +43,8 @@ next-env.d.ts
 /src/generated/prisma
 .env
 
-# Hassas belgeler — public/ dışında ama git'e girmesin
-/private/
+# Hassas belgeler — public/ dışında, oturum gerektiriyor
+# /private/ git'te kalıyor — içeriği dikkatli yönet
 
 # Yedek klasörü — git'e girmesin
 /backups/

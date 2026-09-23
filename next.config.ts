@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["pg", "@prisma/adapter-pg", "@prisma/client"],
+  outputFileTracingIncludes: {
+    "/tpao-teklif": ["./private/**/*"],
+    "/katalog": ["./private/**/*"],
+  },
   images: {
     unoptimized: true,
     remotePatterns: [
