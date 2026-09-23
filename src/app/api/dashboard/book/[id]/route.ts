@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { getActiveAccess } from "@/lib/access";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -12,17 +13,9 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
   const { id } = await params;
 
-  // Kullanıcı + şirket + kitap bilgileri — tek round-trip
-  const [user, book, playerState, favorite] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session.id },
-      select: {
-        isActive: true,
-        company: {
-          select: { id: true, packageId: true, isActive: true, endDate: true },
-        },
-      },
-    }),
+  // Erişim kontrolü + kitap sorguları — tek round-trip
+  const [access, book, playerState, favorite] = await Promise.all([
+    getActiveAccess(session.id),
     prisma.book.findUnique({
       where: { id },
       include: {
@@ -39,26 +32,12 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     }).catch(() => null),
   ]);
 
-  if (!user?.isActive) {
-    return NextResponse.json({ error: "Hesap pasif." }, { status: 403 });
-  }
-
-  const company = user.company;
-  if (!company?.isActive) {
-    return NextResponse.json({ error: "Erişim yok." }, { status: 403 });
-  }
-
-  if (company.endDate && company.endDate < new Date()) {
-    return NextResponse.json({ error: "Lisans süresi doldu." }, { status: 403 });
-  }
-
-  if (!company.packageId) {
-    return NextResponse.json({ error: "Aktif paket yok." }, { status: 403 });
-  }
+  if (!access.ok) return access.response;
+  const { packageId } = access.data;
 
   if (!book) return NextResponse.json({ error: "Bulunamadı." }, { status: 404 });
 
-  const inPackage = book.packageBooks.some((pb) => pb.packageId === company.packageId);
+  const inPackage = book.packageBooks.some((pb) => pb.packageId === packageId);
   if (!inPackage) {
     return NextResponse.json({ error: "Bu kitap paketinizde yok." }, { status: 403 });
   }

@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { getActiveAccess } from "@/lib/access";
 import { getPlayUrl } from "@/lib/s3";
 
 export async function GET() {
@@ -12,40 +13,38 @@ export async function GET() {
       return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
     }
 
-    // companyId token'dan değil, DB'den — user.isActive + company.isActive + endDate tek sorguda
-    const user = await prisma.user.findUnique({
-      where: { id: session.id },
+    // user.isActive + company.isActive + endDate tek sorguda; companyId DB'den
+    const access = await getActiveAccess(session.id);
+    if (!access.ok) return access.response;
+    const { companyId } = access.data;
+
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
       select: {
-        isActive: true,
-        company: {
+        id: true,
+        name: true,
+        logoUrl: true,
+        brandColor: true,
+        endDate: true,
+        package: {
           select: {
-            id: true,
             name: true,
-            logoUrl: true,
-            brandColor: true,
-            isActive: true,
-            endDate: true,
-            package: {
-              select: {
-                name: true,
-                books: {
-                  where: { book: { isActive: true } },
-                  include: {
-                    book: {
-                      select: {
-                        id: true,
-                        title: true,
-                        author: true,
-                        narrator: true,
-                        duration: true,
-                        coverUrl: true,
-                        description: true,
-                        isActive: true,
-                        category: { select: { name: true } },
-                        series: { select: { id: true, name: true, slug: true } },
-                        seriesOrder: true,
-                      },
-                    },
+            books: {
+              where: { book: { isActive: true } },
+              include: {
+                book: {
+                  select: {
+                    id: true,
+                    title: true,
+                    author: true,
+                    narrator: true,
+                    duration: true,
+                    coverUrl: true,
+                    description: true,
+                    isActive: true,
+                    category: { select: { name: true } },
+                    series: { select: { id: true, name: true, slug: true } },
+                    seriesOrder: true,
                   },
                 },
               },
@@ -55,17 +54,8 @@ export async function GET() {
       },
     });
 
-    if (!user?.isActive) {
-      return NextResponse.json({ error: "Hesap pasif." }, { status: 403 });
-    }
-
-    const company = user.company;
-    if (!company?.isActive) {
-      return NextResponse.json({ books: [], company: null });
-    }
-
-    if (company.endDate && company.endDate < new Date()) {
-      return NextResponse.json({ books: [], company: null });
+    if (!company) {
+      return NextResponse.json({ error: "Şirket bulunamadı." }, { status: 403 });
     }
 
     const books = (company.package?.books ?? [])
