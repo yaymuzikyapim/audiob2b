@@ -7,6 +7,23 @@ export const metadata = {
     "Şirketinizin çalışanlarına sesli kitap kütüphanesi sunun. Kurumsal lisans, kolay yönetim, mobil uygulama.",
 };
 
+const APP_STORE_URL  = "https://apps.apple.com/tr/app/audiob2b/id6801790848?l=tr";
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.audiob2b.mobile&pcampaignid=web_share";
+
+const COVERS = [
+  { url: "https://dj37r9f1t56v.cloudfront.net/covers/d3209dd1-5c41-4afe-af88-dca387e6c1da.jpg",  title: "Mad Mehmed" },
+  { url: "https://dj37r9f1t56v.cloudfront.net/covers/34ffb0b3-86e1-4661-b858-11fec26643f6.jpg", title: "The Rose Beauty" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255578068.jpg",  title: "Kur'an-ı Kerim 1. Cüz" },
+  { url: "https://dj37r9f1t56v.cloudfront.net/covers/a6f2c76b-580e-4177-9c4c-475e15c2cb15.jpg",  title: "Snow White" },
+  { url: "https://dj37r9f1t56v.cloudfront.net/covers/b32de88a-6565-45d1-9cd2-f33d7cbf2389.jpg",  title: "The Golden-Haired Children" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255578365.jpg",  title: "Kur'an-ı Kerim 30. Cüz" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255578143.jpg",  title: "Kur'an-ı Kerim 9. Cüz" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255578280.jpg",  title: "Kur'an-ı Kerim 22. Cüz" },
+];
+
+// Sonsuz marquee için listeyi çiftleriz
+const COVERS_DOUBLED = [...COVERS, ...COVERS];
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-white text-gray-900">
@@ -24,7 +41,7 @@ export default function Home() {
       </nav>
 
       {/* HERO */}
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-24 text-center">
+      <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
         <span className="inline-block bg-orange-50 text-orange-600 text-xs font-semibold px-3 py-1 rounded-full mb-6 tracking-wide uppercase">
           Kurumsal Sesli Kitap
         </span>
@@ -42,10 +59,78 @@ export default function Home() {
         >
           Demo Talep Et
         </a>
+
+        {/* Mağaza rozeti */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
+          <a
+            href={APP_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 bg-black text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+          >
+            {/* Apple logo */}
+            <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+            </svg>
+            <div className="text-left">
+              <p className="text-xs text-gray-400 leading-none">App Store'dan İndir</p>
+              <p className="text-sm font-semibold leading-snug">iOS Uygulaması</p>
+            </div>
+          </a>
+
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 bg-black text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+          >
+            {/* Google Play logo */}
+            <svg viewBox="0 0 24 24" className="w-6 h-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3.18 23.76c.3.17.63.24.97.21l13.2-11.97-2.97-2.97L3.18 23.76z" fill="#EA4335"/>
+              <path d="M22.54 10.42l-3.48-1.96-3.3 2.97 3.3 3.3 3.51-1.98c1-.57 1-.99 1-1.17-.01-.18-.03-.59-1.03-1.16z" fill="#FBBC04"/>
+              <path d="M3.18.24a1.23 1.23 0 00-.94 1.26v21c0 .54.32.95.77 1.26l.12.09L14.4 12.02v-.28L3.18.24z" fill="#4285F4"/>
+              <path d="M14.4 12l3.84-3.84L4.9.3C4.55.1 4.1.05 3.7.2L14.4 12z" fill="#34A853"/>
+            </svg>
+            <div className="text-left">
+              <p className="text-xs text-gray-400 leading-none">Google Play'de İndir</p>
+              <p className="text-sm font-semibold leading-snug">Android Uygulaması</p>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      {/* BOOK SHOWCASE — sonsuz kayan şerit */}
+      <section className="py-14 bg-gray-50 overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6 text-center mb-10">
+          <h2 className="text-3xl font-bold mb-3">Kütüphanemizden Seçmeler</h2>
+          <p className="text-gray-500 text-lg">Yüzlerce sesli kitap, çalışanlarınızın parmaklarının ucunda</p>
+        </div>
+
+        {/* Sonsuz marquee şeridi */}
+        <div className="flex overflow-hidden select-none">
+          <div className="flex gap-4 animate-marquee flex-shrink-0">
+            {COVERS_DOUBLED.map((book, i) => (
+              <div
+                key={i}
+                className="relative flex-shrink-0 w-36 h-52 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                style={{ transform: `rotate(${[-1.5, -0.5, 0.8, -0.8, 1.2, -1.2, 0.5, 1.5][i % 8]}deg)` }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={book.url}
+                  alt={book.title}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* FEATURES */}
-      <section className="bg-gray-50 py-20">
+      <section className="bg-white py-20">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-3xl font-bold text-center mb-14">Neden AudioB2B?</h2>
           <div className="grid md:grid-cols-3 gap-8">
@@ -58,7 +143,7 @@ export default function Home() {
               {
                 icon: "📱",
                 title: "Mobil Uygulama",
-                desc: "iOS uygulamasıyla çalışanlar istedikleri zaman, istedikleri yerde dinleyebilir.",
+                desc: "iOS ve Android uygulamalarıyla çalışanlar istedikleri zaman, istedikleri yerde dinleyebilir.",
               },
               {
                 icon: "📊",
@@ -81,7 +166,7 @@ export default function Home() {
                 desc: "Şirket logonuz ve kurumsal renk palet ile kişiselleştirilmiş deneyim.",
               },
             ].map((f) => (
-              <div key={f.title} className="bg-white rounded-2xl p-6 shadow-sm">
+              <div key={f.title} className="bg-gray-50 rounded-2xl p-6 shadow-sm">
                 <div className="text-3xl mb-3">{f.icon}</div>
                 <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
@@ -111,21 +196,48 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA */}
+      {/* APP DOWNLOAD CTA */}
       <section className="bg-gray-900 py-20 text-center">
         <div className="max-w-2xl mx-auto px-6">
           <h2 className="text-3xl font-bold text-white mb-4">
-            Şirketiniz için demo alın
+            Uygulamayı hemen indirin
           </h2>
           <p className="text-gray-400 mb-8">
-            Size özel fiyatlandırma ve demo için e-posta gönderin.
+            iOS ve Android için ücretsiz. Şirketiniz aboneyse anında başlayın.
           </p>
-          <a
-            href="mailto:satis@audiob2b.com.tr?subject=AudioB2B Demo Talebi"
-            className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-4 rounded-xl transition-colors"
-          >
-            satis@audiob2b.com.tr
-          </a>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
+            <a
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 bg-white text-gray-900 px-6 py-3 rounded-xl hover:bg-gray-100 transition-colors font-semibold"
+            >
+              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-gray-900 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+              </svg>
+              App Store
+            </a>
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 bg-white text-gray-900 px-6 py-3 rounded-xl hover:bg-gray-100 transition-colors font-semibold"
+            >
+              <svg viewBox="0 0 24 24" className="w-6 h-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3.18 23.76c.3.17.63.24.97.21l13.2-11.97-2.97-2.97L3.18 23.76z" fill="#EA4335"/>
+                <path d="M22.54 10.42l-3.48-1.96-3.3 2.97 3.3 3.3 3.51-1.98c1-.57 1-.99 1-1.17-.01-.18-.03-.59-1.03-1.16z" fill="#FBBC04"/>
+                <path d="M3.18.24a1.23 1.23 0 00-.94 1.26v21c0 .54.32.95.77 1.26l.12.09L14.4 12.02v-.28L3.18.24z" fill="#4285F4"/>
+                <path d="M14.4 12l3.84-3.84L4.9.3C4.55.1 4.1.05 3.7.2L14.4 12z" fill="#34A853"/>
+              </svg>
+              Google Play
+            </a>
+          </div>
+          <p className="text-gray-500 text-sm">
+            Demo veya kurumsal fiyatlandırma için:{" "}
+            <a href="mailto:satis@audiob2b.com.tr" className="text-orange-400 hover:text-orange-300 transition-colors">
+              satis@audiob2b.com.tr
+            </a>
+          </p>
         </div>
       </section>
 
