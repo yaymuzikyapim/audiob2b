@@ -132,6 +132,41 @@ export default function Home() {
         </div>
       </section>
 
+      {/* APP SCREENSHOTS */}
+      <section className="bg-white py-20 overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6 text-center mb-14">
+          <h2 className="text-3xl font-bold mb-3">Uygulamayı Keşfet</h2>
+          <p className="text-gray-500 text-lg">iOS ve Android'de sorunsuz dinleme deneyimi</p>
+        </div>
+        <div className="flex justify-center gap-6 flex-wrap">
+          {[
+            { src: "/screenshots/screen-library.webp",    label: "Kütüphane",    bg: "from-orange-100 to-amber-50" },
+            { src: "/screenshots/screen-book.webp",       label: "Kitap Detayı", bg: "from-blue-100 to-indigo-50" },
+            { src: "/screenshots/screen-player.webp",     label: "Oynatıcı",     bg: "from-stone-700 to-stone-900" },
+            { src: "/screenshots/screen-categories.webp", label: "Kategoriler",  bg: "from-rose-100 to-pink-50" },
+          ].map((s, i) => (
+            <div key={i} className="flex flex-col items-center gap-3">
+              {/* Telefon çerçevesi */}
+              <div className={`relative bg-gradient-to-b ${s.bg} rounded-[2.8rem] p-2 shadow-2xl`}
+                style={{ width: 172, height: 372 }}>
+                {/* Dinamik ada (notch yerine) */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-10" />
+                {/* Ekran */}
+                <div className="w-full h-full rounded-[2.4rem] overflow-hidden bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={s.src} alt={s.label} className="w-full h-full object-cover object-top" />
+                </div>
+                {/* Yan butonlar */}
+                <div className="absolute -right-1 top-20 w-1 h-10 bg-gray-400 rounded-r-full" />
+                <div className="absolute -left-1 top-16 w-1 h-8 bg-gray-400 rounded-l-full" />
+                <div className="absolute -left-1 top-28 w-1 h-8 bg-gray-400 rounded-l-full" />
+              </div>
+              <span className="text-sm font-medium text-gray-500">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* FEATURES */}
       <section className="bg-white py-20">
         <div className="max-w-6xl mx-auto px-6">
