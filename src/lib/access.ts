@@ -29,20 +29,20 @@ export async function getActiveAccess(
   });
 
   if (!user?.isActive) {
-    return { ok: false, response: NextResponse.json({ error: "Hesabınız pasif durumdadır. Lütfen yöneticinizle iletişime geçin." }, { status: 403 }) };
+    return { ok: false, response: NextResponse.json({ error: "Hesabınız pasif durumdadır. Lütfen yöneticinizle iletişime geçin.", code: "ACCOUNT_INACTIVE" }, { status: 403 }) };
   }
 
   const co = user.company;
   if (!co?.isActive) {
-    return { ok: false, response: NextResponse.json({ error: "Şirket hesabı pasif durumdadır. Lütfen yöneticinizle iletişime geçin." }, { status: 403 }) };
+    return { ok: false, response: NextResponse.json({ error: "Şirket hesabı pasif durumdadır. Lütfen yöneticinizle iletişime geçin.", code: "COMPANY_INACTIVE" }, { status: 403 }) };
   }
 
   if (co.endDate && co.endDate < new Date()) {
-    return { ok: false, response: NextResponse.json({ error: "Şirketinizin lisans süresi sona ermiştir. Lütfen yöneticinizle iletişime geçin." }, { status: 403 }) };
+    return { ok: false, response: NextResponse.json({ error: "Şirketinizin lisans süresi sona ermiştir. Lütfen yöneticinizle iletişime geçin.", code: "LICENSE_EXPIRED" }, { status: 403 }) };
   }
 
   if (!co.packageId) {
-    return { ok: false, response: NextResponse.json({ error: "Şirketinize tanımlı aktif bir paket bulunmuyor. Lütfen yöneticinizle iletişime geçin." }, { status: 403 }) };
+    return { ok: false, response: NextResponse.json({ error: "Şirketinize tanımlı aktif bir paket bulunmuyor. Lütfen yöneticinizle iletişime geçin.", code: "NO_PACKAGE" }, { status: 403 }) };
   }
 
   return { ok: true, data: { userId, companyId: co.id, packageId: co.packageId } };
