@@ -51,13 +51,16 @@ export default function AudioPlayer({
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sessionStartRef = useRef<number | null>(null);
   const pendingPlayRef = useRef(false); // bölüm bitince otomatik devam
   const didInitialSeekRef = useRef(false);
   // Stale closure'ı önlemek için ref'ler
   const chapterIdxRef = useRef(0);
   const currentTimeRef = useRef(0);
-  const playbackRateRef = useRef(1);
+  // Dinleme birikimi: timeupdate'de kademeli olarak artar, logPlayHistory'de sıfırlanır
+  const accListenedRef = useRef(0);  // gerçek dinleme süresi (saniye)
+  const accContentRef = useRef(0);   // tüketilen içerik (saniye, pozisyon adımı)
+  const lastTUPosRef = useRef<number | null>(null);
+  const lastTUAtRef = useRef<number | null>(null);
   const color = brandColor || "#2563eb";
 
   const initialIdx = (() => {
@@ -87,11 +90,13 @@ export default function AudioPlayer({
 
   // ── Audio event listener'ları (bir kez bağla) ──────────────────────────
   const logPlayHistory = useCallback(() => {
-    if (!sessionStartRef.current) return;
-    const listenedSec = (Date.now() - sessionStartRef.current) / 1000;
-    sessionStartRef.current = null;
+    const listenedSec = accListenedRef.current;
+    const contentSec = accContentRef.current;
+    accListenedRef.current = 0;
+    accContentRef.current = 0;
+    lastTUPosRef.current = null;
+    lastTUAtRef.current = null;
     if (listenedSec < 5) return;
-    const contentSec = listenedSec * playbackRateRef.current;
     const totalDurationSec = book.chapters.reduce((acc, ch) => acc + ch.duration, 0);
     const prevChaptersDuration = book.chapters
       .slice(0, chapterIdxRef.current)
@@ -146,11 +151,26 @@ export default function AudioPlayer({
     const onTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
       saveProgress();
+      // Birikimli dinleme süresi: pozisyon adımını filtrele (sarma/atlama → yok say)
+      const now = Date.now();
+      if (lastTUPosRef.current !== null && lastTUAtRef.current !== null) {
+        const step = audio.currentTime - lastTUPosRef.current;
+        const dt = (now - lastTUAtRef.current) / 1000;
+        const rate = audio.playbackRate || 1;
+        if (step > 0 && step <= dt * rate + 0.5) {
+          accContentRef.current += step;
+          accListenedRef.current += step / rate;
+        }
+      }
+      lastTUPosRef.current = audio.currentTime;
+      lastTUAtRef.current = now;
     };
     const onDurationChange = () => setDuration(audio.duration || 0);
     const onPlay = () => {
       setIsPlaying(true);
-      if (!sessionStartRef.current) sessionStartRef.current = Date.now();
+      // Resume sonrası ilk tick'i atla (pause sırasında pozisyon değişmedi, büyük dt var)
+      lastTUPosRef.current = null;
+      lastTUAtRef.current = null;
     };
     const onPause = () => {
       setIsPlaying(false);
@@ -257,7 +277,6 @@ export default function AudioPlayer({
 
   function changeRate(rate: number) {
     setPlaybackRate(rate);
-    playbackRateRef.current = rate;
     if (audioRef.current) audioRef.current.playbackRate = rate;
   }
 

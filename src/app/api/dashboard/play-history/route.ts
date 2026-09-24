@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
   if (!bookId || !listenedSec || listenedSec < 5) {
     return NextResponse.json({ ok: true });
   }
-  // Tek çağrıda 2 saatten fazlası güvenilmez — sessizce reddet
-  if (listenedSec > 7200) {
+  // 2 dk'da bir gönderildiği için tek çağrıda 1 saati aşanlar güvensiz — sessizce reddet
+  if (listenedSec > 3600) {
     return NextResponse.json({ ok: true });
   }
 

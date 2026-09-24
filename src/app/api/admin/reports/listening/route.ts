@@ -16,10 +16,11 @@ export async function GET(req: NextRequest) {
   const from = new Date(year, month - 1, 1);
   const to = new Date(year, month, 1);
 
-  // Kitap bazlı
+  // Kitap bazlı — yalnızca doğru delta yöntemiyle gelen kayıtlar (clientVersion: 2)
+  // clientVersion: 1 kayıtlar konum bazlı olduğu için raporlarda güvenilmez
   const byBook = await prisma.playHistory.groupBy({
     by: ["bookId"],
-    where: { playedAt: { gte: from, lt: to } },
+    where: { playedAt: { gte: from, lt: to }, clientVersion: 2 },
     _sum: { listenedSec: true },
     _count: { userId: true },
   });
@@ -41,10 +42,10 @@ export async function GET(req: NextRequest) {
     }))
     .sort((a, b) => b.listenedSec - a.listenedSec);
 
-  // Şirket bazlı (user → company üzerinden)
+  // Şirket bazlı — yalnızca clientVersion: 2 (güvenilir delta kayıtlar)
   const byUser = await prisma.playHistory.groupBy({
     by: ["userId"],
-    where: { playedAt: { gte: from, lt: to } },
+    where: { playedAt: { gte: from, lt: to }, clientVersion: 2 },
     _sum: { listenedSec: true },
   });
 
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
     const companyUserIds = users.filter((u) => u.companyId === companyId).map((u) => u.id);
     const top = await prisma.playHistory.groupBy({
       by: ["bookId"],
-      where: { userId: { in: companyUserIds }, playedAt: { gte: from, lt: to } },
+      where: { userId: { in: companyUserIds }, playedAt: { gte: from, lt: to }, clientVersion: 2 },
       _sum: { listenedSec: true },
       orderBy: { _sum: { listenedSec: "desc" } },
       take: 1,
