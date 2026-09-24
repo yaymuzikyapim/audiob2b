@@ -2,7 +2,19 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { sendToAll, sendToCompany, sendToUsers } from "@/lib/push";
+import { sendToAll, sendToCompany, sendToUsers, countActiveTokens } from "@/lib/push";
+
+export async function GET(req: NextRequest) {
+  const session = await getSession();
+  if (!session || session.role !== "SUPER_ADMIN") {
+    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
+  }
+  const { searchParams } = new URL(req.url);
+  const target = searchParams.get("target") as "all" | "company" ?? "all";
+  const companyId = searchParams.get("companyId") ?? undefined;
+  const count = await countActiveTokens(target, companyId);
+  return NextResponse.json({ count });
+}
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
