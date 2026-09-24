@@ -12,6 +12,10 @@ export async function POST(req: NextRequest) {
   if (!bookId || !listenedSec || listenedSec < 5) {
     return NextResponse.json({ ok: true });
   }
+  // Tek çağrıda 2 saatten fazlası güvenilmez — sessizce reddet
+  if (listenedSec > 7200) {
+    return NextResponse.json({ ok: true });
+  }
 
   await prisma.playHistory.create({
     data: {
