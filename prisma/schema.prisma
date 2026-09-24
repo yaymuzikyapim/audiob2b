@@ -168,10 +168,11 @@ model PlayHistory {
   id           String   @id @default(cuid())
   userId       String
   bookId       String
-  listenedSec  Int      @default(0)  // bu oturumda gerçekten dinlenen süre (delta, saniye)
-  contentSec   Int      @default(0)  // kitabın toplam süresi (denormalize)
-  completedPct Float    @default(0)  // tamamlanma yüzdesi (0-100)
-  playedAt     DateTime @default(now())
+  listenedSec   Int      @default(0)  // bu oturumda gerçekten dinlenen süre (delta, saniye)
+  contentSec    Int      @default(0)  // tüketilen içerik süresi (listenedSec × hız)
+  completedPct  Float    @default(0)  // tamamlanma yüzdesi (0-100)
+  clientVersion Int      @default(1)  // 1=eski (pozisyon), 2=yeni (delta); rapor filtrelemesi için
+  playedAt      DateTime @default(now())
 
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   book         Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)

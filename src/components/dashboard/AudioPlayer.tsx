@@ -57,6 +57,7 @@ export default function AudioPlayer({
   // Stale closure'ı önlemek için ref'ler
   const chapterIdxRef = useRef(0);
   const currentTimeRef = useRef(0);
+  const playbackRateRef = useRef(1);
   const color = brandColor || "#2563eb";
 
   const initialIdx = (() => {
@@ -90,14 +91,18 @@ export default function AudioPlayer({
     const listenedSec = (Date.now() - sessionStartRef.current) / 1000;
     sessionStartRef.current = null;
     if (listenedSec < 5) return;
+    const contentSec = listenedSec * playbackRateRef.current;
     const totalDurationSec = book.chapters.reduce((acc, ch) => acc + ch.duration, 0);
+    const prevChaptersDuration = book.chapters
+      .slice(0, chapterIdxRef.current)
+      .reduce((acc, ch) => acc + ch.duration, 0);
     const completedPct = totalDurationSec > 0
-      ? Math.min(100, (currentTimeRef.current / totalDurationSec) * 100)
+      ? Math.min(100, ((prevChaptersDuration + currentTimeRef.current) / totalDurationSec) * 100)
       : 0;
     fetch("/api/dashboard/play-history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookId: book.id, listenedSec, completedPct }),
+      body: JSON.stringify({ bookId: book.id, listenedSec, contentSec, completedPct, v: 2 }),
       keepalive: true,
     });
   }, [book.id, book.chapters]);
@@ -252,6 +257,7 @@ export default function AudioPlayer({
 
   function changeRate(rate: number) {
     setPlaybackRate(rate);
+    playbackRateRef.current = rate;
     if (audioRef.current) audioRef.current.playbackRate = rate;
   }
 
