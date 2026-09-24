@@ -147,12 +147,12 @@ export default function Home() {
           ].map((s, i) => (
             <div key={i} className="flex flex-col items-center gap-3">
               {/* Telefon çerçevesi */}
-              <div className={`relative bg-gradient-to-b ${s.bg} rounded-[2.8rem] p-2 shadow-2xl`}
-                style={{ width: 172, height: 372 }}>
-                {/* Dinamik ada (notch yerine) */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-10" />
+              <div className={`relative bg-gradient-to-b ${s.bg} p-[6px] shadow-2xl`}
+                style={{ width: 172, height: 372, borderRadius: 22 }}>
+                {/* Dinamik ada */}
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-16 h-[14px] bg-black z-10" style={{ borderRadius: 8 }} />
                 {/* Ekran */}
-                <div className="w-full h-full rounded-[2.4rem] overflow-hidden bg-white">
+                <div className="w-full h-full overflow-hidden bg-white" style={{ borderRadius: 17 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={s.src} alt={s.label} className="w-full h-full object-cover object-top" />
                 </div>
