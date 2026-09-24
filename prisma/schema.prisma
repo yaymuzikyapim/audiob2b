@@ -168,7 +168,8 @@ model PlayHistory {
   id           String   @id @default(cuid())
   userId       String
   bookId       String
-  listenedSec  Int      @default(0)  // bu oturumda dinlenen süre (saniye)
+  listenedSec  Int      @default(0)  // bu oturumda gerçekten dinlenen süre (delta, saniye)
+  contentSec   Int      @default(0)  // kitabın toplam süresi (denormalize)
   completedPct Float    @default(0)  // tamamlanma yüzdesi (0-100)
   playedAt     DateTime @default(now())
 
