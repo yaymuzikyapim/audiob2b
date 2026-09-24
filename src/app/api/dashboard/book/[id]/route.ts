@@ -21,7 +21,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
       include: {
         chapters: { orderBy: { order: "asc" } },
         category: { select: { name: true } },
-        packageBooks: { select: { packageId: true } },
+        packages: { select: { packageId: true } },
       },
     }),
     prisma.playerState.findUnique({
@@ -37,14 +37,14 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
   if (!book) return NextResponse.json({ error: "Bulunamadı." }, { status: 404 });
 
-  const inPackage = book.packageBooks.some((pb) => pb.packageId === packageId);
+  const inPackage = book.packages.some((pb) => pb.packageId === packageId);
   if (!inPackage) {
     return NextResponse.json({ error: "Bu kitap paketinizde yok." }, { status: 403 });
   }
 
   const isFavorite = !!favorite;
   const chapters = book.chapters.map((ch) => ({ ...ch, title: `Bölüm ${ch.order}` }));
-  const { packageBooks: _pb, ...bookRest } = book;
+  const { packages: _pb, ...bookRest } = book;
 
   return NextResponse.json({ book: { ...bookRest, chapters, isFavorite }, playerState });
 }
