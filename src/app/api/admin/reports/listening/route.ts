@@ -17,28 +17,35 @@ export async function GET(req: NextRequest) {
   const to = new Date(year, month, 1);
 
   // Kitap bazlı — yalnızca doğru delta yöntemiyle gelen kayıtlar (clientVersion: 2)
-  // clientVersion: 1 kayıtlar konum bazlı olduğu için raporlarda güvenilmez
-  const byBook = await prisma.playHistory.groupBy({
-    by: ["bookId"],
+  // groupBy([bookId, userId]) → JS'de topla → distinct kullanıcı sayısı doğru hesaplanır
+  const byBookUser = await prisma.playHistory.groupBy({
+    by: ["bookId", "userId"],
     where: { playedAt: { gte: from, lt: to }, clientVersion: 2 },
     _sum: { listenedSec: true },
-    _count: { userId: true },
   });
 
-  const bookIds = byBook.map((r) => r.bookId);
+  // Kitap başına listenedSec toplam + distinct kullanıcı sayısı
+  const bookAgg: Record<string, { listenedSec: number; userIds: Set<string> }> = {};
+  for (const r of byBookUser) {
+    if (!bookAgg[r.bookId]) bookAgg[r.bookId] = { listenedSec: 0, userIds: new Set() };
+    bookAgg[r.bookId].listenedSec += r._sum.listenedSec ?? 0;
+    bookAgg[r.bookId].userIds.add(r.userId);
+  }
+
+  const bookIds = Object.keys(bookAgg);
   const books = await prisma.book.findMany({
     where: { id: { in: bookIds } },
     select: { id: true, title: true, author: true },
   });
   const bookMap = Object.fromEntries(books.map((b) => [b.id, b]));
 
-  const bookReport = byBook
-    .map((r) => ({
-      bookId: r.bookId,
-      title: bookMap[r.bookId]?.title ?? "—",
-      author: bookMap[r.bookId]?.author ?? "—",
-      listenedSec: r._sum.listenedSec ?? 0,
-      userCount: r._count.userId,
+  const bookReport = bookIds
+    .map((bookId) => ({
+      bookId,
+      title: bookMap[bookId]?.title ?? "—",
+      author: bookMap[bookId]?.author ?? "—",
+      listenedSec: bookAgg[bookId].listenedSec,
+      userCount: bookAgg[bookId].userIds.size,
     }))
     .sort((a, b) => b.listenedSec - a.listenedSec);
 
