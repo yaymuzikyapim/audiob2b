@@ -11,14 +11,18 @@ const APP_STORE_URL  = "https://apps.apple.com/tr/app/audiob2b/id6801790848?l=tr
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.audiob2b.mobile&pcampaignid=web_share";
 
 const COVERS = [
-  { url: "https://dj37r9f1t56v.cloudfront.net/covers/d3209dd1-5c41-4afe-af88-dca387e6c1da.jpg",  title: "Mad Mehmed" },
-  { url: "https://dj37r9f1t56v.cloudfront.net/covers/34ffb0b3-86e1-4661-b858-11fec26643f6.jpg", title: "The Rose Beauty" },
-  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255578068.jpg",  title: "Kur'an-ı Kerim 1. Cüz" },
-  { url: "https://dj37r9f1t56v.cloudfront.net/covers/a6f2c76b-580e-4177-9c4c-475e15c2cb15.jpg",  title: "Snow White" },
-  { url: "https://dj37r9f1t56v.cloudfront.net/covers/b32de88a-6565-45d1-9cd2-f33d7cbf2389.jpg",  title: "The Golden-Haired Children" },
-  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255578365.jpg",  title: "Kur'an-ı Kerim 30. Cüz" },
-  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255578143.jpg",  title: "Kur'an-ı Kerim 9. Cüz" },
-  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255578280.jpg",  title: "Kur'an-ı Kerim 22. Cüz" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786055571344.png",  title: "İnsan Ne İle Yaşar" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786257888424.png",  title: "Sokrates'in Savunması" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255578853.jpg",  title: "Silahlara Veda" },
+  { url: "https://dj37r9f1t56v.cloudfront.net/covers/d83146c5-70dc-4506-abdf-eb88b6cfbb1e.jpg",  title: "Çok Hayal Kuran Çocuk" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255577177.png",  title: "At Şu Adımı" },
+  { url: "https://dj37r9f1t56v.cloudfront.net/covers/4c9cb1a6-57a5-492d-91ce-131b0fd945f6.jpg",  title: "Gençler İçin Nutuk" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786257112505.png",  title: "Mikrobiyota" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786257353144.png",  title: "Aganta Burina Burinata" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255578068.jpg",  title: "Kur'an-ı Kerim" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786258477061.png",  title: "Listen Up!" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786055212568.jpg",  title: "Küçük Prens" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786257353427.png",  title: "Söylenceler - Odysseia" },
 ];
 
 // Sonsuz marquee için listeyi çiftleriz
@@ -112,7 +116,7 @@ export default function Home() {
             {COVERS_DOUBLED.map((book, i) => (
               <div
                 key={i}
-                className="relative flex-shrink-0 w-36 h-52 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                className="relative flex-shrink-0 w-44 h-44 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
                 style={{ transform: `rotate(${[-1.5, -0.5, 0.8, -0.8, 1.2, -1.2, 0.5, 1.5][i % 8]}deg)` }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
