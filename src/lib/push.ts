@@ -8,6 +8,7 @@ export interface PushPayload {
   title: string;
   body: string;
   data?: Record<string, unknown>;
+  coverUrl?: string; // Android zengin bildirim görseli (CloudFront public URL)
 }
 
 // Aktif kullanıcı filtresi: user.isActive + company.isActive + lisans geçerli
@@ -39,6 +40,7 @@ async function _send(
       body: payload.body,
       data: payload.data ?? {},
       sound: "default",
+      ...(payload.coverUrl ? { richContent: { image: payload.coverUrl } } : {}),
     });
   }
 

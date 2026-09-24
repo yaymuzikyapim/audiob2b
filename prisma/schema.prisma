@@ -25,10 +25,11 @@ model User {
 
   pushToken    String?
 
-  playHistory  PlayHistory[]
-  bookmarks    Bookmark[]
-  playerStates PlayerState[]
-  favorites    UserFavorite[]
+  playHistory       PlayHistory[]
+  bookmarks         Bookmark[]
+  playerStates      PlayerState[]
+  favorites         UserFavorite[]
+  notificationLogs  NotificationLog[]
 }
 
 enum UserRole {
@@ -216,4 +217,22 @@ model UserFavorite {
   book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
   @@unique([userId, bookId])
+}
+
+// ─── BİLDİRİM GEÇMİŞİ ────────────────────────────────────────────
+
+model NotificationLog {
+  id        String   @id @default(cuid())
+  sentAt    DateTime @default(now())
+  adminId   String
+  target    String   // "all" | "company"
+  companyId String?
+  title     String
+  body      String
+  bookId    String?
+  coverUrl  String?
+  sent      Int
+  failed    Int
+
+  admin     User     @relation(fields: [adminId], references: [id])
 }

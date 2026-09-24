@@ -8,6 +8,8 @@ rsync -a \
   --exclude='.git' \
   --exclude='node_modules' \
   --exclude='.next' \
+  --exclude='.claude' \
+  --exclude='.windsurf' \
   "$(dirname "$0")/" /tmp/ab2b/
 cd /tmp/ab2b
 npx vercel --prod

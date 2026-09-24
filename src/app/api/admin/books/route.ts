@@ -4,14 +4,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
   }
 
+  const q = new URL(req.url).searchParams.get("q");
+
   const books = await prisma.book.findMany({
+    where: q ? { title: { contains: q, mode: "insensitive" } } : undefined,
     orderBy: { createdAt: "desc" },
+    take: q ? 10 : undefined,
     include: {
       category: { select: { name: true } },
       _count: { select: { chapters: true, packages: true } },
