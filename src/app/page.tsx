@@ -117,7 +117,6 @@ export default function Home() {
               <div
                 key={i}
                 className="relative flex-shrink-0 w-44 h-44 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
-                style={{ transform: `rotate(${[-1.5, -0.5, 0.8, -0.8, 1.2, -1.2, 0.5, 1.5][i % 8]}deg)` }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
