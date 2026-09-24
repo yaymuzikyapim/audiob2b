@@ -59,3 +59,4 @@ prisma/upload-from-drive.ts
 prisma/verify-uploads.ts
 prisma/check-logins.mjs
 prisma/reset-passwords.mjs
+pdf-export.mjs

@@ -7,9 +7,11 @@
  *   npx tsx prisma/migrate-cdn-urls.ts
  */
 
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 const CDN = process.env.CLOUDFRONT_URL?.replace(/\/$/, "");
 
 if (!CDN) {

@@ -22,6 +22,7 @@ interface QueueItem {
   status: "waiting" | "uploading" | "done" | "error";
   progress: number;
   errorMsg: string;
+  qualityWarning: string | null; // bitrate düşük, süre sıfır vb.
 }
 
 function formatDuration(sec: number) {
@@ -66,10 +67,28 @@ export default function ChapterUploader({ bookId, chapters }: { bookId: string; 
     const url = URL.createObjectURL(item.file);
     audio.src = url;
     audio.onloadedmetadata = () => {
-      updateItem(item.id, { duration: Math.round(audio.duration), durationReady: true });
+      const duration = Math.round(audio.duration);
+      URL.revokeObjectURL(url);
+      let qualityWarning: string | null = null;
+      if (duration === 0 || isNaN(audio.duration)) {
+        qualityWarning = "Süre okunamadı — dosya bozuk veya desteklenmeyen format";
+      } else {
+        const bitrateKbps = (item.file.size * 8) / duration / 1000;
+        if (bitrateKbps < 32) {
+          qualityWarning = `Bitrate çok düşük (${Math.round(bitrateKbps)} kbps) — dosya bozuk olabilir`;
+        } else if (bitrateKbps < 64) {
+          qualityWarning = `Düşük kalite (${Math.round(bitrateKbps)} kbps) — minimum 128 kbps önerilir`;
+        }
+        if (duration < 30) {
+          qualityWarning = `Süre çok kısa (${duration}s) — doğru dosya mı?`;
+        }
+      }
+      updateItem(item.id, { duration, durationReady: true, qualityWarning });
+    };
+    audio.onerror = () => {
+      updateItem(item.id, { durationReady: true, qualityWarning: "Ses dosyası okunamadı — format desteklenmiyor olabilir" });
       URL.revokeObjectURL(url);
     };
-    audio.onerror = () => { updateItem(item.id, { durationReady: true }); URL.revokeObjectURL(url); };
   }
 
   function addFiles(files: File[]) {
@@ -92,6 +111,7 @@ export default function ChapterUploader({ bookId, chapters }: { bookId: string; 
           status: "waiting",
           progress: 0,
           errorMsg: "",
+          qualityWarning: null,
         }));
       newItems.forEach(readDuration);
       return [...prev, ...newItems].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
@@ -296,6 +316,9 @@ export default function ChapterUploader({ bookId, chapters }: { bookId: string; 
                   {item.status === "error" && item.errorMsg && (
                     <div className="text-red-400 text-xs mt-0.5">{item.errorMsg}</div>
                   )}
+                  {item.qualityWarning && item.status !== "error" && (
+                    <div className="text-yellow-400 text-xs mt-0.5">⚠ {item.qualityWarning}</div>
+                  )}
                 </div>
 
                 {/* Süre */}
@@ -351,6 +374,26 @@ export default function ChapterUploader({ bookId, chapters }: { bookId: string; 
           </div>
         )}
       </div>
+
+      {/* Sıra boşluğu kontrolü */}
+      {chapters.length > 1 && (() => {
+        const orders = chapters.map((c) => c.order).sort((a, b) => a - b);
+        const gaps: number[] = [];
+        for (let i = 1; i < orders.length; i++) {
+          if (orders[i] - orders[i - 1] > 1) gaps.push(orders[i - 1] + 1);
+        }
+        return gaps.length > 0 ? (
+          <div className="mx-6 my-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3 flex items-start gap-3">
+            <span className="text-yellow-400 text-lg flex-shrink-0">⚠️</span>
+            <div>
+              <div className="text-yellow-400 text-sm font-semibold">Bölüm sırasında boşluk var</div>
+              <div className="text-yellow-300/80 text-xs mt-0.5">
+                Eksik bölüm numaraları: {gaps.join(", ")}
+              </div>
+            </div>
+          </div>
+        ) : null;
+      })()}
 
       {/* Mevcut bölüm listesi */}
       <div className="divide-y divide-gray-800">
