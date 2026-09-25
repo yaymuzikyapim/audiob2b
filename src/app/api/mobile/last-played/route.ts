@@ -3,12 +3,18 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { getActiveAccess } from "@/lib/access";
 
 export async function GET() {
   const session = await getSession();
   if (!session || session.role === "SUPER_ADMIN") {
     return NextResponse.json({ lastPlayed: null });
   }
+
+  const access = await getActiveAccess(session.id);
+  if (!access.ok) return NextResponse.json({ lastPlayed: null });
+
+  const { packageId } = access.data;
 
   const state = await prisma.playerState.findFirst({
     where: { userId: session.id },
@@ -31,9 +37,15 @@ export async function GET() {
 
   if (!state) return NextResponse.json({ lastPlayed: null });
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.id },
-    select: { company: { select: { brandColor: true } } },
+  // Kitap hâlâ kullanıcının paketinde mi? (many-to-many: PackageBook)
+  const inPackage = await prisma.packageBook.findUnique({
+    where: { packageId_bookId: { packageId, bookId: state.book.id } },
+  });
+  if (!inPackage) return NextResponse.json({ lastPlayed: null });
+
+  const company = await prisma.company.findUnique({
+    where: { id: access.data.companyId },
+    select: { brandColor: true },
   });
 
   return NextResponse.json({
@@ -45,7 +57,7 @@ export async function GET() {
       chapterId: state.chapterId ?? null,
       positionSec: state.positionSec,
       chapters: state.book.chapters,
-      brandColor: user?.company?.brandColor ?? null,
+      brandColor: company?.brandColor ?? null,
     },
   });
 }
