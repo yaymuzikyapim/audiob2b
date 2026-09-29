@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const access = await getActiveAccess(session.id);
   if (!access.ok) return access.response;
 
-  const { bookId, listenedSec, contentSec, completedPct, listenedAt, v } = await req.json();
+  const { bookId, listenedSec, contentSec, completedPct, listenedAt, v, clientId } = await req.json();
   if (!bookId || !listenedSec || listenedSec < 5) {
     return NextResponse.json({ ok: true });
   }
@@ -31,17 +31,25 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  await prisma.playHistory.create({
-    data: {
-      userId: session.id,
-      bookId,
-      listenedSec: Math.floor(listenedSec),
-      contentSec: Math.floor(contentSec ?? 0),
-      completedPct: Math.min(100, Math.max(0, completedPct ?? 0)),
-      clientVersion: v === 2 ? 2 : 1,
-      ...(playedAt && { playedAt }),
-    },
-  });
+  const data = {
+    userId: session.id,
+    bookId,
+    listenedSec: Math.floor(listenedSec),
+    contentSec: Math.floor(contentSec ?? 0),
+    completedPct: Math.min(100, Math.max(0, completedPct ?? 0)),
+    clientVersion: v === 2 ? 2 : 1,
+    ...(playedAt && { playedAt }),
+  };
+
+  if (clientId && typeof clientId === "string" && clientId.length > 0) {
+    await prisma.playHistory.upsert({
+      where: { clientId },
+      create: { ...data, clientId },
+      update: {},  // zaten varsa dokunma
+    });
+  } else {
+    await prisma.playHistory.create({ data });
+  }
 
   return NextResponse.json({ ok: true });
 }

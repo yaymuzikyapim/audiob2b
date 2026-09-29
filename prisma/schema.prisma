@@ -167,6 +167,7 @@ model PlayerState {
 
 model PlayHistory {
   id           String   @id @default(cuid())
+  clientId     String?  @unique        // istemci UUID; çift kayıt önleme
   userId       String
   bookId       String
   listenedSec   Int      @default(0)  // bu oturumda gerçekten dinlenen süre (delta, saniye)
