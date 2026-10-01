@@ -49,6 +49,9 @@ next-env.d.ts
 # Yedek klasörü — git'e girmesin
 /backups/
 
+# Geçici raporlar — git'e girmesin
+/reports/
+
 # Tek seferlik çalıştırma scriptleri — git'e girmesin
 prisma/create-*.ts
 prisma/create-*.mjs
