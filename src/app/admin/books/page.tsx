@@ -12,12 +12,16 @@ function formatDuration(sec: number) {
   return `${m}dk`;
 }
 
+const PAGE_SIZE = 20;
+
 export default async function BooksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; status?: string; q?: string }>;
+  searchParams: Promise<{ category?: string; status?: string; q?: string; page?: string }>;
 }) {
-  const { category, status, q } = await searchParams;
+  const { category, status, q, page: pageParam } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam ?? "1"));
+  const skip = (page - 1) * PAGE_SIZE;
 
   const where: Record<string, unknown> = {};
   if (category) where.category = { name: category };
@@ -29,15 +33,18 @@ export default async function BooksPage({
     { narrator: { contains: q, mode: "insensitive" } },
   ];
 
-  const [books, total, categories] = await Promise.all([
+  const [books, filteredTotal, total, categories] = await Promise.all([
     prisma.book.findMany({
       where,
       orderBy: { createdAt: "desc" },
+      take: PAGE_SIZE,
+      skip,
       include: {
         category: { select: { name: true } },
         _count: { select: { chapters: true, packages: true } },
       },
     }),
+    prisma.book.count({ where }),
     prisma.book.count(),
     prisma.category.findMany({
       where: { books: { some: {} } },
@@ -45,6 +52,18 @@ export default async function BooksPage({
       select: { name: true },
     }),
   ]);
+
+  const totalPages = Math.ceil(filteredTotal / PAGE_SIZE);
+
+  function pageUrl(p: number) {
+    const params = new URLSearchParams();
+    if (category) params.set("category", category);
+    if (status) params.set("status", status);
+    if (q) params.set("q", q);
+    if (p > 1) params.set("page", String(p));
+    const qs = params.toString();
+    return `/admin/books${qs ? `?${qs}` : ""}`;
+  }
 
   return (
     <div>
@@ -69,7 +88,7 @@ export default async function BooksPage({
       </div>
 
       <Suspense>
-        <BooksFilter categories={categories} total={total} filtered={books.length} />
+        <BooksFilter categories={categories} total={total} filtered={filteredTotal} />
       </Suspense>
 
       <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
@@ -123,6 +142,25 @@ export default async function BooksPage({
           </table>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 text-sm text-gray-400">
+          <span>{skip + 1}–{Math.min(skip + books.length, filteredTotal)} / {filteredTotal} kitap</span>
+          <div className="flex gap-2">
+            {page > 1 && (
+              <Link href={pageUrl(page - 1)} className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors">
+                ← Önceki
+              </Link>
+            )}
+            <span className="px-3 py-1.5 text-gray-500">{page} / {totalPages}</span>
+            {page < totalPages && (
+              <Link href={pageUrl(page + 1)} className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors">
+                Sonraki →
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -18,6 +18,7 @@ export default function BooksFilter({ categories, total, filtered }: Props) {
       const params = new URLSearchParams(sp.toString());
       if (value) params.set(key, value);
       else params.delete(key);
+      params.delete("page");
       router.push(`/admin/books?${params.toString()}`);
     },
     [router, sp]
