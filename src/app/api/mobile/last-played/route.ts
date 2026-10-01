@@ -56,6 +56,7 @@ export async function GET() {
       totalDuration: state.book.duration,
       chapterId: state.chapterId ?? null,
       positionSec: state.positionSec,
+      updatedAt: state.updatedAt.toISOString(),
       chapters: state.book.chapters,
       brandColor: company?.brandColor ?? null,
     },
