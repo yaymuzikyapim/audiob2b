@@ -30,7 +30,8 @@ export async function GET() {
           select: {
             name: true,
             books: {
-              where: { book: { isActive: true } },
+              // Bölümü olmayan kitap dinlenemez, listede de görünmesin.
+              where: { book: { isActive: true, chapters: { some: {} } } },
               include: {
                 book: {
                   select: {

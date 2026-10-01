@@ -35,7 +35,16 @@ export default async function DashboardHome() {
       maxSeats: true,
       isActive: true,
       brandColor: true,
-      package: { select: { name: true, books: { select: { bookId: true } } } },
+      package: {
+        select: {
+          name: true,
+          // Sayı, kullanıcının gerçekten dinleyebildiği kitapları göstersin.
+          books: {
+            where: { book: { isActive: true, chapters: { some: {} } } },
+            select: { bookId: true },
+          },
+        },
+      },
       _count: { select: { users: true } },
     },
   });

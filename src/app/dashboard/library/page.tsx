@@ -17,7 +17,8 @@ export default async function LibraryPage() {
         select: {
           name: true,
           books: {
-            where: { book: { isActive: true } },
+            // Bölümü olmayan kitap dinlenemez, listede de görünmesin.
+            where: { book: { isActive: true, chapters: { some: {} } } },
             select: {
               book: {
                 select: {
