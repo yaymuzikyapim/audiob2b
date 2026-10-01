@@ -98,17 +98,20 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({
-      company: {
-        id: company.id,
-        name: company.name,
-        logoUrl: logoSignedUrl,
-        brandColor: company.brandColor ?? null,
-        endDate: company.endDate,
-        packageName: company.package?.name,
+    return NextResponse.json(
+      {
+        company: {
+          id: company.id,
+          name: company.name,
+          logoUrl: logoSignedUrl,
+          brandColor: company.brandColor ?? null,
+          endDate: company.endDate,
+          packageName: company.package?.name,
+        },
+        books: booksWithProgress,
       },
-      books: booksWithProgress,
-    });
+      { headers: { "Cache-Control": "private, no-store" } }
+    );
   } catch (err: any) {
     console.error("[library] HATA:", err?.message ?? err);
     return NextResponse.json({ error: err?.message ?? "Sunucu hatası" }, { status: 500 });

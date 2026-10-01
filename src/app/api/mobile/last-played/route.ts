@@ -48,17 +48,20 @@ export async function GET() {
     select: { brandColor: true },
   });
 
-  return NextResponse.json({
-    lastPlayed: {
-      bookId: state.book.id,
-      bookTitle: state.book.title,
-      coverUrl: state.book.coverUrl ?? null,
-      totalDuration: state.book.duration,
-      chapterId: state.chapterId ?? null,
-      positionSec: state.positionSec,
-      updatedAt: state.updatedAt.toISOString(),
-      chapters: state.book.chapters,
-      brandColor: company?.brandColor ?? null,
+  return NextResponse.json(
+    {
+      lastPlayed: {
+        bookId: state.book.id,
+        bookTitle: state.book.title,
+        coverUrl: state.book.coverUrl ?? null,
+        totalDuration: state.book.duration,
+        chapterId: state.chapterId ?? null,
+        positionSec: state.positionSec,
+        updatedAt: state.updatedAt.toISOString(),
+        chapters: state.book.chapters,
+        brandColor: company?.brandColor ?? null,
+      },
     },
-  });
+    { headers: { "Cache-Control": "private, no-store" } }
+  );
 }

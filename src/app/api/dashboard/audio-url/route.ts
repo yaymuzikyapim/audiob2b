@@ -30,5 +30,5 @@ export async function GET(req: NextRequest) {
   if (!inPackage) return NextResponse.json({ error: "Bu kitap paketinizde değil." }, { status: 403 });
 
   const url = await getPlayUrl(key);
-  return NextResponse.json({ url });
+  return NextResponse.json({ url }, { headers: { "Cache-Control": "private, no-store" } });
 }

@@ -46,5 +46,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   const chapters = book.chapters.map((ch) => ({ ...ch, title: `Bölüm ${ch.order}` }));
   const { packages: _pb, ...bookRest } = book;
 
-  return NextResponse.json({ book: { ...bookRest, chapters, isFavorite }, playerState });
+  return NextResponse.json(
+    { book: { ...bookRest, chapters, isFavorite }, playerState },
+    { headers: { "Cache-Control": "private, no-store" } }
+  );
 }
