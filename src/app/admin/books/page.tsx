@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import BooksFilter from "@/components/admin/BooksFilter";
 import ToggleActiveButton from "@/components/admin/ToggleActiveButton";
@@ -17,10 +18,12 @@ const PAGE_SIZE = 20;
 export default async function BooksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; status?: string; q?: string; page?: string }>;
+  searchParams: Promise<{ category?: string; status?: string; q?: string; page?: string | string[] }>;
 }) {
   const { category, status, q, page: pageParam } = await searchParams;
-  const page = Math.max(1, parseInt(pageParam ?? "1"));
+  const rawPage = Array.isArray(pageParam) ? pageParam[0] : (pageParam ?? "1");
+  const parsed = Number.parseInt(rawPage, 10);
+  const page = Number.isFinite(parsed) ? Math.max(1, parsed) : 1;
   const skip = (page - 1) * PAGE_SIZE;
 
   const where: Record<string, unknown> = {};
@@ -36,7 +39,7 @@ export default async function BooksPage({
   const [books, filteredTotal, total, categories] = await Promise.all([
     prisma.book.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: PAGE_SIZE,
       skip,
       include: {
@@ -53,7 +56,9 @@ export default async function BooksPage({
     }),
   ]);
 
-  const totalPages = Math.ceil(filteredTotal / PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filteredTotal / PAGE_SIZE));
+
+  if (page > totalPages) redirect(pageUrl(totalPages));
 
   function pageUrl(p: number) {
     const params = new URLSearchParams();
