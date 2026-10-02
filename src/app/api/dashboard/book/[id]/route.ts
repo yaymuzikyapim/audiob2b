@@ -46,8 +46,13 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   const chapters = book.chapters.map((ch) => ({ ...ch, title: `Bölüm ${ch.order}` }));
   const { packages: _pb, ...bookRest } = book;
 
+  // Mobil updatedAt karşılaştırması; clientSavedAt gerçek dinleme zamanını taşır
+  const playerStateOut = playerState
+    ? { ...playerState, updatedAt: (playerState.clientSavedAt ?? playerState.updatedAt).toISOString() }
+    : null;
+
   return NextResponse.json(
-    { book: { ...bookRest, chapters, isFavorite }, playerState },
+    { book: { ...bookRest, chapters, isFavorite }, playerState: playerStateOut },
     { headers: { "Cache-Control": "private, no-store" } }
   );
 }

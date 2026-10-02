@@ -18,7 +18,8 @@ export async function GET() {
 
   const state = await prisma.playerState.findFirst({
     where: { userId: session.id },
-    orderBy: { updatedAt: "desc" },
+    // clientSavedAt gerçek dinleme zamanını taşır; NULL ise updatedAt'e dön
+    orderBy: [{ clientSavedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
     include: {
       book: {
         select: {
@@ -57,7 +58,8 @@ export async function GET() {
         totalDuration: state.book.duration,
         chapterId: state.chapterId ?? null,
         positionSec: state.positionSec,
-        updatedAt: state.updatedAt.toISOString(),
+        // Mobil karşılaştırma kodu updatedAt alanını okur; clientSavedAt gerçek zamanı taşır
+        updatedAt: (state.clientSavedAt ?? state.updatedAt).toISOString(),
         chapters: state.book.chapters,
         brandColor: company?.brandColor ?? null,
       },
