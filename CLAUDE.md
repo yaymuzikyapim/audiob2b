@@ -15,3 +15,9 @@ Schema değişikliği yapıldığında deployment sırası:
 - `DIRECT_URL` → Supabase direct (port 5432) — migration'lar için
 
 Her iki değişken de Vercel Environment Variables'a eklenmiş olmalı.
+
+## Canlı Ortam Doğrulaması
+
+API testleri için `.env.local`'deki `TEST_USER_EMAIL` ve `TEST_USER_PASSWORD` kullanılır.
+Bu hesap App Store incelemesinde de kullanıldığından **şifresi asla değiştirilmez**.
+Şifre hiçbir komut çıktısında, logda veya sohbette yazdırılmaz.
