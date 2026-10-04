@@ -2,14 +2,12 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/auth-guard";
 
 // { covers: [{ isbn: string; coverUrl: string }] }
 export async function POST(req: NextRequest) {
-  const session = await getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+  const auth = await requireUser({ roles: ["SUPER_ADMIN"] });
+  if (!auth.ok) return auth.response;
 
   const { covers }: { covers: { isbn: string; coverUrl: string }[] } = await req.json();
   if (!covers || !Array.isArray(covers) || covers.length === 0) {

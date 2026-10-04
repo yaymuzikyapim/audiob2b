@@ -11,7 +11,7 @@ function toSlug(name: string) {
     .replace(/^-|-$/g, "");
 }
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/auth-guard";
 
 interface BookRow {
   isbn?: string;
@@ -25,10 +25,8 @@ interface BookRow {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+  const auth = await requireUser({ roles: ["SUPER_ADMIN"] });
+  if (!auth.ok) return auth.response;
 
   const { rows }: { rows: BookRow[] } = await req.json();
 

@@ -2,13 +2,11 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/auth-guard";
 
 export async function GET(req: NextRequest) {
-  const session = await getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+  const auth = await requireUser({ roles: ["SUPER_ADMIN"] });
+  if (!auth.ok) return auth.response;
 
   const year = parseInt(req.nextUrl.searchParams.get("year") || String(new Date().getFullYear()));
   const month = parseInt(req.nextUrl.searchParams.get("month") || String(new Date().getMonth() + 1));

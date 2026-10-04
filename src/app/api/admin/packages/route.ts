@@ -2,13 +2,11 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/auth-guard";
 
 export async function GET() {
-  const session = await getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+  const auth = await requireUser({ roles: ["SUPER_ADMIN"] });
+  if (!auth.ok) return auth.response;
 
   const packages = await prisma.package.findMany({
     orderBy: { createdAt: "desc" },
@@ -21,10 +19,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+  const auth = await requireUser({ roles: ["SUPER_ADMIN"] });
+  if (!auth.ok) return auth.response;
 
   const { name, description } = await req.json();
   if (!name) return NextResponse.json({ error: "Paket adı zorunlu." }, { status: 400 });

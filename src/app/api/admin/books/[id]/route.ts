@@ -2,13 +2,11 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/auth-guard";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+  const auth = await requireUser({ roles: ["SUPER_ADMIN"] });
+  if (!auth.ok) return auth.response;
 
   const { id } = await params;
   const book = await prisma.book.findUnique({
@@ -25,10 +23,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+  const auth = await requireUser({ roles: ["SUPER_ADMIN"] });
+  if (!auth.ok) return auth.response;
 
   const { id } = await params;
   const body = await req.json();
@@ -54,10 +50,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+  const auth = await requireUser({ roles: ["SUPER_ADMIN"] });
+  if (!auth.ok) return auth.response;
 
   const { id } = await params;
   await prisma.book.delete({ where: { id } });

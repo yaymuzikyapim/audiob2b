@@ -2,17 +2,17 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/auth-guard";
 
 export async function GET() {
-  const session = await getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+  const auth = await requireUser({ roles: ["SUPER_ADMIN"] });
+  if (!auth.ok) return auth.response;
 
-  const [companies, books, packages, users] = await Promise.all([
+  const [companies, books, booksSilent, packages, users] = await Promise.all([
     prisma.company.count(),
     prisma.book.count(),
+    // Sesi hiç yüklenmemiş kitaplar
+    prisma.book.count({ where: { chapters: { none: {} } } }),
     prisma.package.count(),
     prisma.user.count({ where: { role: { not: "SUPER_ADMIN" } } }),
   ]);
@@ -24,5 +24,5 @@ export async function GET() {
     select: { id: true, name: true, createdAt: true, isActive: true, maxSeats: true },
   });
 
-  return NextResponse.json({ companies, books, packages, users, activeCompanies, recentCompanies });
+  return NextResponse.json({ companies, books, booksSilent, packages, users, activeCompanies, recentCompanies });
 }

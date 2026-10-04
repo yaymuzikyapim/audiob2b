@@ -2,15 +2,13 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/auth-guard";
 import { chapterS3Key, getUploadUrl, deleteFile } from "@/lib/s3";
 
 // Bölüm listesi + upload URL al
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+  const auth = await requireUser({ roles: ["SUPER_ADMIN"] });
+  if (!auth.ok) return auth.response;
 
   const { id: bookId } = await params;
   const { title, order, duration, ext = "mp3" } = await req.json();
@@ -43,10 +41,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 // Bölüm sil
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+  const auth = await requireUser({ roles: ["SUPER_ADMIN"] });
+  if (!auth.ok) return auth.response;
 
   const { id: bookId } = await params;
   const { chapterId } = await req.json();
