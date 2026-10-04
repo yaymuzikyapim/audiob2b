@@ -94,7 +94,6 @@ export default function NewCompanyForm({ packages }: { packages: Package[] }) {
             className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition text-sm"
           >
             <option value="PER_SEAT">Koltuk Başına (PER_SEAT)</option>
-            <option value="FLEX_POOL">Esnek Havuz (FLEX_POOL)</option>
           </select>
         </div>
         <div>

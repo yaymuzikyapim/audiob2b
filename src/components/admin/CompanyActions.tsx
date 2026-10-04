@@ -124,7 +124,6 @@ export default function CompanyActions({ company, packages }: { company: Company
               <select value={form.licenseType} onChange={(e) => set("licenseType", e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 <option value="PER_SEAT">Koltuk Başına</option>
-                <option value="FLEX_POOL">Esnek Havuz</option>
               </select>
             </div>
             <div>
