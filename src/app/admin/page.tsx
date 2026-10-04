@@ -6,10 +6,12 @@ function formatDate(d: Date) {
 }
 
 export default async function AdminDashboard() {
-  const [companiesTotal, booksTotal, packagesTotal, usersTotal, activeCompanies, recentCompanies] =
+  const [companiesTotal, booksTotal, booksSilent, packagesTotal, usersTotal, activeCompanies, recentCompanies] =
     await Promise.all([
       prisma.company.count(),
       prisma.book.count(),
+      // Sesi hiç yüklenmemiş kitaplar — kütüphanede listelenmiyorlar
+      prisma.book.count({ where: { chapters: { none: {} } } }),
       prisma.package.count(),
       prisma.user.count({ where: { role: { not: "SUPER_ADMIN" } } }),
       prisma.company.count({ where: { isActive: true } }),
@@ -22,7 +24,13 @@ export default async function AdminDashboard() {
 
   const stats = [
     { label: "Toplam Şirket", value: companiesTotal, sub: `${activeCompanies} aktif`, href: "/admin/companies", color: "emerald" },
-    { label: "Kitap", value: booksTotal, sub: "kütüphanede", href: "/admin/books", color: "blue" },
+    {
+      label: "Kitap",
+      value: booksTotal,
+      sub: booksSilent > 0 ? `${booksTotal - booksSilent} dinlenebilir · ${booksSilent} sesi yok` : "hepsi dinlenebilir",
+      href: "/admin/books",
+      color: "blue",
+    },
     { label: "Paket", value: packagesTotal, sub: "tanımlı", href: "/admin/packages", color: "purple" },
     { label: "Kullanıcı", value: usersTotal, sub: "toplam (admin hariç)", href: "#", color: "orange" },
   ];

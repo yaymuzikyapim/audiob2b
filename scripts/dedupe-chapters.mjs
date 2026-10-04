@@ -60,7 +60,7 @@ console.log("\n✓ Güvenlik kontrolü: silinecek satırlara bağlı yer imi / d
 
 if (!UYGULA) {
   console.log("\n🔍 SADECE RAPOR — hiçbir şey silinmedi.");
-  console.log("Uygulamak için: node prisma/dedupe-chapters.mjs --yes");
+  console.log("Uygulamak için: node scripts/dedupe-chapters.mjs --yes");
   await pool.end();
   process.exit(0);
 }

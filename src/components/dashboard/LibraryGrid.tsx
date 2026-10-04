@@ -93,6 +93,11 @@ function BookCard({ book, color }: { book: Book; color: string }) {
         <div className="mt-1.5 px-0.5">
           <p className="text-white text-[11px] font-medium line-clamp-2 leading-tight">{book.title}</p>
           <p className="text-gray-500 text-[10px] mt-0.5 truncate">{book.author}</p>
+          {/* Aynı kitabın birden fazla seslendirmesi olabiliyor (ör. Şık);
+              ayırt edilebilmesi için seslendiren de kartta görünüyor. */}
+          {book.narrator && (
+            <p className="text-gray-600 text-[10px] mt-px truncate">{book.narrator}</p>
+          )}
         </div>
       </div>
     </Link>
