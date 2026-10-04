@@ -1,77 +1,149 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/auth-guard";
 import { sendEmail } from "@/lib/mailer";
 import { inviteEmailHtml } from "@/lib/emails/invite";
 
-export async function POST(req: NextRequest) {
-  const session = await getSession();
-  if (!session || session.role !== "COMPANY_ADMIN" || !session.companyId) {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+type InviteResult = { email: string; status: "ok" | "skipped" | "error"; reason?: string };
 
-  const { invites } = await req.json() as { invites: { email: string; role: string }[] };
+export async function POST(req: NextRequest) {
+  const auth = await requireUser({ roles: ["COMPANY_ADMIN"] });
+  if (!auth.ok) return auth.response;
+  const { user } = auth;
+
+  const { invites } = (await req.json()) as { invites: { email: string; role: string }[] };
   if (!Array.isArray(invites) || invites.length === 0) {
     return NextResponse.json({ error: "Davet listesi boş." }, { status: 400 });
   }
 
-  const company = await prisma.company.findUnique({
-    where: { id: session.companyId },
-    select: { name: true, maxSeats: true, _count: { select: { users: true } } },
-  });
-  if (!company) return NextResponse.json({ error: "Şirket bulunamadı." }, { status: 404 });
-
-  const remaining = company.maxSeats - company._count.users;
-  if (invites.length > remaining) {
-    return NextResponse.json({ error: `Yalnızca ${remaining} koltuk boş, ${invites.length} davet gönderilemiyor.` }, { status: 400 });
-  }
-
   const EXPIRES_DAYS = 7;
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const expiresAt = new Date(Date.now() + EXPIRES_DAYS * 86400000);
 
-  const results: { email: string; status: "ok" | "skipped" | "error"; reason?: string }[] = [];
+  // Format doğrulama (transaction dışında)
+  const skippedResults: InviteResult[] = [];
+  const validInvites: { email: string; role: "EMPLOYEE" | "COMPANY_ADMIN" }[] = [];
 
   for (const { email, role } of invites) {
     if (!email || !email.includes("@")) {
-      results.push({ email, status: "skipped", reason: "Geçersiz e-posta" });
+      skippedResults.push({ email, status: "skipped", reason: "Geçersiz e-posta" });
       continue;
     }
     if (!["EMPLOYEE", "COMPANY_ADMIN"].includes(role)) {
-      results.push({ email, status: "skipped", reason: "Geçersiz rol" });
+      skippedResults.push({ email, status: "skipped", reason: "Geçersiz rol" });
       continue;
     }
+    validInvites.push({ email, role: role as "EMPLOYEE" | "COMPANY_ADMIN" });
+  }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      results.push({ email, status: "skipped", reason: "Zaten kayıtlı" });
-      continue;
-    }
+  if (validInvites.length === 0) {
+    return NextResponse.json({ results: skippedResults });
+  }
 
-    const existingInvite = await prisma.inviteToken.findFirst({
-      where: { email, companyId: session.companyId, usedAt: null, expiresAt: { gt: new Date() } },
-    });
-    if (existingInvite) {
-      results.push({ email, status: "skipped", reason: "Aktif davet mevcut" });
-      continue;
-    }
+  // Kayıtlı e-postaları önceden filtrele (transaction dışında — okuma güvenli)
+  const existingUsers = await prisma.user.findMany({
+    where: { email: { in: validInvites.map((i) => i.email) } },
+    select: { email: true },
+  });
+  const registeredEmails = new Set(existingUsers.map((u) => u.email));
 
-    try {
-      const invite = await prisma.inviteToken.create({
-        data: { email, companyId: session.companyId, role: role as "EMPLOYEE" | "COMPANY_ADMIN", expiresAt: new Date(Date.now() + EXPIRES_DAYS * 86400000) },
+  const toInvite = validInvites.filter((i) => !registeredEmails.has(i.email));
+  for (const { email } of validInvites.filter((i) => registeredEmails.has(i.email))) {
+    skippedResults.push({ email, status: "skipped", reason: "Zaten kayıtlı" });
+  }
+
+  if (toInvite.length === 0) {
+    return NextResponse.json({ results: skippedResults });
+  }
+
+  // Token'ları önceden üret — createMany geri dönüş değeri vermez
+  const tokensData = toInvite.map((inv) => ({
+    ...inv,
+    token: randomBytes(32).toString("hex"),
+    companyId: user.companyId!,
+    expiresAt,
+  }));
+
+  let companyName: string;
+  let createdEmails: string[];
+  const dupResults: InviteResult[] = [];
+
+  try {
+    const txResult = await prisma.$transaction(async (tx) => {
+      // Şirket satırını kilitle — eşzamanlı toplu davetlerin kota aşmasını engelle (TOCTOU)
+      await tx.$queryRaw`SELECT id FROM "Company" WHERE id = ${user.companyId!} FOR UPDATE`;
+
+      const [activeUsers, pendingInvites, company] = await Promise.all([
+        tx.user.count({ where: { companyId: user.companyId!, isActive: true } }),
+        tx.inviteToken.count({
+          where: { companyId: user.companyId!, usedAt: null, expiresAt: { gt: new Date() } },
+        }),
+        tx.company.findUnique({ where: { id: user.companyId! }, select: { name: true, maxSeats: true } }),
+      ]);
+
+      if (!company) throw Object.assign(new Error("Şirket bulunamadı."), { code: "NOT_FOUND" });
+
+      const occupied = activeUsers + pendingInvites;
+      const remaining = company.maxSeats - occupied;
+      if (toInvite.length > remaining) {
+        throw Object.assign(
+          new Error(`Yalnızca ${remaining} koltuk boş, ${toInvite.length} davet gönderilemiyor.`),
+          { code: "SEATS_FULL" }
+        );
+      }
+
+      // Bekleyen davetleri kontrol et (transaction içinde)
+      const existingInvites = await tx.inviteToken.findMany({
+        where: {
+          email: { in: toInvite.map((i) => i.email) },
+          companyId: user.companyId!,
+          usedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        select: { email: true },
       });
-      const inviteUrl = `${baseUrl}/invite/${invite.token}`;
+      const dupeSet = new Set(existingInvites.map((i) => i.email));
+      const finalTokens = tokensData.filter((t) => !dupeSet.has(t.email));
+      const dupEmails = tokensData.filter((t) => dupeSet.has(t.email)).map((t) => t.email);
+
+      if (finalTokens.length > 0) {
+        await tx.inviteToken.createMany({ data: finalTokens });
+      }
+
+      return { companyName: company.name, dupEmails, createdEmails: finalTokens.map((t) => t.email) };
+    });
+
+    companyName = txResult.companyName;
+    createdEmails = txResult.createdEmails;
+    for (const email of txResult.dupEmails) {
+      dupResults.push({ email, status: "skipped", reason: "Aktif davet mevcut" });
+    }
+  } catch (e: any) {
+    if (e?.code === "NOT_FOUND") return NextResponse.json({ error: "Şirket bulunamadı." }, { status: 404 });
+    if (e?.code === "SEATS_FULL") return NextResponse.json({ error: e.message }, { status: 400 });
+    console.error("[BulkInvite] Transaction hatası:", e);
+    return NextResponse.json({ error: "Sunucu hatası." }, { status: 500 });
+  }
+
+  // E-postalar commit SONRASI gönderilir
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const emailResults: InviteResult[] = [];
+
+  for (const { email, role, token } of tokensData.filter((t) => createdEmails.includes(t.email))) {
+    const inviteUrl = `${baseUrl}/invite/${token}`;
+    try {
       await sendEmail({
         to: email,
-        subject: `${company.name} sizi AudioB2B'ye davet etti`,
-        html: inviteEmailHtml({ companyName: company.name, inviteUrl, role, expiresInDays: EXPIRES_DAYS }),
+        subject: `${companyName} sizi AudioB2B'ye davet etti`,
+        html: inviteEmailHtml({ companyName, inviteUrl, role, expiresInDays: EXPIRES_DAYS }),
       });
-      results.push({ email, status: "ok" });
+      emailResults.push({ email, status: "ok" });
     } catch {
-      results.push({ email, status: "error", reason: "E-posta gönderilemedi" });
+      emailResults.push({ email, status: "error", reason: "E-posta gönderilemedi" });
     }
   }
 
-  return NextResponse.json({ results });
+  return NextResponse.json({ results: [...skippedResults, ...dupResults, ...emailResults] });
 }

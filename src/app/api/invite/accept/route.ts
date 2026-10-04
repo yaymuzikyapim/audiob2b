@@ -28,37 +28,44 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Şirket hesabı aktif değil." }, { status: 400 });
   }
 
-  // Kota kontrolü
-  const userCount = await prisma.user.count({ where: { companyId: invite.companyId } });
-  const company = await prisma.company.findUnique({ where: { id: invite.companyId }, select: { maxSeats: true } });
-  if (company && userCount >= company.maxSeats) {
-    return NextResponse.json({ error: "Şirket lisans kotası doldu." }, { status: 400 });
-  }
-
-  // Mevcut kullanıcı kontrolü
-  const existing = await prisma.user.findUnique({ where: { email: invite.email } });
-  if (existing) {
-    return NextResponse.json({ error: "Bu e-posta zaten kayıtlı." }, { status: 409 });
-  }
-
   const hashedPassword = await bcrypt.hash(password, 12);
 
-  const [user] = await prisma.$transaction([
-    prisma.user.create({
-      data: {
-        email: invite.email,
-        name,
-        password: hashedPassword,
-        role: invite.role,
-        companyId: invite.companyId,
-      },
-    }),
-    prisma.inviteToken.update({
-      where: { token },
-      data: { usedAt: new Date() },
-    }),
-  ]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let newUser: any;
 
+  try {
+    newUser = await prisma.$transaction(async (tx) => {
+      // Şirket satırını kilitle — eşzamanlı kabullerin kota aşmasını engelle (TOCTOU)
+      await tx.$queryRaw`SELECT id FROM "Company" WHERE id = ${invite.companyId} FOR UPDATE`;
+
+      const [activeUserCount, company] = await Promise.all([
+        tx.user.count({ where: { companyId: invite.companyId, isActive: true } }),
+        tx.company.findUnique({ where: { id: invite.companyId }, select: { maxSeats: true } }),
+      ]);
+
+      if (!company) throw Object.assign(new Error("Şirket bulunamadı."), { code: "NOT_FOUND" });
+      if (activeUserCount >= company.maxSeats) {
+        throw Object.assign(new Error("Şirket lisans kotası doldu."), { code: "SEATS_FULL" });
+      }
+
+      const existing = await tx.user.findUnique({ where: { email: invite.email } });
+      if (existing) throw Object.assign(new Error("Bu e-posta zaten kayıtlı."), { code: "EMAIL_EXISTS" });
+
+      const created = await tx.user.create({
+        data: { email: invite.email, name, password: hashedPassword, role: invite.role, companyId: invite.companyId },
+      });
+      await tx.inviteToken.update({ where: { token }, data: { usedAt: new Date() } });
+      return created;
+    });
+  } catch (e: any) {
+    if (e?.code === "NOT_FOUND") return NextResponse.json({ error: "Şirket bulunamadı." }, { status: 400 });
+    if (e?.code === "SEATS_FULL") return NextResponse.json({ error: "Şirket lisans kotası doldu." }, { status: 400 });
+    if (e?.code === "EMAIL_EXISTS") return NextResponse.json({ error: "Bu e-posta zaten kayıtlı." }, { status: 409 });
+    console.error("[Accept] Transaction hatası:", e);
+    return NextResponse.json({ error: "Sunucu hatası." }, { status: 500 });
+  }
+
+  const user = newUser;
   const jwtToken = await signSession({
     id: user.id,
     email: user.email,
