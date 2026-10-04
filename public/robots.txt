@@ -1,7 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /tpao-teklif
-Disallow: /admin
-Disallow: /api/
 
 Sitemap: https://www.audiob2b.com.tr/sitemap.xml
