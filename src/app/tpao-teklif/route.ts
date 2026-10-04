@@ -1,17 +1,15 @@
 import { readFile } from "fs/promises";
 import { join } from "path";
-import { getSession } from "@/lib/session";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await getSession();
-  if (!session) return NextResponse.redirect(new URL("/login", "https://www.audiob2b.com.tr"));
-  if (session.role !== "SUPER_ADMIN") return new Response("Bulunamadı.", { status: 404 });
-
   const html = await readFile(join(process.cwd(), "private", "tpao-teklif.html"), "utf-8");
   return new Response(html, {
-    headers: { "Content-Type": "text/html; charset=utf-8" },
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "X-Robots-Tag": "noindex, nofollow",
+    },
   });
 }
