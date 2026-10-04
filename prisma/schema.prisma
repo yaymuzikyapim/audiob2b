@@ -52,6 +52,7 @@ model Company {
   startDate   DateTime
   endDate     DateTime
   isActive    Boolean     @default(true)
+  isDemo      Boolean     @default(false)
   notes       String? // Sesle'nin iç notu
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

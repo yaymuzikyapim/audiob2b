@@ -10,15 +10,28 @@ export async function GET(req: NextRequest) {
 
   const year = parseInt(req.nextUrl.searchParams.get("year") || String(new Date().getFullYear()));
   const month = parseInt(req.nextUrl.searchParams.get("month") || String(new Date().getMonth() + 1));
+  const includeDemo = req.nextUrl.searchParams.get("includeDemo") === "true";
 
   const from = new Date(year, month - 1, 1);
   const to = new Date(year, month, 1);
+
+  // Demo şirket kullanıcılarını varsayılan olarak hariç tut
+  const excludedUserIds: string[] = [];
+  if (!includeDemo) {
+    const demoCompanies = await prisma.company.findMany({ where: { isDemo: true }, select: { id: true } });
+    const demoCompanyIds = demoCompanies.map((c) => c.id);
+    if (demoCompanyIds.length) {
+      const demoUsers = await prisma.user.findMany({ where: { companyId: { in: demoCompanyIds } }, select: { id: true } });
+      excludedUserIds.push(...demoUsers.map((u) => u.id));
+    }
+  }
+  const playFilter = excludedUserIds.length ? { userId: { notIn: excludedUserIds } } : {};
 
   // Kitap bazlı — yalnızca doğru delta yöntemiyle gelen kayıtlar (clientVersion: 2)
   // groupBy([bookId, userId]) → JS'de topla → distinct kullanıcı sayısı doğru hesaplanır
   const byBookUser = await prisma.playHistory.groupBy({
     by: ["bookId", "userId"],
-    where: { playedAt: { gte: from, lt: to }, clientVersion: 2 },
+    where: { playedAt: { gte: from, lt: to }, clientVersion: 2, ...playFilter },
     _sum: { listenedSec: true },
   });
 
@@ -50,7 +63,7 @@ export async function GET(req: NextRequest) {
   // Şirket bazlı — yalnızca clientVersion: 2 (güvenilir delta kayıtlar)
   const byUser = await prisma.playHistory.groupBy({
     by: ["userId"],
-    where: { playedAt: { gte: from, lt: to }, clientVersion: 2 },
+    where: { playedAt: { gte: from, lt: to }, clientVersion: 2, ...playFilter },
     _sum: { listenedSec: true },
   });
 
@@ -68,8 +81,9 @@ export async function GET(req: NextRequest) {
   }
 
   const companyIds = Object.keys(companyListenMap);
+  const demoFilter = includeDemo ? {} : { isDemo: false };
   const companies = await prisma.company.findMany({
-    where: { id: { in: companyIds } },
+    where: { id: { in: companyIds }, ...demoFilter },
     select: { id: true, name: true },
   });
 
