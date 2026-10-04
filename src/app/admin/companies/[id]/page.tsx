@@ -5,6 +5,7 @@ import CompanyActions from "@/components/admin/CompanyActions";
 import AdminInviteButton from "@/components/admin/AdminInviteButton";
 import AddUserButton from "@/components/admin/AddUserButton";
 import CompanyBranding from "@/components/admin/CompanyBranding";
+import ResetPasswordButton from "@/components/admin/ResetPasswordButton";
 
 function formatDate(d: Date) {
   return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "long", year: "numeric" }).format(new Date(d));
@@ -33,13 +34,15 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
   });
 
   const userIds = company.users.map((u) => u.id);
-  const playerStates = await prisma.playerState.findMany({
-    where: { userId: { in: userIds } },
-    select: { userId: true, positionSec: true },
+  // Kümülatif dinleme süresi: yalnızca güvenilir delta kayıtlar (clientVersion: 2)
+  const listenHistory = await prisma.playHistory.groupBy({
+    by: ["userId"],
+    where: { userId: { in: userIds }, clientVersion: 2 },
+    _sum: { listenedSec: true },
   });
   const listeningMap: Record<string, number> = {};
-  for (const ps of playerStates) {
-    listeningMap[ps.userId] = (listeningMap[ps.userId] ?? 0) + ps.positionSec;
+  for (const r of listenHistory) {
+    listeningMap[r.userId] = r._sum.listenedSec ?? 0;
   }
 
   const pendingInvites = await prisma.inviteToken.findMany({
@@ -175,6 +178,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
                   <span className={`text-xs px-2 py-0.5 rounded-full ${u.isActive ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
                     {u.isActive ? "Aktif" : "Pasif"}
                   </span>
+                  <ResetPasswordButton userId={u.id} />
                 </div>
               </div>
             );
