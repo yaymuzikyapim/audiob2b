@@ -12,8 +12,14 @@ export async function proxy(req: NextRequest) {
     PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
   const session = await getSessionFromRequest(req);
 
-  // Davet sayfaları her zaman erişilebilir — oturum açık olsa bile yönlendirme yok
-  if (pathname.startsWith("/invite") || pathname.startsWith("/api/invite")) {
+  // Bu yollar oturum durumundan bağımsız her zaman erişilebilir
+  if (
+    pathname.startsWith("/invite") ||
+    pathname.startsWith("/api/invite") ||
+    pathname.startsWith("/p/") ||
+    pathname.startsWith("/api/p/") ||
+    pathname.startsWith("/tpao-teklif")
+  ) {
     return NextResponse.next();
   }
 
