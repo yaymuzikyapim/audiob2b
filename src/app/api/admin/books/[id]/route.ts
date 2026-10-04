@@ -1,9 +1,24 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-guard";
 import { deleteFile } from "@/lib/s3";
+
+const BookPatchSchema = z.object({
+  title: z.string().min(1).optional(),
+  author: z.string().min(1).optional(),
+  narrator: z.string().optional().nullable(),
+  duration: z.coerce.number().int().positive().optional(),
+  coverUrl: z.string().url().optional().nullable(),
+  description: z.string().optional().nullable(),
+  isbn: z.string().optional().nullable(),
+  categoryId: z.string().optional().nullable(),
+  seriesId: z.string().optional().nullable(),
+  seriesOrder: z.union([z.coerce.number().int(), z.literal(""), z.null()]).optional(),
+  isActive: z.boolean().optional(),
+});
 
 function extractOwnS3Key(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -44,7 +59,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
-  const body = await req.json();
+  const raw = await req.json();
+  const parsed = BookPatchSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Geçersiz veri." }, { status: 400 });
+  }
+  const body = parsed.data;
 
   const book = await prisma.book.update({
     where: { id },
@@ -52,13 +72,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(body.title && { title: body.title }),
       ...(body.author && { author: body.author }),
       ...(body.narrator !== undefined && { narrator: body.narrator }),
-      ...(body.duration !== undefined && { duration: parseInt(body.duration) }),
+      ...(body.duration !== undefined && { duration: body.duration }),
       ...(body.coverUrl !== undefined && { coverUrl: body.coverUrl }),
       ...(body.description !== undefined && { description: body.description }),
       ...(body.isbn !== undefined && { isbn: body.isbn }),
       ...(body.categoryId !== undefined && { categoryId: body.categoryId || null }),
       ...(body.seriesId !== undefined && { seriesId: body.seriesId || null }),
-      ...(body.seriesOrder !== undefined && { seriesOrder: body.seriesOrder === "" ? null : parseInt(body.seriesOrder) }),
+      ...(body.seriesOrder !== undefined && { seriesOrder: body.seriesOrder === "" ? null : Number(body.seriesOrder) }),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
     },
   });
