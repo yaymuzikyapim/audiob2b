@@ -2,20 +2,18 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
-import { getActiveAccess } from "@/lib/access";
+
+import { requireUser } from "@/lib/auth-guard";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession();
-  if (!session || session.role === "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
+  const auth = await requireUser({ roles: ["COMPANY_ADMIN", "EMPLOYEE"] });
+  if (!auth.ok) return auth.response;
+  const { user } = auth;
+  const packageId = user.company!.packageId!;
 
   const { id } = await params;
 
-  // Erişim kontrolü + kitap sorguları — tek round-trip
-  const [access, book, playerState, favorite] = await Promise.all([
-    getActiveAccess(session.id),
+  const [book, playerState, favorite] = await Promise.all([
     prisma.book.findUnique({
       where: { id },
       include: {
@@ -25,15 +23,12 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
       },
     }),
     prisma.playerState.findUnique({
-      where: { userId_bookId: { userId: session.id, bookId: id } },
+      where: { userId_bookId: { userId: user.id, bookId: id } },
     }),
     (prisma as any).userFavorite.findUnique({
-      where: { userId_bookId: { userId: session.id, bookId: id } },
+      where: { userId_bookId: { userId: user.id, bookId: id } },
     }).catch(() => null),
   ]);
-
-  if (!access.ok) return access.response;
-  const { packageId } = access.data;
 
   if (!book) return NextResponse.json({ error: "Bulunamadı." }, { status: 404 });
 

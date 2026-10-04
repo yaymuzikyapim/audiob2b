@@ -2,14 +2,15 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/auth-guard";
 
 export async function GET() {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
+  const auth = await requireUser({ roles: ["COMPANY_ADMIN", "EMPLOYEE"] });
+  if (!auth.ok) return auth.response;
+  const { user } = auth;
 
   const favorites = await prisma.userFavorite.findMany({
-    where: { userId: session.id },
+    where: { userId: user.id },
     select: { bookId: true, createdAt: true },
     orderBy: { createdAt: "desc" },
   });
@@ -18,15 +19,16 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
+  const auth = await requireUser({ roles: ["COMPANY_ADMIN", "EMPLOYEE"] });
+  if (!auth.ok) return auth.response;
+  const { user } = auth;
 
   const { bookId } = await req.json();
   if (!bookId) return NextResponse.json({ error: "bookId gerekli." }, { status: 400 });
 
   const favorite = await prisma.userFavorite.upsert({
-    where: { userId_bookId: { userId: session.id, bookId } },
-    create: { userId: session.id, bookId },
+    where: { userId_bookId: { userId: user.id, bookId } },
+    create: { userId: user.id, bookId },
     update: {},
   });
 

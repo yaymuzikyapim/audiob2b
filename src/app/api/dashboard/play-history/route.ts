@@ -2,15 +2,13 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
-import { getActiveAccess } from "@/lib/access";
+
+import { requireUser } from "@/lib/auth-guard";
 
 export async function POST(req: NextRequest) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
-
-  const access = await getActiveAccess(session.id);
-  if (!access.ok) return access.response;
+  const auth = await requireUser({ roles: ["COMPANY_ADMIN", "EMPLOYEE"] });
+  if (!auth.ok) return auth.response;
+  const { user } = auth;
 
   const { bookId, listenedSec, contentSec, completedPct, listenedAt, v, clientId } = await req.json();
   if (!bookId || !listenedSec || listenedSec < 5) {
@@ -32,7 +30,7 @@ export async function POST(req: NextRequest) {
   }
 
   const data = {
-    userId: session.id,
+    userId: user.id,
     bookId,
     listenedSec: Math.floor(listenedSec),
     contentSec: Math.floor(contentSec ?? 0),

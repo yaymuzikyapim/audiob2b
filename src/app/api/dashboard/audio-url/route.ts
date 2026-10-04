@@ -2,20 +2,15 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
-import { getActiveAccess } from "@/lib/access";
+
+import { requireUser } from "@/lib/auth-guard";
 import { getPlayUrl } from "@/lib/s3";
 
 export async function GET(req: NextRequest) {
-  const session = await getSession();
-  if (!session || session.role === "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-  }
-
-  // user.isActive + company.isActive + endDate — tek sorgu, companyId token'dan değil DB'den
-  const access = await getActiveAccess(session.id);
-  if (!access.ok) return access.response;
-  const { packageId } = access.data;
+  const auth = await requireUser({ roles: ["COMPANY_ADMIN", "EMPLOYEE"] });
+  if (!auth.ok) return auth.response;
+  const { user } = auth;
+  const packageId = user.company!.packageId!;
 
   const key = req.nextUrl.searchParams.get("key");
   if (!key) return NextResponse.json({ error: "key gerekli." }, { status: 400 });

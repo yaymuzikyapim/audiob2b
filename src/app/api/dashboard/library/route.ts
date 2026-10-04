@@ -2,21 +2,16 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
-import { getActiveAccess } from "@/lib/access";
+
+import { requireUser } from "@/lib/auth-guard";
 import { getPlayUrl } from "@/lib/s3";
 
 export async function GET() {
   try {
-    const session = await getSession();
-    if (!session || session.role === "SUPER_ADMIN") {
-      return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
-    }
-
-    // user.isActive + company.isActive + endDate tek sorguda; companyId DB'den
-    const access = await getActiveAccess(session.id);
-    if (!access.ok) return access.response;
-    const { companyId } = access.data;
+    const auth = await requireUser({ roles: ["COMPANY_ADMIN", "EMPLOYEE"] });
+    if (!auth.ok) return auth.response;
+    const { user } = auth;
+    const companyId = user.companyId!;
 
     const company = await prisma.company.findUnique({
       where: { id: companyId },
@@ -65,14 +60,14 @@ export async function GET() {
     const bookIds = books.map((b) => b.id);
 
     const playerStates = await prisma.playerState.findMany({
-      where: { userId: session.id, bookId: { in: bookIds } },
+      where: { userId: user.id, bookId: { in: bookIds } },
       select: { bookId: true, positionSec: true },
     });
 
     let userFavorites: { bookId: string }[] = [];
     try {
       userFavorites = await (prisma as any).userFavorite.findMany({
-        where: { userId: session.id, bookId: { in: bookIds } },
+        where: { userId: user.id, bookId: { in: bookIds } },
         select: { bookId: true },
       });
     } catch {}
