@@ -54,12 +54,27 @@ export default function CompanyActions({ company, packages }: { company: Company
     router.refresh();
   }
 
-  async function handleToggle() {
+  async function handleDeactivate() {
+    if (!confirm(`"${company.name}" şirketini devre dışı bırakmak istediğinizden emin misiniz?\n\nBekleyen davetler iptal edilir. Kullanıcılar etkilenmez.`)) return;
+    setLoading(true);
     await fetch(`/api/admin/companies/${company.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !company.isActive }),
+      body: JSON.stringify({ isActive: false }),
     });
+    setLoading(false);
+    router.refresh();
+  }
+
+  async function handleReactivate() {
+    if (!confirm(`"${company.name}" şirketini yeniden etkinleştirmek istediğinizden emin misiniz?`)) return;
+    setLoading(true);
+    await fetch(`/api/admin/companies/${company.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: true }),
+    });
+    setLoading(false);
     router.refresh();
   }
 
@@ -72,12 +87,23 @@ export default function CompanyActions({ company, packages }: { company: Company
         >
           Düzenle
         </button>
-        <button
-          onClick={handleToggle}
-          className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${company.isActive ? "text-red-400 hover:bg-red-400/10" : "text-emerald-400 hover:bg-emerald-400/10"}`}
-        >
-          {company.isActive ? "Pasife Al" : "Aktive Et"}
-        </button>
+        {company.isActive ? (
+          <button
+            onClick={handleDeactivate}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-400/10 disabled:opacity-50 rounded-xl transition-colors"
+          >
+            Devre Dışı Bırak
+          </button>
+        ) : (
+          <button
+            onClick={handleReactivate}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-400/10 disabled:opacity-50 rounded-xl transition-colors"
+          >
+            Yeniden Etkinleştir
+          </button>
+        )}
       </div>
     );
   }
