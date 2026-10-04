@@ -25,7 +25,31 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) return auth.response;
   const { user } = auth;
 
-  const { bookId, chapterId, positionSec, note } = await req.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Geçersiz istek gövdesi." }, { status: 400 });
+  }
+
+  const { bookId, chapterId, positionSec, note } = body as {
+    bookId?: string; chapterId?: string; positionSec?: number; note?: string;
+  };
+
+  if (!bookId || positionSec === undefined) {
+    return NextResponse.json({ error: "bookId ve positionSec zorunlu." }, { status: 400 });
+  }
+
+  const book = await prisma.book.findUnique({ where: { id: bookId }, select: { id: true } });
+  if (!book) return NextResponse.json({ error: "BOOK_NOT_FOUND" }, { status: 404 });
+
+  if (chapterId) {
+    const chapter = await prisma.chapter.findFirst({
+      where: { id: chapterId, bookId },
+      select: { id: true },
+    });
+    if (!chapter) return NextResponse.json({ error: "CHAPTER_NOT_FOUND" }, { status: 404 });
+  }
 
   const bookmark = await prisma.bookmark.create({
     data: {

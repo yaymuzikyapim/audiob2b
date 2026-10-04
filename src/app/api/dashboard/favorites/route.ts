@@ -23,8 +23,18 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) return auth.response;
   const { user } = auth;
 
-  const { bookId } = await req.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Geçersiz istek gövdesi." }, { status: 400 });
+  }
+
+  const { bookId } = body as { bookId?: string };
   if (!bookId) return NextResponse.json({ error: "bookId gerekli." }, { status: 400 });
+
+  const book = await prisma.book.findUnique({ where: { id: bookId }, select: { id: true } });
+  if (!book) return NextResponse.json({ error: "BOOK_NOT_FOUND" }, { status: 404 });
 
   const favorite = await prisma.userFavorite.upsert({
     where: { userId_bookId: { userId: user.id, bookId } },
