@@ -48,6 +48,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const { bookIds } = await req.json(); // tüm bookId listesi gönderilir
 
+  // Transaction'dan önce tüm bookId'lerin var olduğunu doğrula
+  if (Array.isArray(bookIds) && bookIds.length > 0) {
+    const found = await prisma.book.findMany({
+      where: { id: { in: bookIds } },
+      select: { id: true },
+    });
+    if (found.length !== bookIds.length) {
+      const missing = (bookIds as string[]).filter((bid) => !found.some((b) => b.id === bid));
+      return NextResponse.json({ error: `Geçersiz kitap: ${missing.join(", ")}` }, { status: 400 });
+    }
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.packageBook.deleteMany({ where: { packageId: id } });
     if (bookIds?.length) {
