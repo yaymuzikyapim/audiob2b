@@ -1,23 +1,17 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+import { requireUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
-import { getActiveAccess } from "@/lib/access";
 
 export async function GET() {
-  const session = await getSession();
-  if (!session || session.role === "SUPER_ADMIN") {
-    return NextResponse.json({ lastPlayed: null });
-  }
-
-  const access = await getActiveAccess(session.id);
-  if (!access.ok) return NextResponse.json({ lastPlayed: null });
-
-  const { packageId } = access.data;
+  const auth = await requireUser({ roles: ["COMPANY_ADMIN", "EMPLOYEE"] });
+  if (!auth.ok) return auth.response;
+  const { user } = auth;
+  const packageId = user.company!.packageId!;
 
   const state = await prisma.playerState.findFirst({
-    where: { userId: session.id },
+    where: { userId: user.id },
     // clientSavedAt gerçek dinleme zamanını taşır; NULL ise updatedAt'e dön
     orderBy: [{ clientSavedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
     include: {
@@ -45,7 +39,7 @@ export async function GET() {
   if (!inPackage) return NextResponse.json({ lastPlayed: null });
 
   const company = await prisma.company.findUnique({
-    where: { id: access.data.companyId },
+    where: { id: user.companyId! },
     select: { brandColor: true },
   });
 

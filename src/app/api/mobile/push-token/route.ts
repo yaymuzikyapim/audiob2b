@@ -2,14 +2,15 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth-guard";
 import { getSession } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
-    }
+    // requireActiveCompany: false — login anında şirket durumundan bağımsız çalışmalı
+    const auth = await requireUser({ requireActiveCompany: false });
+    if (!auth.ok) return auth.response;
+    const { user } = auth;
 
     const { token } = await req.json();
     if (!token || typeof token !== "string") {
@@ -18,12 +19,12 @@ export async function POST(req: NextRequest) {
 
     // Aynı token başka kullanıcıda varsa önce temizle (cihaz paylaşımı / hesap değişimi)
     await prisma.user.updateMany({
-      where: { pushToken: token, NOT: { id: session.id } },
+      where: { pushToken: token, NOT: { id: user.id } },
       data: { pushToken: null },
     });
 
     await prisma.user.update({
-      where: { id: session.id },
+      where: { id: user.id },
       data: { pushToken: token },
     });
 
@@ -34,6 +35,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// DELETE: çıkış akışının parçası — token geçersiz veya hesap pasife alınmış olsa bile
+// push token temizlenebilmeli; sert hata döndürme.
 export async function DELETE() {
   try {
     const session = await getSession();
@@ -44,6 +47,6 @@ export async function DELETE() {
     });
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ ok: true }); // Sessizce geç — çıkışı engelleme
+    return NextResponse.json({ ok: true });
   }
 }
