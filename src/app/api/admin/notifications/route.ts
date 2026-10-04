@@ -77,19 +77,23 @@ export async function POST(req: NextRequest) {
   }
 
   // Gönderim geçmişine kaydet
-  prisma.notificationLog.create({
-    data: {
-      adminId: user.id,
-      target: target ?? "all",
-      companyId: companyId ?? null,
-      title: title.trim(),
-      body: body.trim(),
-      bookId: data?.bookId as string ?? null,
-      coverUrl: coverUrl ?? null,
-      sent: result.sent,
-      failed: result.failed,
-    },
-  }).catch(() => {});
+  try {
+    await prisma.notificationLog.create({
+      data: {
+        adminId: user.id,
+        target: target ?? "all",
+        companyId: companyId ?? null,
+        title: title.trim(),
+        body: body.trim(),
+        bookId: data?.bookId as string ?? null,
+        coverUrl: coverUrl ?? null,
+        sent: result.sent,
+        failed: result.failed,
+      },
+    });
+  } catch (err) {
+    console.error("[notifications] Log kaydı başarısız:", err);
+  }
 
   return NextResponse.json({ ok: true, ...result });
 }
