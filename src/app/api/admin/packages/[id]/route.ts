@@ -48,12 +48,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const { bookIds } = await req.json(); // tüm bookId listesi gönderilir
 
-  await prisma.packageBook.deleteMany({ where: { packageId: id } });
-  if (bookIds?.length) {
-    await prisma.packageBook.createMany({
-      data: bookIds.map((bookId: string) => ({ packageId: id, bookId })),
-    });
-  }
+  await prisma.$transaction(async (tx) => {
+    await tx.packageBook.deleteMany({ where: { packageId: id } });
+    if (bookIds?.length) {
+      await tx.packageBook.createMany({
+        data: bookIds.map((bookId: string) => ({ packageId: id, bookId })),
+      });
+    }
+  });
 
   return NextResponse.json({ ok: true });
 }
