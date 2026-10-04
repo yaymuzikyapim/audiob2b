@@ -37,18 +37,18 @@ export async function POST(req: NextRequest) {
 
   const sourceIds = sources.map((s) => s.id);
 
-  // Kitapları hedef kategoriye taşı
-  const updated = await prisma.book.updateMany({
-    where: { categoryId: { in: sourceIds } },
-    data: { categoryId: target.id },
+  const booksUpdated = await prisma.$transaction(async (tx) => {
+    const updated = await tx.book.updateMany({
+      where: { categoryId: { in: sourceIds } },
+      data: { categoryId: target.id },
+    });
+    await tx.category.deleteMany({ where: { id: { in: sourceIds } } });
+    return updated.count;
   });
-
-  // Boş kalan kaynak kategorileri sil
-  await prisma.category.deleteMany({ where: { id: { in: sourceIds } } });
 
   return NextResponse.json({
     target: targetName,
     merged: sources.map((s) => s.name),
-    booksUpdated: updated.count,
+    booksUpdated,
   });
 }
