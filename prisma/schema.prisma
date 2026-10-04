@@ -229,6 +229,34 @@ model UserFavorite {
 
 // ─── BİLDİRİM GEÇMİŞİ ────────────────────────────────────────────
 
+// ─── TEKLİF LİNKLERİ ────────────────────────────────────────────
+
+model ProposalLink {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  label     String
+  slug      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  visitors ProposalLinkVisitor[]
+}
+
+model ProposalLinkVisitor {
+  id          String   @id @default(cuid())
+  linkId      String
+  visitorId   String
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime
+  views       Int      @default(1)
+
+  link ProposalLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@unique([linkId, visitorId])
+}
+
+// ─── BİLDİRİM GEÇMİŞİ ────────────────────────────────────────────
+
 model NotificationLog {
   id        String   @id @default(cuid())
   sentAt    DateTime @default(now())
