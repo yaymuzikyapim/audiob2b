@@ -16,6 +16,13 @@ Schema değişikliği yapıldığında deployment sırası:
 
 Her iki değişken de Vercel Environment Variables'a eklenmiş olmalı.
 
+## Push Öncesi Kontrol Listesi
+
+Push yapmadan önce her iki koşul sağlanmalı:
+
+1. **`npm run build` yerelde temiz olmalı** — Vercel'de build'i kıran dosyalar (import edilip commit edilmemiş bileşenler vb.) yerelde de hata verir.
+2. **`git status` temiz olmalı** — takip edilmeyen (untracked) dosya bırakılmamalı; her dosya ya commit edilmeli, ya silinmeli, ya da `.gitignore`'a eklenmeli.
+
 ## Canlı Ortam Doğrulaması
 
 API testleri için `.env.local`'deki `TEST_USER_EMAIL` ve `TEST_USER_PASSWORD` kullanılır.
