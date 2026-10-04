@@ -23,6 +23,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const existing = await prisma.user.findFirst({ where: { email, companyId } });
     if (existing) return NextResponse.json({ error: "Bu e-posta zaten kayıtlı." }, { status: 400 });
 
+    const existingInvite = await prisma.inviteToken.findFirst({
+      where: { email, companyId, usedAt: null, expiresAt: { gt: new Date() } },
+    });
+    if (existingInvite) return NextResponse.json({ error: "Bu e-posta için bekleyen davet var." }, { status: 409 });
+
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
