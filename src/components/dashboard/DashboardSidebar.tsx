@@ -15,7 +15,7 @@ const NAV_EMPLOYEE = [
 ];
 
 const NAV_ADMIN_EXTRA = [
-  { href: "/dashboard/team", label: "Ekip", icon: "👥" },
+  { href: "/dashboard/admin", label: "Yönetim paneli", icon: "⚙️" },
 ];
 
 export default function DashboardSidebar({
