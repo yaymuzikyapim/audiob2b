@@ -28,3 +28,15 @@ Push yapmadan önce her iki koşul sağlanmalı:
 API testleri için `.env.local`'deki `TEST_USER_EMAIL` ve `TEST_USER_PASSWORD` kullanılır.
 Bu hesap App Store incelemesinde de kullanıldığından **şifresi asla değiştirilmez**.
 Şifre hiçbir komut çıktısında, logda veya sohbette yazdırılmaz.
+
+## Güvenlik Kuralı — Kimlik Bilgisi / Şifre
+
+**Şifre, token, API anahtarı veya herhangi bir giriş bilgisi asla sohbet çıktısına, echo/print komutlarına veya log dosyalarına yazılmaz.**
+
+Ekran görüntüsü gerektiren görevler için kural:
+1. Geçici hesabı `tmp-admin-screenshot-<timestamp>` adıyla oluştur — şifreyi script içinde üret, sohbete yazma
+2. Giriş yap, görüntüleri al
+3. Görüntü alındıktan hemen sonra hesabı DB'den sil, silindiğini `SELECT COUNT(*)` ile doğrula
+4. Dev ve production aynı DB'yi kullandığından geçici hesaplar canlıda da geçerlidir — geciktirme yok
+
+Bu kural `TEST_USER_PASSWORD` için de geçerlidir: değerini okuyabilirsin ama asla çıktıya yansıtma.

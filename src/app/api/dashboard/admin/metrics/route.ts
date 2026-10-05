@@ -37,7 +37,7 @@ export async function GET(req: Request) {
   const { from, to } = parsePeriod(period, now);
   const trendFrom = new Date(now.getTime() - 12 * 7 * 86400000);
 
-  const [companyUsers, company, invitesSentCount, firstV2] = await Promise.all([
+  const [companyUsers, company, invitesSentCount, firstV2, firstChapter] = await Promise.all([
     prisma.user.findMany({
       where: { companyId, isActive: true },
       select: { id: true },
@@ -50,6 +50,12 @@ export async function GET(req: Request) {
     prisma.inviteToken.count({ where: { companyId } }),
     prisma.playHistory.findFirst({
       where: { user: { companyId }, clientVersion: 2 },
+      orderBy: { playedAt: "asc" },
+      select: { playedAt: true },
+    }),
+    // Kitap tamamlama için chapterId içeren ilk v2 kaydın tarihi
+    prisma.playHistory.findFirst({
+      where: { user: { companyId }, clientVersion: 2, chapterId: { not: null } },
       orderBy: { playedAt: "asc" },
       select: { playedAt: true },
     }),
@@ -163,6 +169,7 @@ export async function GET(req: Request) {
     occupiedSeats: userIds.length,
     pendingInvites: Math.max(0, invitesSentCount - invitesAccepted),
     firstV2Date: firstV2?.playedAt?.toISOString() ?? null,
+    firstChapterDate: firstChapter?.playedAt?.toISOString() ?? null,
     trend,
     funnel,
     topBooks: top5,

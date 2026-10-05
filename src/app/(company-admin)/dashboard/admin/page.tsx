@@ -31,6 +31,7 @@ interface MetricsData {
   occupiedSeats: number;
   pendingInvites: number;
   firstV2Date: string | null;
+  firstChapterDate: string | null;
   trend: Array<{ weekStart: string; listenedSec: number; activeUsers: number }>;
   funnel: {
     seats: number;
@@ -393,8 +394,11 @@ export default function AdminOverviewPage() {
           </section>
 
           {/* Dipnot */}
-          <p style={{ margin: 0, fontSize: 12, color: "#9EA6B3" }}>
+          <p style={{ margin: 0, fontSize: 12, color: "#9EA6B3", lineHeight: 1.6 }}>
             Dinleme süreleri{data.firstV2Date ? ` ${fmtDate(data.firstV2Date)} itibarıyla` : ""} gerçek dinlenen süreye göre hesaplanır; ileri sarılan bölümler sayılmaz.
+            {data.firstChapterDate && (
+              <> Kitap tamamlama verisi {fmtDate(data.firstChapterDate)} itibarıyla geçerlidir (önceki kayıtlarda bölüm bilgisi yok).</>
+            )}
           </p>
         </>
       )}
