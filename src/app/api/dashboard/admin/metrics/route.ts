@@ -119,14 +119,46 @@ export async function GET(req: Request) {
     now
   );
 
+  // Önceki dönem (delta hesabı için)
+  const periodMs = to.getTime() - from.getTime();
+  const prevFrom = new Date(from.getTime() - periodMs);
+  const prevTo = from;
+
+  const rawHistoryPrev = await prisma.playHistory.findMany({
+    where: { userId: { in: userIds }, clientVersion: 2, playedAt: { gte: prevFrom, lte: prevTo } },
+    select: { userId: true, bookId: true, chapterId: true, listenedSec: true, completedPct: true, playedAt: true },
+  });
+  const prevRows = rawHistoryPrev.map(toRow);
+
+  const prevBookIds = [...new Set(prevRows.filter(r => r.chapterId).map(r => r.bookId))];
+  let prevChaptersByBook = chaptersByBook; // aynı kitap seti için yeniden kullan
+  if (prevBookIds.some(id => !chaptersByBook.has(id))) {
+    const prevChapters = await prisma.chapter.findMany({
+      where: { bookId: { in: prevBookIds } }, select: { bookId: true, id: true }
+    });
+    prevChaptersByBook = new Map(chaptersByBook);
+    for (const ch of prevChapters) {
+      if (!prevChaptersByBook.has(ch.bookId)) prevChaptersByBook.set(ch.bookId, new Set());
+      prevChaptersByBook.get(ch.bookId)!.add(ch.id);
+    }
+  }
+
+  const prevActiveListeners = countActiveListeners(prevRows, prevFrom, prevTo);
+  const prevTotalListenedSec = sumListenedSec(prevRows, prevFrom, prevTo);
+  const prevCompletedBooks = countCompletedBooks(prevRows, prevFrom, prevTo, prevChaptersByBook);
+
+  const curActiveListeners = countActiveListeners(rows, from, to);
+  const curTotalListenedSec = sumListenedSec(rows, from, to);
+  const curCompletedBooks = countCompletedBooks(rows, from, to, chaptersByBook);
+
   return NextResponse.json({
     period,
     from: from.toISOString(),
     to: to.toISOString(),
     company: company ? { ...company, endDate: company.endDate.toISOString() } : null,
-    activeListeners: countActiveListeners(rows, from, to),
-    totalListenedSec: sumListenedSec(rows, from, to),
-    completedBooks: countCompletedBooks(rows, from, to, chaptersByBook),
+    activeListeners: curActiveListeners,
+    totalListenedSec: curTotalListenedSec,
+    completedBooks: curCompletedBooks,
     totalSeats: company?.maxSeats ?? 0,
     occupiedSeats: userIds.length,
     pendingInvites: Math.max(0, invitesSentCount - invitesAccepted),
@@ -134,5 +166,10 @@ export async function GET(req: Request) {
     trend,
     funnel,
     topBooks: top5,
+    prev: {
+      activeListeners: prevActiveListeners,
+      totalListenedSec: prevTotalListenedSec,
+      completedBooks: prevCompletedBooks,
+    },
   });
 }

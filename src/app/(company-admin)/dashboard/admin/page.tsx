@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { Users, Clock, BookOpen, Zap } from "lucide-react";
+import { Users, Clock, BookOpen, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
 interface MetricsData {
@@ -49,13 +49,22 @@ interface MetricsData {
     listenerCount: number;
     pct: number;
   }>;
+  prev: {
+    activeListeners: number;
+    totalListenedSec: number;
+    completedBooks: number;
+  } | null;
 }
 
 function fmtHours(sec: number) {
+  if (sec === 0) return "0 sa";
   const h = sec / 3600;
   if (h >= 1000) return `${(h / 1000).toFixed(1)}B sa`;
   if (h >= 10) return `${Math.round(h)} sa`;
-  return `${Math.floor(h)} sa ${Math.round((h % 1) * 60)} dk`;
+  if (h >= 1) return `${Math.floor(h)} sa ${Math.round((h % 1) * 60)} dk`;
+  const m = Math.floor(sec / 60);
+  if (m > 0) return `${m} dk`;
+  return `${sec} sn`;
 }
 
 function fmtWeekLabel(iso: string) {
@@ -73,6 +82,12 @@ function fmtDateRange(from: string, to: string) {
   const t = new Date(to);
   const months = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
   return `${f.getDate()} ${months[f.getMonth()]} – ${t.getDate()} ${months[t.getMonth()]} ${t.getFullYear()}`;
+}
+
+function deltaPct(cur: number, prev: number): number | null {
+  if (prev === 0 && cur === 0) return null;
+  if (prev === 0) return null;
+  return Math.round(((cur - prev) / Math.abs(prev)) * 100);
 }
 
 const PERIODS = [
@@ -151,103 +166,174 @@ export default function AdminOverviewPage() {
       {data && !loading && (
         <>
           {/* Lisans kullanımı bölümü */}
-          <section
-            aria-label="Lisans kullanımı"
-            style={{ background: "#FFFFFF", border: "1px solid #E3E6EA", borderRadius: 12, padding: "20px 24px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24 }}
-          >
-            <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: "#14181F" }}>Lisans kullanımı</span>
-                <span style={{ fontSize: 14, color: "#3A414C", fontVariantNumeric: "tabular-nums" }}>
-                  <strong style={{ fontSize: 18, color: "#14181F" }}>{data.occupiedSeats}</strong> / {data.totalSeats} kullanıcı
-                </span>
-              </div>
-              <div style={{ height: 10, borderRadius: 999, background: "#E9ECF0", overflow: "hidden" }}>
-                <div
-                  style={{
-                    height: "100%",
-                    borderRadius: 999,
-                    background: brand,
-                    width: `${Math.min(100, ((data.occupiedSeats + data.pendingInvites) / Math.max(1, data.totalSeats)) * 100)}%`,
-                    transition: "width .4s ease",
-                  }}
-                />
-              </div>
-              <span style={{ fontSize: 13, color: "#5A6270" }}>
-                {Math.max(0, data.totalSeats - data.occupiedSeats - data.pendingInvites)} boş lisans
-                {data.pendingInvites > 0 && ` · ${data.pendingInvites} davet yanıt bekliyor`}
-              </span>
-            </div>
-            {data.company?.endDate && (
-              <div style={{ flex: "0 1 auto", display: "flex", flexDirection: "column", gap: 4, paddingLeft: 24, borderLeft: "1px solid #E3E6EA" }}>
-                <span style={{ fontSize: 13, color: "#5A6270" }}>Lisans bitişi</span>
-                <span style={{ fontSize: 16, fontWeight: 600, color: "#14181F" }}>{fmtDate(data.company.endDate)}</span>
-                <span style={{ fontSize: 13, color: "#5A6270" }}>Tüm kütüphane erişimi</span>
-              </div>
-            )}
-          </section>
+          {(() => {
+            const occupied = data.occupiedSeats;
+            const pending = data.pendingInvites;
+            const max = data.totalSeats;
+            const overflow = max > 0 && (occupied + pending) > max;
+            const fillPct = max > 0 ? Math.min(100, ((occupied + pending) / max) * 100) : 0;
+            const barColor = overflow ? "#DC2626" : brand;
+            return (
+              <section
+                aria-label="Lisans kullanımı"
+                style={{ background: "#FFFFFF", border: `1px solid ${overflow ? "#FCA5A5" : "#E3E6EA"}`, borderRadius: 12, padding: "20px 24px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24 }}
+              >
+                <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: "#14181F" }}>Lisans kullanımı</span>
+                    <span style={{ fontSize: 14, color: overflow ? "#991B1B" : "#3A414C", fontVariantNumeric: "tabular-nums" }}>
+                      <strong style={{ fontSize: 18, color: overflow ? "#DC2626" : "#14181F" }}>{occupied}</strong> / {max} kullanıcı
+                    </span>
+                  </div>
+                  <div style={{ height: 10, borderRadius: 999, background: "#E9ECF0", overflow: "hidden" }}>
+                    <div
+                      style={{
+                        height: "100%",
+                        borderRadius: 999,
+                        background: barColor,
+                        width: `${fillPct}%`,
+                        transition: "width .4s ease",
+                      }}
+                    />
+                  </div>
+                  {overflow ? (
+                    <span style={{ fontSize: 13, color: "#DC2626", fontWeight: 600 }}>
+                      Lisans sınırı aşıldı: {occupied + pending} / {max}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 13, color: "#5A6270" }}>
+                      {pending > 0 ? `${pending} davet yanıt bekliyor` : `${Math.max(0, max - occupied - pending)} boş lisans`}
+                    </span>
+                  )}
+                </div>
+                {data.company?.endDate && (
+                  <div style={{ flex: "0 1 auto", display: "flex", flexDirection: "column", gap: 4, paddingLeft: 24, borderLeft: "1px solid #E3E6EA" }}>
+                    <span style={{ fontSize: 13, color: "#5A6270" }}>Lisans bitişi</span>
+                    <span style={{ fontSize: 16, fontWeight: 600, color: "#14181F" }}>{fmtDate(data.company.endDate)}</span>
+                    <span style={{ fontSize: 13, color: "#5A6270" }}>Tüm kütüphane erişimi</span>
+                  </div>
+                )}
+              </section>
+            );
+          })()}
 
-          {/* Stat Kartları */}
-          <section
-            aria-label="Temel göstergeler"
-            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}
-          >
-            <StatCard icon={<Users size={20} />} label="Aktif dinleyici" value={data.activeListeners.toLocaleString("tr-TR")} sub={`/ ${data.occupiedSeats} kullanıcı`} brand={brand} />
-            <StatCard icon={<Clock size={20} />} label="Toplam dinleme" value={fmtHours(data.totalListenedSec)} sub="toplam süre" brand={brand} />
-            <StatCard icon={<BookOpen size={20} />} label="Tamamlanan kitap" value={data.completedBooks.toLocaleString("tr-TR")} sub="oturum" brand={brand} />
-            <StatCard icon={<Zap size={20} />} label="Aktif / Koltuk" value={`${data.activeListeners}/${data.totalSeats}`} sub="bu dönem" brand={brand} />
-          </section>
+          {/* KPI Kartları (4 adet) */}
+          {(() => {
+            const prev = data.prev;
+            const perListenerSec = data.activeListeners > 0 ? Math.round(data.totalListenedSec / data.activeListeners) : 0;
+            const prevPerListenerSec = prev && prev.activeListeners > 0 ? Math.round(prev.totalListenedSec / prev.activeListeners) : 0;
 
-          {/* Trend Grafiği (12 hf, alan-çizgi) + Katılım Hunisi */}
+            const cards = [
+              {
+                icon: <Users size={20} />,
+                label: "Aktif dinleyici",
+                value: data.activeListeners.toLocaleString("tr-TR"),
+                sub: `/ ${data.occupiedSeats} kullanıcı`,
+                delta: prev ? deltaPct(data.activeListeners, prev.activeListeners) : null,
+              },
+              {
+                icon: <Clock size={20} />,
+                label: "Toplam dinleme",
+                value: fmtHours(data.totalListenedSec),
+                sub: "bu dönemde",
+                delta: prev ? deltaPct(data.totalListenedSec, prev.totalListenedSec) : null,
+              },
+              {
+                icon: <TrendingUp size={20} />,
+                label: "Dinleyici başına",
+                value: fmtHours(perListenerSec),
+                sub: "kişi başına ortalama",
+                delta: prev ? deltaPct(perListenerSec, prevPerListenerSec) : null,
+              },
+              {
+                icon: <BookOpen size={20} />,
+                label: "Tamamlanan kitap",
+                value: data.completedBooks.toLocaleString("tr-TR"),
+                sub: "bu dönemde",
+                delta: prev ? deltaPct(data.completedBooks, prev.completedBooks) : null,
+              },
+            ];
+
+            return (
+              <section
+                aria-label="Temel göstergeler"
+                style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}
+              >
+                {cards.map((c) => (
+                  <StatCard key={c.label} icon={c.icon} label={c.label} value={c.value} sub={c.sub} delta={c.delta} brand={brand} />
+                ))}
+              </section>
+            );
+          })()}
+
+          {/* Trend Grafiği + Katılım Hunisi */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "stretch" }}>
             <section
               aria-label="Haftalık dinleme eğilimi"
               style={{ flex: "2 1 520px", minWidth: 0, background: "#FFFFFF", border: "1px solid #E3E6EA", borderRadius: 12, padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}
             >
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
-                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#14181F" }}>Haftalık dinleme (saat)</h2>
-                <span style={{ fontSize: 13, color: "#5A6270" }}>Son 12 hafta</span>
-              </div>
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={data.trend} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={brand} stopOpacity={0.18} />
-                      <stop offset="95%" stopColor={brand} stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#EEF0F3" vertical={false} />
-                  <XAxis
-                    dataKey="weekStart"
-                    tickFormatter={fmtWeekLabel}
-                    tick={{ fontSize: 11, fill: "#9EA6B3" }}
-                    axisLine={false}
-                    tickLine={false}
-                    interval={1}
-                  />
-                  <YAxis
-                    tickFormatter={(v) => `${Math.round(v / 3600)}`}
-                    tick={{ fontSize: 11, fill: "#9EA6B3" }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={36}
-                  />
-                  <Tooltip
-                    formatter={(v) => [`${Math.round((v as number) / 3600)} sa`, "Dinleme"]}
-                    labelFormatter={(label) => fmtWeekLabel(String(label))}
-                    contentStyle={{ borderRadius: 10, border: "1px solid #E3E6EA", fontSize: 12 }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="listenedSec"
-                    stroke={brand}
-                    strokeWidth={2.5}
-                    fill="url(#trendGrad)"
-                    dot={false}
-                    activeDot={{ r: 4, fill: brand }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              {(() => {
+                const maxSec = data.trend.reduce((m, t) => Math.max(m, t.listenedSec), 0);
+                const yLabel = maxSec < 3600 ? "Haftalık dinleme (dakika)" : "Haftalık dinleme (saat)";
+                const yFmt = (v: number) => {
+                  if (maxSec < 3600) return `${Math.round(v / 60)}`;
+                  return `${(v / 3600).toFixed(maxSec < 7200 ? 1 : 0)}`;
+                };
+                const ttFmt = (v: unknown): [string, string] => {
+                  const sec = v as number;
+                  if (maxSec < 3600) return [`${Math.round(sec / 60)} dk`, "Dinleme"];
+                  return [`${(sec / 3600).toFixed(1)} sa`, "Dinleme"];
+                };
+                return (
+                  <>
+                    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
+                      <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#14181F" }}>{yLabel}</h2>
+                      <span style={{ fontSize: 13, color: "#5A6270" }}>Son 12 hafta</span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <AreaChart data={data.trend} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={brand} stopOpacity={0.18} />
+                            <stop offset="95%" stopColor={brand} stopOpacity={0.02} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#EEF0F3" vertical={false} />
+                        <XAxis
+                          dataKey="weekStart"
+                          tickFormatter={fmtWeekLabel}
+                          tick={{ fontSize: 11, fill: "#9EA6B3" }}
+                          axisLine={false}
+                          tickLine={false}
+                          interval={1}
+                        />
+                        <YAxis
+                          tickFormatter={yFmt}
+                          tick={{ fontSize: 11, fill: "#9EA6B3" }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={36}
+                          domain={maxSec === 0 ? [0, 3600] : [0, "auto"]}
+                        />
+                        <Tooltip
+                          formatter={ttFmt}
+                          labelFormatter={(label) => fmtWeekLabel(String(label))}
+                          contentStyle={{ borderRadius: 10, border: "1px solid #E3E6EA", fontSize: 12 }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="listenedSec"
+                          stroke={brand}
+                          strokeWidth={2.5}
+                          fill="url(#trendGrad)"
+                          dot={false}
+                          activeDot={{ r: 4, fill: brand }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </>
+                );
+              })()}
             </section>
 
             {/* Katılım Hunisi */}
@@ -321,12 +407,14 @@ function StatCard({
   label,
   value,
   sub,
+  delta,
   brand,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string | number;
   sub: string;
+  delta: number | null;
   brand: string;
 }) {
   return (
@@ -340,7 +428,18 @@ function StatCard({
       <span style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", color: "#14181F" }}>
         {value}
       </span>
-      <span style={{ fontSize: 13, fontWeight: 500, color: "#9EA6B3" }}>{sub}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: "#9EA6B3" }}>{sub}</span>
+        {delta !== null && (
+          <span style={{
+            fontSize: 12, fontWeight: 600, padding: "2px 6px", borderRadius: 99,
+            background: delta >= 0 ? "#F0FDF4" : "#FFF7ED",
+            color: delta >= 0 ? "#1B7F4C" : "#A3410F",
+          }}>
+            {delta >= 0 ? "+" : ""}{delta}%
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -378,7 +477,7 @@ function FunnelViz({
             <strong>{funnel.neverPlayed.toLocaleString("tr-TR")} kişi</strong> davetini kabul etti ama hiç dinlemedi.
           </span>
           <Link
-            href="/dashboard/admin/users?filter=never_played"
+            href="/dashboard/admin/users?tab=never"
             style={{ alignSelf: "flex-start", fontSize: 14, fontWeight: 600, minHeight: 44, display: "flex", alignItems: "center", textDecoration: "none", color: "#8A4A0F" }}
           >
             Hatırlatma gönder →

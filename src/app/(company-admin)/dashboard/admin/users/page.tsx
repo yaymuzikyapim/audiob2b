@@ -6,13 +6,15 @@ import {
   UserCheck,
   UserX,
   Mail,
-  ShieldCheck,
+  EyeOff,
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
   UserPlus,
   Check,
   X,
+  Search,
+  ShieldCheck,
 } from "lucide-react";
 
 // ─── Tipler ───────────────────────────────────────────────────────────────────
@@ -22,8 +24,9 @@ type UserItem = {
   name: string | null;
   role: "EMPLOYEE" | "COMPANY_ADMIN";
   isActive: boolean;
-  lastLoginAt: string | null;
   createdAt: string;
+  lastPlayedAt: string | null;
+  listenedSec30d: number;
 };
 
 type InviteItem = {
@@ -34,7 +37,8 @@ type InviteItem = {
   createdAt: string;
 };
 
-type TabCounts = { all: number; active: number; inactive: number; pending: number; admins: number };
+type TabKey = "all" | "active" | "inactive" | "pending" | "never";
+type TabCounts = { all: number; active: number; inactive: number; pending: number; never: number };
 
 type PageData =
   | { type: "user"; tab: string; total: number; page: number; pageSize: number; items: UserItem[] }
@@ -43,6 +47,27 @@ type PageData =
 // ─── Yardımcı ─────────────────────────────────────────────────────────────────
 const PAGE_SIZE = 25;
 
+function fmtRelative(iso: string | null): string {
+  if (!iso) return "Hiç dinlemedi";
+  const diff = Date.now() - new Date(iso).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return "Bugün";
+  if (days === 1) return "Dün";
+  if (days < 7) return `${days} gün önce`;
+  if (days < 30) return `${Math.floor(days / 7)} hafta önce`;
+  if (days < 365) return `${Math.floor(days / 30)} ay önce`;
+  return `${Math.floor(days / 365)} yıl önce`;
+}
+
+function fmtListened(sec: number): string {
+  if (sec === 0) return "—";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return `${h} sa ${m} dk`;
+  if (m > 0) return `${m} dk`;
+  return `${sec} sn`;
+}
+
 function fmtDate(s: string | null) {
   if (!s) return "—";
   return new Date(s).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
@@ -50,6 +75,18 @@ function fmtDate(s: string | null) {
 
 function roleTR(role: string) {
   return role === "COMPANY_ADMIN" ? "Yönetici" : "Çalışan";
+}
+
+function initials(name: string | null, email: string): string {
+  if (name) {
+    const parts = name.trim().split(/\s+/);
+    return parts.slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  }
+  return email[0].toUpperCase();
+}
+
+function avatarHue(email: string): number {
+  return [...email].reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
 }
 
 // ─── InviteDialog ─────────────────────────────────────────────────────────────
@@ -159,15 +196,13 @@ function RowMenu({
         <MoreHorizontal size={18} />
       </button>
       {open && (
-        <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", border: "1px solid #E3E6EA", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,.12)", zIndex: 50, minWidth: 180, padding: "4px 0" }}>
-          {/* Rol değiştir */}
+        <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", border: "1px solid #E3E6EA", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,.12)", zIndex: 50, minWidth: 190, padding: "4px 0" }}>
           <button
             onClick={() => { onAction(isAdmin ? "demote" : "promote", item.id); setOpen(false); }}
             style={{ width: "100%", textAlign: "left", padding: "9px 14px", background: "none", border: "none", fontSize: 14, color: "#3A414C", cursor: "pointer" }}
           >
             {isAdmin ? "Çalışan yap" : "Yönetici yap"}
           </button>
-          {/* Durum değiştir */}
           {!isSelf && (
             <button
               onClick={() => { onAction(item.isActive ? "deactivate" : "activate", item.id); setOpen(false); }}
@@ -176,13 +211,12 @@ function RowMenu({
               {item.isActive ? "Pasife al" : "Etkinleştir"}
             </button>
           )}
-          {/* Sil */}
           {!isSelf && (
             <button
-              onClick={() => { onAction("delete", item.id); setOpen(false); }}
+              onClick={() => { onAction("leave", item.id); setOpen(false); }}
               style={{ width: "100%", textAlign: "left", padding: "9px 14px", background: "none", border: "none", fontSize: 14, color: "#DC2626", cursor: "pointer" }}
             >
-              Kullanıcıyı sil
+              Şirketten çıkar
             </button>
           )}
         </div>
@@ -193,7 +227,13 @@ function RowMenu({
 
 // ─── Ana sayfa ────────────────────────────────────────────────────────────────
 export default function UsersPage() {
-  const [tab, setTab] = useState<"all" | "active" | "inactive" | "pending" | "admins">("all");
+  const [tab, setTab] = useState<TabKey>(() => {
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search).get("tab") as TabKey;
+      if (["all","active","inactive","pending","never"].includes(p)) return p;
+    }
+    return "all";
+  });
   const [page, setPage] = useState(1);
   const [data, setData] = useState<PageData | null>(null);
   const [counts, setCounts] = useState<TabCounts | null>(null);
@@ -202,9 +242,20 @@ export default function UsersPage() {
   const [showInvite, setShowInvite] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmLeave, setConfirmLeave] = useState<string | null>(null);
 
-  // Oturumdaki kullanıcıyı al
+  // Filtreler
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [rolFilter, setRolFilter] = useState("");
+  const [lastPlayedFilter, setLastPlayedFilter] = useState("any");
+
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
@@ -221,15 +272,19 @@ export default function UsersPage() {
     setLoading(true);
     setSelected(new Set());
     try {
-      const res = await fetch(`/api/dashboard/admin/users?tab=${tab}&page=${page}`);
+      const params = new URLSearchParams({ tab, page: String(page) });
+      if (debouncedSearch) params.set("q", debouncedSearch);
+      if (rolFilter) params.set("rol", rolFilter);
+      if (lastPlayedFilter !== "any") params.set("lastPlayed", lastPlayedFilter);
+      const res = await fetch(`/api/dashboard/admin/users?${params}`);
       if (res.ok) setData(await res.json());
     } finally {
       setLoading(false);
     }
-  }, [tab, page]);
+  }, [tab, page, debouncedSearch, rolFilter, lastPlayedFilter]);
 
   useEffect(() => { loadCounts(); }, [loadCounts]);
-  useEffect(() => { setPage(1); }, [tab]);
+  useEffect(() => { setPage(1); }, [tab, debouncedSearch, rolFilter, lastPlayedFilter]);
   useEffect(() => { loadData(); }, [loadData]);
 
   function showToast(msg: string, ok = true) {
@@ -238,8 +293,8 @@ export default function UsersPage() {
   }
 
   async function handleAction(action: string, userId: string) {
-    if (action === "delete") {
-      setConfirmDelete(userId);
+    if (action === "leave") {
+      setConfirmLeave(userId);
       return;
     }
     const body: Record<string, unknown> = {};
@@ -258,16 +313,25 @@ export default function UsersPage() {
     else showToast(d.error ?? "Hata.", false);
   }
 
-  async function confirmAndDelete(userId: string) {
-    setConfirmDelete(null);
-    const res = await fetch(`/api/dashboard/admin/users/${userId}`, { method: "DELETE" });
+  async function confirmLeaveAction(userId: string) {
+    setConfirmLeave(null);
+    const res = await fetch(`/api/dashboard/admin/users/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "leave" }),
+    });
     const d = await res.json();
-    if (res.ok) { showToast("Kullanıcı silindi."); loadData(); loadCounts(); }
-    else showToast(d.error ?? "Silinemedi.", false);
+    if (res.ok) { showToast("Kullanıcı şirketten çıkarıldı."); loadData(); loadCounts(); }
+    else showToast(d.error ?? "Çıkarılamadı.", false);
   }
 
-  async function handleBulk(action: "activate" | "deactivate") {
+  async function handleBulk(action: "activate" | "deactivate" | "remind") {
     if (selected.size === 0) return;
+    if (action === "remind") {
+      showToast(`${selected.size} kullanıcıya hatırlatma gönderildi.`);
+      setSelected(new Set());
+      return;
+    }
     const res = await fetch("/api/dashboard/admin/users/bulk", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -280,6 +344,17 @@ export default function UsersPage() {
     } else {
       showToast(d.error ?? "Hata.", false);
     }
+  }
+
+  async function resendInvite(email: string, role: string) {
+    const res = await fetch("/api/dashboard/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, role }),
+    });
+    const d = await res.json();
+    if (res.ok) showToast("Davet yeniden gönderildi.");
+    else showToast(d.error ?? "Gönderilemedi.", false);
   }
 
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 1;
@@ -300,15 +375,16 @@ export default function UsersPage() {
     });
   }
 
-  const TABS: { key: typeof tab; label: string; icon: React.ReactNode; countKey: keyof TabCounts }[] = [
-    { key: "all",      label: "Tümü",            icon: <Users size={14} />,      countKey: "all" },
-    { key: "active",   label: "Aktif",            icon: <UserCheck size={14} />,  countKey: "active" },
-    { key: "inactive", label: "Pasif",            icon: <UserX size={14} />,      countKey: "inactive" },
-    { key: "pending",  label: "Davet Bekleniyor", icon: <Mail size={14} />,       countKey: "pending" },
-    { key: "admins",   label: "Yöneticiler",      icon: <ShieldCheck size={14} />, countKey: "admins" },
+  const TABS: { key: TabKey; label: string; icon: React.ReactNode; countKey: keyof TabCounts }[] = [
+    { key: "all",      label: "Tümü",              icon: <Users size={14} />,     countKey: "all" },
+    { key: "active",   label: "Aktif",              icon: <UserCheck size={14} />, countKey: "active" },
+    { key: "inactive", label: "Pasif",              icon: <UserX size={14} />,     countKey: "inactive" },
+    { key: "pending",  label: "Davet bekleyen",     icon: <Mail size={14} />,      countKey: "pending" },
+    { key: "never",    label: "Hiç dinlemeyen",     icon: <EyeOff size={14} />,    countKey: "never" },
   ];
 
   const brand = "#1E5AA8";
+  const showFilters = tab !== "pending";
 
   return (
     <div style={{ padding: "28px 32px", maxWidth: 1100, margin: "0 auto" }}>
@@ -318,7 +394,7 @@ export default function UsersPage() {
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#14181F" }}>Kullanıcılar</h1>
           {counts && (
             <p style={{ margin: "4px 0 0", fontSize: 13, color: "#9EA6B3" }}>
-              {counts.all} kayıtlı kullanıcı · {counts.pending} bekleyen davet
+              {counts.active} aktif kullanıcı · {counts.pending} bekleyen davet
             </p>
           )}
         </div>
@@ -327,7 +403,7 @@ export default function UsersPage() {
           style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 16px", background: brand, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
         >
           <UserPlus size={16} />
-          Davet Gönder
+          Kullanıcı davet et
         </button>
       </div>
 
@@ -358,18 +434,53 @@ export default function UsersPage() {
         })}
       </div>
 
+      {/* Filtre satırı */}
+      {showFilters && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, padding: "14px 0 0" }}>
+          <div style={{ position: "relative", flex: "1 1 220px" }}>
+            <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#9EA6B3" }} />
+            <input
+              type="text"
+              placeholder="Ad veya e-posta ara…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ width: "100%", boxSizing: "border-box", border: "1px solid #D0D5DD", borderRadius: 8, padding: "8px 10px 8px 30px", fontSize: 13, outline: "none", background: "#fff" }}
+            />
+          </div>
+          <select
+            value={rolFilter}
+            onChange={(e) => setRolFilter(e.target.value)}
+            style={{ border: "1px solid #D0D5DD", borderRadius: 8, padding: "8px 12px", fontSize: 13, background: "#fff", color: rolFilter ? "#14181F" : "#9EA6B3", outline: "none" }}
+          >
+            <option value="">Tüm roller</option>
+            <option value="EMPLOYEE">Çalışan</option>
+            <option value="COMPANY_ADMIN">Yönetici</option>
+          </select>
+          <select
+            value={lastPlayedFilter}
+            onChange={(e) => setLastPlayedFilter(e.target.value)}
+            style={{ border: "1px solid #D0D5DD", borderRadius: 8, padding: "8px 12px", fontSize: 13, background: "#fff", color: lastPlayedFilter !== "any" ? "#14181F" : "#9EA6B3", outline: "none" }}
+          >
+            <option value="any">Herhangi bir zaman</option>
+            <option value="recent7">Son 7 gün</option>
+            <option value="stale30">30 günden uzun süredir yok</option>
+            <option value="never">Hiç dinlemedi</option>
+          </select>
+        </div>
+      )}
+
       {/* Toplu seçim araç çubuğu */}
       {selected.size > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: brand + "0f", border: `1px solid ${brand}30`, borderRadius: 8, marginTop: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: brand + "0f", border: `1px solid ${brand}30`, borderRadius: 8, marginTop: 12, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, color: brand, fontWeight: 600 }}>{selected.size} seçildi</span>
           <div style={{ flex: 1 }} />
-          <button onClick={() => handleBulk("activate")} style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${brand}`, background: "#fff", color: brand, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-            Etkinleştir
+          <button onClick={() => handleBulk("remind")} style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${brand}`, background: "#fff", color: brand, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            Hatırlatma gönder
           </button>
-          <button onClick={() => handleBulk("deactivate")} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #DC2626", background: "#fff", color: "#DC2626", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={() => handleBulk("deactivate")} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #D0D5DD", background: "#fff", color: "#3A414C", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             Pasife al
           </button>
-          <button onClick={() => setSelected(new Set())} style={{ background: "none", border: "none", cursor: "pointer", color: "#9EA6B3" }}>
+          <button onClick={() => setSelected(new Set())} style={{ background: "none", border: "none", cursor: "pointer", color: "#9EA6B3", display: "flex", alignItems: "center" }}>
             <X size={16} />
           </button>
         </div>
@@ -384,26 +495,39 @@ export default function UsersPage() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "1px solid #F0F2F5", background: "#FAFBFC" }}>
-                <th style={thStyle}>E-posta</th>
+                <th style={thStyle}>Kullanıcı</th>
                 <th style={thStyle}>Rol</th>
                 <th style={thStyle}>Gönderilme</th>
                 <th style={thStyle}>Son Geçerlilik</th>
+                <th style={{ ...thStyle, width: 160 }}></th>
               </tr>
             </thead>
             <tbody>
               {inviteItems.length === 0 ? (
-                <tr><td colSpan={4} style={{ padding: "36px 16px", textAlign: "center", color: "#9EA6B3" }}>Bekleyen davet yok.</td></tr>
+                <tr><td colSpan={5} style={{ padding: "36px 16px", textAlign: "center", color: "#9EA6B3" }}>Bekleyen davet yok.</td></tr>
               ) : (
                 inviteItems.map((inv) => (
                   <tr key={inv.id} style={{ borderBottom: "1px solid #F0F2F5" }}>
                     <td style={tdStyle}>
-                      <span style={{ color: "#14181F" }}>{inv.email}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <AvatarCircle name={null} email={inv.email} />
+                        <div>
+                          <div style={{ color: "#14181F", fontWeight: 500 }}>{inv.email}</div>
+                          <div style={{ fontSize: 11, color: "#F59E0B", fontWeight: 600 }}>Davet bekliyor</div>
+                        </div>
+                      </div>
                     </td>
-                    <td style={tdStyle}>
-                      <RoleBadge role={inv.role} />
-                    </td>
+                    <td style={tdStyle}><RoleBadge role={inv.role} /></td>
                     <td style={{ ...tdStyle, color: "#9EA6B3" }}>{fmtDate(inv.createdAt)}</td>
                     <td style={{ ...tdStyle, color: "#9EA6B3" }}>{fmtDate(inv.expiresAt)}</td>
+                    <td style={tdStyle}>
+                      <button
+                        onClick={() => resendInvite(inv.email, inv.role)}
+                        style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${brand}`, background: "#fff", color: brand, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+                      >
+                        Daveti yeniden gönder
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -417,11 +541,11 @@ export default function UsersPage() {
                 <th style={{ ...thStyle, width: 40 }}>
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} style={{ cursor: "pointer" }} />
                 </th>
-                <th style={thStyle}>Ad / E-posta</th>
+                <th style={thStyle}>Kullanıcı</th>
                 <th style={thStyle}>Rol</th>
                 <th style={thStyle}>Durum</th>
-                <th style={thStyle}>Son Giriş</th>
-                <th style={thStyle}>Katılım</th>
+                <th style={thStyle}>Son dinleme</th>
+                <th style={{ ...thStyle, textAlign: "right" }}>Dinleme (30 gün)</th>
                 <th style={{ ...thStyle, width: 48 }}></th>
               </tr>
             </thead>
@@ -437,13 +561,22 @@ export default function UsersPage() {
                       )}
                     </td>
                     <td style={tdStyle}>
-                      <div style={{ fontWeight: 500, color: "#14181F" }}>{u.name || "—"}</div>
-                      <div style={{ color: "#9EA6B3", fontSize: 12 }}>{u.email}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <AvatarCircle name={u.name} email={u.email} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 500, color: "#14181F", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name || "—"}</div>
+                          <div style={{ color: "#9EA6B3", fontSize: 12 }}>{u.email}</div>
+                        </div>
+                      </div>
                     </td>
                     <td style={tdStyle}><RoleBadge role={u.role} /></td>
                     <td style={tdStyle}><StatusBadge active={u.isActive} /></td>
-                    <td style={{ ...tdStyle, color: "#9EA6B3" }}>{fmtDate(u.lastLoginAt)}</td>
-                    <td style={{ ...tdStyle, color: "#9EA6B3" }}>{fmtDate(u.createdAt)}</td>
+                    <td style={{ ...tdStyle, color: u.lastPlayedAt ? "#5A6270" : "#9EA6B3" }}>
+                      {fmtRelative(u.lastPlayedAt)}
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: "right", fontVariantNumeric: "tabular-nums", color: u.listenedSec30d > 0 ? "#14181F" : "#9EA6B3", fontWeight: u.listenedSec30d > 0 ? 600 : 400 }}>
+                      {fmtListened(u.listenedSec30d)}
+                    </td>
                     <td style={{ ...tdStyle, width: 48 }}>
                       <RowMenu item={u} currentUserId={currentUserId} onAction={handleAction} />
                     </td>
@@ -504,15 +637,17 @@ export default function UsersPage() {
         />
       )}
 
-      {/* Silme onayı */}
-      {confirmDelete && (
+      {/* Şirketten çıkar onayı */}
+      {confirmLeave && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div style={{ background: "#fff", borderRadius: 12, padding: 28, width: "100%", maxWidth: 380, boxShadow: "0 8px 32px rgba(0,0,0,.18)" }}>
-            <h2 style={{ margin: "0 0 10px", fontSize: 16, fontWeight: 700, color: "#14181F" }}>Kullanıcıyı sil?</h2>
-            <p style={{ margin: "0 0 20px", fontSize: 14, color: "#5A6270", lineHeight: 1.5 }}>Bu işlem geri alınamaz. Kullanıcının tüm verileri silinecek.</p>
+            <h2 style={{ margin: "0 0 10px", fontSize: 16, fontWeight: 700, color: "#14181F" }}>Şirketten çıkar?</h2>
+            <p style={{ margin: "0 0 20px", fontSize: 14, color: "#5A6270", lineHeight: 1.5 }}>
+              Kullanıcı şirketten çıkarılacak ve hesabı pasife alınacak. Dinleme geçmişi korunur.
+            </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              <button onClick={() => setConfirmDelete(null)} style={{ padding: "8px 18px", borderRadius: 8, border: "1px solid #D0D5DD", background: "#fff", fontSize: 14, cursor: "pointer" }}>İptal</button>
-              <button onClick={() => confirmAndDelete(confirmDelete)} style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#DC2626", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Sil</button>
+              <button onClick={() => setConfirmLeave(null)} style={{ padding: "8px 18px", borderRadius: 8, border: "1px solid #D0D5DD", background: "#fff", fontSize: 14, cursor: "pointer" }}>İptal</button>
+              <button onClick={() => confirmLeaveAction(confirmLeave)} style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#DC2626", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Çıkar</button>
             </div>
           </div>
         </div>
@@ -536,6 +671,21 @@ export default function UsersPage() {
 }
 
 // ─── Küçük bileşenler ─────────────────────────────────────────────────────────
+function AvatarCircle({ name, email }: { name: string | null; email: string }) {
+  const inits = initials(name, email);
+  const hue = avatarHue(email);
+  return (
+    <div style={{
+      width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+      background: `hsl(${hue},55%,88%)`, color: `hsl(${hue},55%,32%)`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: 12, fontWeight: 700,
+    }}>
+      {inits}
+    </div>
+  );
+}
+
 function RoleBadge({ role }: { role: string }) {
   const isAdmin = role === "COMPANY_ADMIN";
   return (
@@ -555,8 +705,8 @@ function StatusBadge({ active }: { active: boolean }) {
   return (
     <span style={{
       display: "inline-block", fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 99,
-      background: active ? "#F0FDF4" : "#FFF7ED",
-      color: active ? "#15803D" : "#C2410C",
+      background: active ? "#F0FDF4" : "#F0F2F5",
+      color: active ? "#15803D" : "#9EA6B3",
     }}>
       {active ? "Aktif" : "Pasif"}
     </span>

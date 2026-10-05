@@ -10,13 +10,24 @@ export async function GET() {
   const { user } = auth;
   const companyId = user.companyId!;
 
-  const [all, active, inactive, pending, admins] = await Promise.all([
+  const [all, active, inactive, pending, withHistory] = await Promise.all([
     prisma.user.count({ where: { companyId } }),
     prisma.user.count({ where: { companyId, isActive: true } }),
     prisma.user.count({ where: { companyId, isActive: false } }),
     prisma.inviteToken.count({ where: { companyId, usedAt: null, expiresAt: { gt: new Date() } } }),
-    prisma.user.count({ where: { companyId, role: "COMPANY_ADMIN" } }),
+    prisma.playHistory.findMany({
+      where: { user: { companyId }, clientVersion: 2 },
+      distinct: ["userId"],
+      select: { userId: true },
+    }),
   ]);
 
-  return NextResponse.json({ all, active, inactive, pending, admins });
+  const withHistoryIds = new Set(withHistory.map((h) => h.userId));
+  const activeUsers = await prisma.user.findMany({
+    where: { companyId, isActive: true },
+    select: { id: true },
+  });
+  const never = activeUsers.filter((u) => !withHistoryIds.has(u.id)).length;
+
+  return NextResponse.json({ all, active, inactive, pending, never });
 }
