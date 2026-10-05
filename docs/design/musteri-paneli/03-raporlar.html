@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Raporlar — Müşteri Paneli</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1E5AA8}a:hover{color:#123E78}
+</style>
+</helmet>
+<div style="font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif; color: #14181F; background: #F4F5F7; min-height: 100vh; display: flex; flex-wrap: wrap; align-items: stretch">
+
+<nav aria-label="Ana menü" style="flex: 1 1 240px; max-width: 260px; background: #FFFFFF; border-right: 1px solid #E3E6EA; box-sizing: border-box; padding: 24px 16px; display: flex; flex-direction: column; gap: 28px">
+  <div style="display: flex; align-items: center; gap: 12px; padding: 0 8px">
+    <div style="width: 40px; height: 40px; border-radius: 10px; background: {{accent}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px">ŞL</div>
+    <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+      <span style="font-weight: 600; font-size: 15px">[Şirket adı]</span>
+      <span style="font-size: 12px; color: #5A6270">AudioB2B ile</span>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 4px">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; color: #3A414C">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+      Genel Bakış
+    </a>
+    <a href="Users.dc.html" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; color: #3A414C">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7"></path><path d="M18 14.3c2 .7 3.5 2.7 3.5 5.7"></path></svg>
+      Kullanıcılar
+    </a>
+    <a href="Reports.dc.html" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; color: {{accent}}; background: {{accentSoft}}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V11"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M3 20h18"></path></svg>
+      Raporlar
+    </a>
+    <a href="Library.dc.html" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; color: #3A414C">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"></path><path d="M5 17a3 3 0 0 1 3-3h11"></path></svg>
+      Kütüphane
+    </a>
+  </div>
+  <div style="margin-top: auto; border-top: 1px solid #E3E6EA; padding: 16px 8px 0; display: flex; flex-direction: column; gap: 4px">
+    <span style="font-size: 13px; font-weight: 600">[Yönetici adı]</span>
+    <span style="font-size: 12px; color: #5A6270">Şirket yöneticisi</span>
+  </div>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 32px clamp(16px, 3vw, 40px) 48px; display: flex; flex-direction: column; gap: 20px">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5A6270">Örnek veri</span>
+      <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em">Raporlar</h1>
+      <p style="margin: 0; font-size: 14px; color: #5A6270">Yönetime sunulabilir dinleme raporları</p>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <button type="button" style="font: inherit; font-size: 14px; font-weight: 500; min-height: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid #CDD2D9; background: #FFFFFF; color: #14181F; display: flex; align-items: center; gap: 8px; cursor: pointer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"></path><path d="m7 10 5 5 5-5"></path><path d="M4 20h16"></path></svg>
+        Excel
+      </button>
+      <button type="button" style="font: inherit; font-size: 14px; font-weight: 600; min-height: 44px; padding: 0 18px; border-radius: 8px; border: none; background: {{accent}}; color: #FFFFFF; display: flex; align-items: center; gap: 8px; cursor: pointer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"></path><path d="m7 10 5 5 5-5"></path><path d="M4 20h16"></path></svg>
+        PDF rapor
+      </button>
+    </div>
+  </header>
+
+  <div style="background: #FFFFFF; border: 1px solid #E3E6EA; border-radius: 12px; padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 13px; font-weight: 500; color: #3A414C">Dönem</span>
+      <div style="display: flex; flex-wrap: wrap; gap: 4px; background: #F1F3F5; border-radius: 10px; padding: 4px">
+        <sc-for list="{{periods}}" as="p" hint-placeholder-count="4">
+          <button type="button" aria-pressed="{{p.pressed}}" style="font: inherit; font-size: 14px; font-weight: {{p.weight}}; min-height: 40px; padding: 0 14px; border-radius: 8px; border: none; background: {{p.bg}}; color: #14181F; box-shadow: {{p.shadow}}; cursor: pointer">{{p.label}}</button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 13px; font-weight: 500; color: #3A414C">Görünüm</span>
+      <div style="display: flex; gap: 4px; background: #F1F3F5; border-radius: 10px; padding: 4px">
+        <button type="button" aria-pressed="true" style="font: inherit; font-size: 14px; font-weight: 600; min-height: 40px; padding: 0 14px; border-radius: 8px; border: none; background: #FFFFFF; color: #14181F; box-shadow: 0 1px 2px rgba(20,24,31,0.12); cursor: pointer">Kitap bazında</button>
+        <button type="button" aria-pressed="false" style="font: inherit; font-size: 14px; font-weight: 500; min-height: 40px; padding: 0 14px; border-radius: 8px; border: none; background: transparent; color: #14181F; cursor: pointer">Kullanıcı bazında</button>
+      </div>
+    </div>
+    <span style="font-size: 13px; color: #5A6270; margin-left: auto">5 Eyl – 4 Eki 2026</span>
+  </div>
+
+  <section aria-label="Dönem özeti" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px">
+    <sc-for list="{{summary}}" as="s" hint-placeholder-count="4">
+      <div style="background: #FFFFFF; border: 1px solid #E3E6EA; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 13px; color: #5A6270">{{s.label}}</span>
+        <span style="font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums">{{s.value}}</span>
+      </div>
+    </sc-for>
+  </section>
+
+  <section aria-label="Günlük aktif dinleyici" style="background: #FFFFFF; border: 1px solid #E3E6EA; border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline">
+      <h2 style="margin: 0; font-size: 16px; font-weight: 600">Günlük aktif dinleyici</h2>
+      <span style="font-size: 13px; color: #5A6270">Hafta sonları daha açık renkte</span>
+    </div>
+    <div style="height: 180px; display: flex; align-items: flex-end; gap: 4px; border-bottom: 1px solid #D5DAE0">
+      <sc-for list="{{days}}" as="d" hint-placeholder-count="30">
+        <div title="{{d.tip}}" style="flex: 1 1 0; min-width: 4px; height: {{d.h}}; border-radius: 4px 4px 0 0; background: {{d.color}}"></div>
+      </sc-for>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #5A6270">
+      <span>5 Eyl</span><span>12 Eyl</span><span>19 Eyl</span><span>26 Eyl</span><span>4 Eki</span>
+    </div>
+  </section>
+
+  <section aria-label="Kitap bazında rapor" style="background: #FFFFFF; border: 1px solid #E3E6EA; border-radius: 12px; overflow: hidden">
+    <div style="padding: 16px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline">
+      <h2 style="margin: 0; font-size: 16px; font-weight: 600">Kitap bazında</h2>
+      <span style="font-size: 13px; color: #5A6270">Toplam dinlemeye göre sıralı</span>
+    </div>
+    <div style="overflow-x: auto">
+      <table style="width: 100%; min-width: 820px; border-collapse: collapse; font-size: 14px">
+        <thead>
+          <tr style="background: #F8F9FA; text-align: left">
+            <th scope="col" style="padding: 12px 20px; font-size: 13px; font-weight: 600; color: #3A414C">Kitap</th>
+            <th scope="col" style="padding: 12px 8px; font-size: 13px; font-weight: 600; color: #3A414C; text-align: right">Dinleyen</th>
+            <th scope="col" style="padding: 12px 8px; font-size: 13px; font-weight: 600; color: #3A414C; text-align: right">Toplam dinleme</th>
+            <th scope="col" style="padding: 12px 8px; font-size: 13px; font-weight: 600; color: #3A414C; width: 240px">Tamamlayanlar</th>
+            <th scope="col" style="padding: 12px 20px; font-size: 13px; font-weight: 600; color: #3A414C; text-align: right">Ort. ilerleme</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+            <tr style="border-top: 1px solid #EEF0F3">
+              <td style="padding: 12px 20px">
+                <div style="display: flex; flex-direction: column; gap: 2px">
+                  <span style="font-weight: 600">{{r.title}}</span>
+                  <span style="font-size: 13px; color: #5A6270">{{r.meta}}</span>
+                </div>
+              </td>
+              <td style="padding: 12px 8px; text-align: right; font-variant-numeric: tabular-nums">{{r.listeners}}</td>
+              <td style="padding: 12px 8px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums">{{r.hours}}</td>
+              <td style="padding: 12px 8px">
+                <div style="display: flex; align-items: center; gap: 10px">
+                  <div style="flex: 1 1 auto; height: 8px; border-radius: 999px; background: #E9ECF0; overflow: hidden">
+                    <div style="width: {{r.done}}; height: 100%; border-radius: 999px; background: {{accent}}"></div>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 600; width: 40px; text-align: right; font-variant-numeric: tabular-nums">{{r.done}}</span>
+                </div>
+              </td>
+              <td style="padding: 12px 20px; text-align: right; color: #3A414C; font-variant-numeric: tabular-nums">{{r.progress}}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <p style="margin: 0; font-size: 12px; color: #5A6270">“Tamamlayanlar”: kitabın tüm bölümlerini en az %90 dinleyen kişilerin oranı. Dinleme süreleri [ölçüm başlangıç tarihi] itibarıyla hesaplanır.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1E5AA8","options":["#1E5AA8","#0F6E66","#8A2D3B","#3D3A8C"]},"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#1E5AA8';
+    const soft = 'color-mix(in srgb, ' + accent + ' 12%, white)';
+    const lite = 'color-mix(in srgb, ' + accent + ' 40%, white)';
+    const vals = [410,438,452,470,465,190,160,480,502,515,498,520,210,175,530,548,560,541,566,230,188,575,590,602,588,610,240,205,615,640];
+    const max = 700;
+    const per = (label, sel) => ({
+      label: label, pressed: sel ? 'true' : 'false', weight: sel ? '600' : '500',
+      bg: sel ? '#FFFFFF' : 'transparent', shadow: sel ? '0 1px 2px rgba(20,24,31,0.12)' : 'none'
+    });
+    return {
+      accent: accent,
+      accentSoft: soft,
+      periods: [per('Son 30 gün', true), per('Bu çeyrek', false), per('Bu yıl', false), per('Özel aralık', false)],
+      summary: [
+        { label: 'Toplam dinleme', value: '3.912 sa' },
+        { label: 'Aktif dinleyici', value: '1.246' },
+        { label: 'Dinlenen farklı kitap', value: '187' },
+        { label: 'Tamamlanan kitap', value: '418' }
+      ],
+      days: vals.map((v, i) => {
+        const weekend = (i % 7 === 5) || (i % 7 === 6);
+        return { h: Math.round((v / max) * 100) + '%', color: weekend ? lite : accent, tip: v + ' dinleyici' };
+      }),
+      rows: [
+        { title: 'Zor Konuşmaları Yönetmek', meta: 'İletişim · 6 sa 10 dk', listeners: '412', hours: '486 sa', done: '38%', progress: '%64' },
+        { title: 'Ekip Liderliğinde İlk Yıl', meta: 'Liderlik · 7 sa 45 dk', listeners: '366', hours: '431 sa', done: '29%', progress: '%57' },
+        { title: 'Sahada İş Güvenliği Kültürü', meta: 'İSG · 4 sa 20 dk', listeners: '301', hours: '355 sa', done: '52%', progress: '%71' },
+        { title: 'Verimli Toplantılar', meta: 'Verimlilik · 3 sa 05 dk', listeners: '277', hours: '298 sa', done: '61%', progress: '%78' },
+        { title: 'Değişimi Yönetmek', meta: 'Liderlik · 8 sa 30 dk', listeners: '240', hours: '262 sa', done: '18%', progress: '%42' },
+        { title: 'Finansal Okuryazarlık', meta: 'Kişisel gelişim · 5 sa 40 dk', listeners: '198', hours: '214 sa', done: '24%', progress: '%49' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

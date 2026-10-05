@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Kütüphane ve öneri listeleri — Müşteri Paneli</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1E5AA8}a:hover{color:#123E78}
+</style>
+</helmet>
+<div style="font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif; color: #14181F; background: #F4F5F7; min-height: 100vh; display: flex; flex-wrap: wrap; align-items: stretch">
+
+<nav aria-label="Ana menü" style="flex: 1 1 240px; max-width: 260px; background: #FFFFFF; border-right: 1px solid #E3E6EA; box-sizing: border-box; padding: 24px 16px; display: flex; flex-direction: column; gap: 28px">
+  <div style="display: flex; align-items: center; gap: 12px; padding: 0 8px">
+    <div style="width: 40px; height: 40px; border-radius: 10px; background: {{accent}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px">ŞL</div>
+    <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+      <span style="font-weight: 600; font-size: 15px">[Şirket adı]</span>
+      <span style="font-size: 12px; color: #5A6270">AudioB2B ile</span>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 4px">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; color: #3A414C">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+      Genel Bakış
+    </a>
+    <a href="Users.dc.html" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; color: #3A414C">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7"></path><path d="M18 14.3c2 .7 3.5 2.7 3.5 5.7"></path></svg>
+      Kullanıcılar
+    </a>
+    <a href="Reports.dc.html" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; color: #3A414C">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V11"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M3 20h18"></path></svg>
+      Raporlar
+    </a>
+    <a href="Library.dc.html" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; color: {{accent}}; background: {{accentSoft}}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"></path><path d="M5 17a3 3 0 0 1 3-3h11"></path></svg>
+      Kütüphane
+    </a>
+  </div>
+  <div style="margin-top: auto; border-top: 1px solid #E3E6EA; padding: 16px 8px 0; display: flex; flex-direction: column; gap: 4px">
+    <span style="font-size: 13px; font-weight: 600">[Yönetici adı]</span>
+    <span style="font-size: 12px; color: #5A6270">Şirket yöneticisi</span>
+  </div>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 32px clamp(16px, 3vw, 40px) 48px; display: flex; flex-direction: column; gap: 24px">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5A6270">Örnek veri</span>
+      <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em">Kütüphane</h1>
+      <p style="margin: 0; font-size: 14px; color: #5A6270">Paketinizde 187 kitap · 4 öneri listesi</p>
+    </div>
+    <button type="button" style="font: inherit; font-size: 14px; font-weight: 600; min-height: 44px; padding: 0 18px; border-radius: 8px; border: none; background: {{accent}}; color: #FFFFFF; display: flex; align-items: center; gap: 8px; cursor: pointer">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      Yeni öneri listesi
+    </button>
+  </header>
+
+  <section aria-labelledby="lists-title" style="display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+      <h2 id="lists-title" style="margin: 0; font-size: 16px; font-weight: 600">Öneri listeleri</h2>
+      <span style="font-size: 13px; color: #5A6270">Çalışanlarınız bu listeleri uygulamada “Şirketinizin önerileri” bölümünde görür</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px">
+      <sc-for list="{{lists}}" as="l" hint-placeholder-count="4">
+        <article style="background: #FFFFFF; border: {{l.border}}; border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px">
+            <h3 style="margin: 0; font-size: 15px; font-weight: 600; line-height: 1.35">{{l.title}}</h3>
+            <span style="flex: none; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: {{l.badgeBg}}; color: {{l.badgeFg}}">{{l.status}}</span>
+          </div>
+          <span style="font-size: 13px; color: #5A6270">{{l.meta}}</span>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; justify-content: space-between; font-size: 13px">
+              <span style="color: #3A414C">Başlayan</span><span style="font-weight: 600; font-variant-numeric: tabular-nums">{{l.started}}</span>
+            </div>
+            <div style="height: 6px; border-radius: 999px; background: #E9ECF0; overflow: hidden">
+              <div style="width: {{l.started}}; height: 100%; border-radius: 999px; background: {{accent}}"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 13px">
+              <span style="color: #3A414C">Tamamlayan</span><span style="font-weight: 600; font-variant-numeric: tabular-nums">{{l.done}}</span>
+            </div>
+          </div>
+        </article>
+      </sc-for>
+    </div>
+  </section>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+    <section aria-labelledby="catalog-title" style="flex: 2 1 520px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E6EA; border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+        <h2 id="catalog-title" style="margin: 0; font-size: 16px; font-weight: 600">Paket kataloğu</h2>
+        <span style="font-size: 13px; color: #5A6270">Kitap ekle veya doğrudan kişilere öner</span>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+        <div style="flex: 2 1 240px; display: flex; flex-direction: column; gap: 6px">
+          <label for="lib-search" style="font-size: 13px; font-weight: 500; color: #3A414C">Ara</label>
+          <input id="lib-search" type="search" placeholder="Kitap, yazar veya seslendiren" style="font: inherit; font-size: 14px; width: 100%; box-sizing: border-box; min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid #CDD2D9; background: #FFFFFF; color: #14181F">
+        </div>
+        <div style="flex: 1 1 180px; display: flex; flex-direction: column; gap: 6px">
+          <label for="lib-sort" style="font-size: 13px; font-weight: 500; color: #3A414C">Sırala</label>
+          <select id="lib-sort" style="font: inherit; font-size: 14px; min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #CDD2D9; background: #FFFFFF; color: #14181F">
+            <option>Şirketinizde en çok dinlenen</option>
+            <option>Yeni eklenenler</option>
+            <option>Ada göre</option>
+          </select>
+        </div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <sc-for list="{{cats}}" as="c" hint-placeholder-count="6">
+          <button type="button" aria-pressed="{{c.pressed}}" style="font: inherit; font-size: 13px; font-weight: {{c.weight}}; min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid {{c.border}}; background: {{c.bg}}; color: {{c.fg}}; cursor: pointer">{{c.label}}</button>
+        </sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px">
+        <sc-for list="{{books}}" as="b" hint-placeholder-count="8">
+          <article style="display: flex; flex-direction: column; gap: 10px">
+            <div style="aspect-ratio: 1 / 1; border-radius: 10px; background: {{b.cover}}; position: relative; display: flex; align-items: flex-end; padding: 14px; box-sizing: border-box">
+              <span style="font-size: 14px; font-weight: 700; color: #14181F; line-height: 1.25">{{b.title}}</span>
+              <sc-if value="{{b.inList}}" hint-placeholder-val="{{ false }}">
+                <span style="position: absolute; top: 10px; right: 10px; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: #FFFFFF; color: #14181F">Listede</span>
+              </sc-if>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 13px; font-weight: 600">{{b.author}}</span>
+              <span style="font-size: 12px; color: #5A6270">{{b.meta}}</span>
+            </div>
+            <div style="display: flex; gap: 6px">
+              <button type="button" style="flex: 1 1 auto; font: inherit; font-size: 13px; font-weight: 600; min-height: 40px; border-radius: 8px; border: 1px solid #CDD2D9; background: #FFFFFF; color: #14181F; cursor: pointer">{{b.addLabel}}</button>
+              <button type="button" aria-label="{{b.recLabel}}" style="flex: none; width: 40px; min-height: 40px; border-radius: 8px; border: 1px solid #CDD2D9; background: #FFFFFF; color: #3A414C; display: flex; align-items: center; justify-content: center; cursor: pointer">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"></path><path d="m21 3-7 18-4-7-7-4z"></path></svg>
+              </button>
+            </div>
+          </article>
+        </sc-for>
+      </div>
+    </section>
+
+    <aside aria-labelledby="editor-title" style="flex: 1 1 320px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E6EA; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5A6270">Liste düzenleniyor</span>
+        <h2 id="editor-title" style="margin: 0; font-size: 18px; font-weight: 700">Yeni yöneticiler için ilk 90 gün</h2>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="list-note" style="font-size: 13px; font-weight: 500; color: #3A414C">Çalışanlara not</label>
+        <textarea id="list-note" rows="3" style="font: inherit; font-size: 14px; padding: 10px 12px; border-radius: 8px; border: 1px solid #CDD2D9; resize: vertical; color: #14181F">Yeni rolünüzün ilk aylarında işinize yarayacak dört kitap. Önerilen sırayla dinleyin.</textarea>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 13px; font-weight: 500; color: #3A414C">Kitaplar (önerilen sıra)</span>
+        <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px">
+          <sc-for list="{{listBooks}}" as="lb" hint-placeholder-count="4">
+            <li style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #E3E6EA; border-radius: 8px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA3AF" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"></path></svg>
+              <span style="font-size: 13px; font-weight: 600; color: #5A6270; width: 16px; font-variant-numeric: tabular-nums">{{lb.n}}</span>
+              <span style="flex: 1 1 auto; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{lb.title}}</span>
+              <button type="button" aria-label="{{lb.removeLabel}}" style="flex: none; width: 36px; height: 36px; border-radius: 6px; border: none; background: none; color: #5A6270; display: flex; align-items: center; justify-content: center; cursor: pointer">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+              </button>
+            </li>
+          </sc-for>
+        </ol>
+      </div>
+
+      <fieldset style="margin: 0; padding: 0; border: none; display: flex; flex-direction: column; gap: 8px">
+        <legend style="font-size: 13px; font-weight: 500; color: #3A414C; padding: 0; margin-bottom: 8px">Kimler görsün?</legend>
+        <label style="display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px"><input type="radio" name="audience" style="width: 18px; height: 18px"> Tüm çalışanlar</label>
+        <label style="display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px"><input type="radio" name="audience" checked style="width: 18px; height: 18px"> Seçili kişiler <span style="font-size: 13px; color: #5A6270">(48 kişi)</span></label>
+        <button type="button" style="align-self: flex-start; font: inherit; font-size: 13px; font-weight: 600; min-height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid #CDD2D9; background: #FFFFFF; color: #14181F; cursor: pointer">Kişileri seç</button>
+      </fieldset>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="list-due" style="font-size: 13px; font-weight: 500; color: #3A414C">Hedef tarih (isteğe bağlı)</label>
+        <input id="list-due" type="text" value="31 Aralık 2026" style="font: inherit; font-size: 14px; min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #CDD2D9; color: #14181F">
+      </div>
+
+      <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.4">
+        <input type="checkbox" checked style="width: 18px; height: 18px; margin-top: 2px">
+        <span>Yayınlanınca seçili kişilere bildirim gönder</span>
+      </label>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid #EEF0F3; padding-top: 16px">
+        <button type="button" style="flex: 1 1 auto; font: inherit; font-size: 14px; font-weight: 600; min-height: 44px; padding: 0 16px; border-radius: 8px; border: none; background: {{accent}}; color: #FFFFFF; cursor: pointer">Yayınla</button>
+        <button type="button" style="flex: 1 1 auto; font: inherit; font-size: 14px; font-weight: 500; min-height: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid #CDD2D9; background: #FFFFFF; color: #14181F; cursor: pointer">Taslak olarak kaydet</button>
+      </div>
+    </aside>
+  </div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1E5AA8","options":["#1E5AA8","#0F6E66","#8A2D3B","#3D3A8C"]},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#1E5AA8';
+    const soft = 'color-mix(in srgb, ' + accent + ' 12%, white)';
+    const live = { badgeBg: '#E7F4EC', badgeFg: '#1B6B42', status: 'Yayında' };
+    const draft = { badgeBg: '#EEF0F3', badgeFg: '#4A515C', status: 'Taslak' };
+    const cat = (label, sel) => ({
+      label: label, pressed: sel ? 'true' : 'false', weight: sel ? '600' : '500',
+      border: sel ? accent : '#CDD2D9', bg: sel ? soft : '#FFFFFF', fg: sel ? accent : '#3A414C'
+    });
+    const tints = ['#E6EEF8', '#F3E9DD', '#E4F1EC', '#EFE6F2', '#F6EDD3', '#E3ECEF', '#F2E3E3', '#E9EBDF'];
+    const books = [
+      ['Zor Konuşmaları Yönetmek', '[Yazar]', 'İletişim · 6 sa 10 dk', true],
+      ['Ekip Liderliğinde İlk Yıl', '[Yazar]', 'Liderlik · 7 sa 45 dk', true],
+      ['Sahada İş Güvenliği Kültürü', '[Yazar]', 'İSG · 4 sa 20 dk', false],
+      ['Verimli Toplantılar', '[Yazar]', 'Verimlilik · 3 sa 05 dk', true],
+      ['Değişimi Yönetmek', '[Yazar]', 'Liderlik · 8 sa 30 dk', true],
+      ['Finansal Okuryazarlık', '[Yazar]', 'Kişisel gelişim · 5 sa 40 dk', false],
+      ['Geri Bildirim Vermek', '[Yazar]', 'İletişim · 2 sa 50 dk', false],
+      ['Stres ve Dayanıklılık', '[Yazar]', 'Sağlık · 4 sa 05 dk', false]
+    ];
+    const lb = ['Ekip Liderliğinde İlk Yıl', 'Zor Konuşmaları Yönetmek', 'Verimli Toplantılar', 'Değişimi Yönetmek'];
+    return {
+      accent: accent,
+      accentSoft: soft,
+      lists: [
+        Object.assign({ title: 'Yeni yöneticiler için ilk 90 gün', meta: '4 kitap · 48 kişi · hedef 31 Ara', started: '62%', done: '21%', border: '2px solid ' + accent }, live),
+        Object.assign({ title: 'Sahada güvenlik farkındalığı', meta: '3 kitap · Tüm çalışanlar', started: '38%', done: '12%', border: '1px solid #E3E6EA' }, live),
+        Object.assign({ title: 'Etkili iletişim', meta: '5 kitap · Tüm çalışanlar', started: '27%', done: '6%', border: '1px solid #E3E6EA' }, live),
+        Object.assign({ title: 'Kişisel finans temelleri', meta: '2 kitap · henüz atanmadı', started: '0%', done: '0%', border: '1px solid #E3E6EA' }, draft)
+      ],
+      cats: [cat('Tümü', true), cat('Liderlik', false), cat('İletişim', false), cat('İSG', false), cat('Verimlilik', false), cat('Kişisel gelişim', false)],
+      books: books.map((b, i) => ({
+        title: b[0], author: b[1], meta: b[2], inList: b[3], cover: tints[i % tints.length],
+        addLabel: b[3] ? 'Listeden çıkar' : 'Listeye ekle',
+        recLabel: b[0] + ' kitabını kişilere öner'
+      })),
+      listBooks: lb.map((t, i) => ({ n: String(i + 1), title: t, removeLabel: t + ' listeden çıkar' }))
+    };
+  }
+}
+</script>
+</body>
+</html>
