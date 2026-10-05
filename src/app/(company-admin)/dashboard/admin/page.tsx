@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import {
-  BarChart,
-  Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -11,17 +11,35 @@ import {
   CartesianGrid,
 } from "recharts";
 import { Users, Clock, BookOpen, Zap } from "lucide-react";
+import Link from "next/link";
 
 interface MetricsData {
   period: string;
-  company: { name: string; brandColor: string; maxSeats: number; logoUrl: string | null };
+  from: string;
+  to: string;
+  company: {
+    name: string;
+    brandColor: string;
+    maxSeats: number;
+    logoUrl: string | null;
+    endDate: string;
+  } | null;
   activeListeners: number;
   totalListenedSec: number;
   completedBooks: number;
   totalSeats: number;
   occupiedSeats: number;
+  pendingInvites: number;
+  firstV2Date: string | null;
   trend: Array<{ weekStart: string; listenedSec: number; activeUsers: number }>;
-  funnel: { seats: number; hasPlayed: number; completed: number };
+  funnel: {
+    seats: number;
+    invitesSent: number;
+    invitesAccepted: number;
+    hasPlayedEver: number;
+    activeInPeriod: number;
+    neverPlayed: number;
+  };
   topBooks: Array<{
     bookId: string;
     title: string;
@@ -29,12 +47,15 @@ interface MetricsData {
     coverUrl: string | null;
     listenedSec: number;
     listenerCount: number;
+    pct: number;
   }>;
 }
 
 function fmtHours(sec: number) {
-  const h = Math.round(sec / 3600);
-  return h >= 1000 ? `${(h / 1000).toFixed(1)}B sa` : `${h} sa`;
+  const h = sec / 3600;
+  if (h >= 1000) return `${(h / 1000).toFixed(1)}B sa`;
+  if (h >= 10) return `${Math.round(h)} sa`;
+  return `${Math.floor(h)} sa ${Math.round((h % 1) * 60)} dk`;
 }
 
 function fmtWeekLabel(iso: string) {
@@ -42,10 +63,22 @@ function fmtWeekLabel(iso: string) {
   return `${d.getUTCDate()} ${["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"][d.getUTCMonth()]}`;
 }
 
+function fmtDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function fmtDateRange(from: string, to: string) {
+  const f = new Date(from);
+  const t = new Date(to);
+  const months = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+  return `${f.getDate()} ${months[f.getMonth()]} – ${t.getDate()} ${months[t.getMonth()]} ${t.getFullYear()}`;
+}
+
 const PERIODS = [
-  { label: "7 gün", value: "7d" },
-  { label: "30 gün", value: "30d" },
-  { label: "90 gün", value: "90d" },
+  { label: "Son 30 gün", value: "30d" },
+  { label: "Bu çeyrek", value: "quarter" },
+  { label: "Bu yıl", value: "year" },
 ];
 
 export default function AdminOverviewPage() {
@@ -64,112 +97,133 @@ export default function AdminOverviewPage() {
   }, [period]);
 
   const brand = data?.company?.brandColor || "#1E5AA8";
+  const accentSoft = brand + "14";
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      {/* Başlık */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "#14181F" }}>
+    <div style={{ padding: "32px clamp(16px, 3vw, 40px) 48px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 1200, margin: "0 auto" }}>
+
+      {/* Başlık + Dönem seçici */}
+      <header style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: "-0.01em", color: "#14181F" }}>
             Genel Bakış
           </h1>
-          <p className="text-sm mt-1" style={{ color: "#5A6270" }}>
-            {data?.company?.name ?? "Yükleniyor…"}
+          <p style={{ margin: 0, fontSize: 14, color: "#5A6270" }}>
+            {data ? fmtDateRange(data.from, data.to) : "Yükleniyor…"}
           </p>
         </div>
-        {/* Dönem seçici */}
-        <div className="flex gap-1 p-1 rounded-xl" style={{ background: "#E3E6EA" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {PERIODS.map((p) => (
             <button
               key={p.value}
               onClick={() => setPeriod(p.value)}
-              className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
-              style={
-                period === p.value
-                  ? { background: "#fff", color: "#14181F", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
-                  : { color: "#5A6270" }
-              }
+              style={{
+                fontFamily: "inherit",
+                fontSize: 14,
+                fontWeight: 500,
+                minHeight: 44,
+                padding: "0 16px",
+                borderRadius: 8,
+                border: period === p.value ? `1.5px solid ${brand}` : "1px solid #CDD2D9",
+                background: period === p.value ? accentSoft : "#FFFFFF",
+                color: period === p.value ? brand : "#3A414C",
+                cursor: "pointer",
+                transition: "all .15s",
+              }}
             >
               {p.label}
             </button>
           ))}
         </div>
-      </div>
+      </header>
 
       {loading && (
-        <div className="flex items-center justify-center h-64 text-sm" style={{ color: "#9EA6B3" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 240, fontSize: 14, color: "#9EA6B3" }}>
           Yükleniyor…
         </div>
       )}
       {error && (
-        <div className="rounded-xl p-4 text-sm" style={{ background: "#FEE2E2", color: "#991B1B" }}>
+        <div style={{ borderRadius: 12, padding: "14px 16px", background: "#FEE2E2", color: "#991B1B", fontSize: 14 }}>
           Veriler yüklenemedi: {error}
         </div>
       )}
 
       {data && !loading && (
         <>
-          {/* Stat Kartları */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard
-              icon={<Users size={20} />}
-              label="Aktif Dinleyici"
-              value={data.activeListeners}
-              sub={`/ ${data.occupiedSeats} kullanıcı`}
-              brand={brand}
-            />
-            <StatCard
-              icon={<Clock size={20} />}
-              label="Toplam Dinleme"
-              value={fmtHours(data.totalListenedSec)}
-              sub="toplam saat"
-              brand={brand}
-            />
-            <StatCard
-              icon={<BookOpen size={20} />}
-              label="Tamamlanan Kitap"
-              value={data.completedBooks}
-              sub="oturum"
-              brand={brand}
-            />
-            <StatCard
-              icon={<Zap size={20} />}
-              label="Lisans Doluluk"
-              value={`${data.occupiedSeats}/${data.totalSeats}`}
-              sub="koltuk"
-              brand={brand}
-              extra={
-                <div className="mt-3 w-full rounded-full h-1.5 overflow-hidden" style={{ background: "#E3E6EA" }}>
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${Math.min(100, (data.occupiedSeats / Math.max(1, data.totalSeats)) * 100)}%`,
-                      background: brand,
-                    }}
-                  />
-                </div>
-              }
-            />
-          </div>
+          {/* Lisans kullanımı bölümü */}
+          <section
+            aria-label="Lisans kullanımı"
+            style={{ background: "#FFFFFF", border: "1px solid #E3E6EA", borderRadius: 12, padding: "20px 24px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24 }}
+          >
+            <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: "#14181F" }}>Lisans kullanımı</span>
+                <span style={{ fontSize: 14, color: "#3A414C", fontVariantNumeric: "tabular-nums" }}>
+                  <strong style={{ fontSize: 18, color: "#14181F" }}>{data.occupiedSeats}</strong> / {data.totalSeats} kullanıcı
+                </span>
+              </div>
+              <div style={{ height: 10, borderRadius: 999, background: "#E9ECF0", overflow: "hidden" }}>
+                <div
+                  style={{
+                    height: "100%",
+                    borderRadius: 999,
+                    background: brand,
+                    width: `${Math.min(100, ((data.occupiedSeats + data.pendingInvites) / Math.max(1, data.totalSeats)) * 100)}%`,
+                    transition: "width .4s ease",
+                  }}
+                />
+              </div>
+              <span style={{ fontSize: 13, color: "#5A6270" }}>
+                {Math.max(0, data.totalSeats - data.occupiedSeats - data.pendingInvites)} boş lisans
+                {data.pendingInvites > 0 && ` · ${data.pendingInvites} davet yanıt bekliyor`}
+              </span>
+            </div>
+            {data.company?.endDate && (
+              <div style={{ flex: "0 1 auto", display: "flex", flexDirection: "column", gap: 4, paddingLeft: 24, borderLeft: "1px solid #E3E6EA" }}>
+                <span style={{ fontSize: 13, color: "#5A6270" }}>Lisans bitişi</span>
+                <span style={{ fontSize: 16, fontWeight: 600, color: "#14181F" }}>{fmtDate(data.company.endDate)}</span>
+                <span style={{ fontSize: 13, color: "#5A6270" }}>Tüm kütüphane erişimi</span>
+              </div>
+            )}
+          </section>
 
-          {/* Trend Grafiği + Huni */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-            <div
-              className="lg:col-span-2 rounded-2xl p-6"
-              style={{ background: "#fff", border: "1px solid #E3E6EA" }}
+          {/* Stat Kartları */}
+          <section
+            aria-label="Temel göstergeler"
+            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}
+          >
+            <StatCard icon={<Users size={20} />} label="Aktif dinleyici" value={data.activeListeners.toLocaleString("tr-TR")} sub={`/ ${data.occupiedSeats} kullanıcı`} brand={brand} />
+            <StatCard icon={<Clock size={20} />} label="Toplam dinleme" value={fmtHours(data.totalListenedSec)} sub="toplam süre" brand={brand} />
+            <StatCard icon={<BookOpen size={20} />} label="Tamamlanan kitap" value={data.completedBooks.toLocaleString("tr-TR")} sub="oturum" brand={brand} />
+            <StatCard icon={<Zap size={20} />} label="Aktif / Koltuk" value={`${data.activeListeners}/${data.totalSeats}`} sub="bu dönem" brand={brand} />
+          </section>
+
+          {/* Trend Grafiği (12 hf, alan-çizgi) + Katılım Hunisi */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "stretch" }}>
+            <section
+              aria-label="Haftalık dinleme eğilimi"
+              style={{ flex: "2 1 520px", minWidth: 0, background: "#FFFFFF", border: "1px solid #E3E6EA", borderRadius: 12, padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}
             >
-              <h2 className="text-sm font-semibold mb-4" style={{ color: "#14181F" }}>
-                Haftalık Dinleme (Saat)
-              </h2>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={data.trend} barSize={18}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F0F2F5" vertical={false} />
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#14181F" }}>Haftalık dinleme (saat)</h2>
+                <span style={{ fontSize: 13, color: "#5A6270" }}>Son 12 hafta</span>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={data.trend} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={brand} stopOpacity={0.18} />
+                      <stop offset="95%" stopColor={brand} stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#EEF0F3" vertical={false} />
                   <XAxis
                     dataKey="weekStart"
                     tickFormatter={fmtWeekLabel}
                     tick={{ fontSize: 11, fill: "#9EA6B3" }}
                     axisLine={false}
                     tickLine={false}
+                    interval={1}
                   />
                   <YAxis
                     tickFormatter={(v) => `${Math.round(v / 3600)}`}
@@ -183,75 +237,79 @@ export default function AdminOverviewPage() {
                     labelFormatter={(label) => fmtWeekLabel(String(label))}
                     contentStyle={{ borderRadius: 10, border: "1px solid #E3E6EA", fontSize: 12 }}
                   />
-                  <Bar dataKey="listenedSec" fill={brand} radius={[4, 4, 0, 0]} />
-                </BarChart>
+                  <Area
+                    type="monotone"
+                    dataKey="listenedSec"
+                    stroke={brand}
+                    strokeWidth={2.5}
+                    fill="url(#trendGrad)"
+                    dot={false}
+                    activeDot={{ r: 4, fill: brand }}
+                  />
+                </AreaChart>
               </ResponsiveContainer>
-            </div>
+            </section>
 
-            {/* Huni */}
-            <div
-              className="rounded-2xl p-6 flex flex-col"
-              style={{ background: "#fff", border: "1px solid #E3E6EA" }}
+            {/* Katılım Hunisi */}
+            <section
+              aria-label="Katılım"
+              style={{ flex: "1 1 280px", background: "#FFFFFF", border: "1px solid #E3E6EA", borderRadius: 12, padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}
             >
-              <h2 className="text-sm font-semibold mb-4" style={{ color: "#14181F" }}>
-                Kullanım Hunisi
-              </h2>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#14181F" }}>Katılım</h2>
               <FunnelViz funnel={data.funnel} brand={brand} />
-            </div>
+            </section>
           </div>
 
           {/* En Çok Dinlenenler */}
-          <div className="rounded-2xl p-6" style={{ background: "#fff", border: "1px solid #E3E6EA" }}>
-            <h2 className="text-sm font-semibold mb-4" style={{ color: "#14181F" }}>
-              En Çok Dinlenen Kitaplar
-            </h2>
+          <section
+            aria-label="En çok dinlenen kitaplar"
+            style={{ background: "#FFFFFF", border: "1px solid #E3E6EA", borderRadius: 12, padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}
+          >
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#14181F" }}>En çok dinlenen kitaplar</h2>
+              <Link
+                href="/dashboard/admin/reports"
+                style={{ fontSize: 14, fontWeight: 600, textDecoration: "none", minHeight: 44, display: "flex", alignItems: "center", color: brand }}
+              >
+                Tüm rapor →
+              </Link>
+            </div>
             {data.topBooks.length === 0 ? (
-              <p className="text-sm py-8 text-center" style={{ color: "#9EA6B3" }}>
+              <p style={{ fontSize: 14, color: "#9EA6B3", textAlign: "center", padding: "24px 0", margin: 0 }}>
                 Bu dönemde veri yok.
               </p>
             ) : (
-              <div className="space-y-3">
+              <div style={{ display: "flex", flexDirection: "column" }}>
                 {data.topBooks.map((book, i) => (
-                  <div key={book.bookId} className="flex items-center gap-4">
-                    <span
-                      className="w-6 text-center text-xs font-semibold flex-shrink-0"
-                      style={{ color: i === 0 ? brand : "#9EA6B3" }}
-                    >
+                  <div
+                    key={book.bookId}
+                    style={{ display: "grid", gridTemplateColumns: "28px minmax(0, 1fr) minmax(80px, 2fr) 90px", gap: 16, alignItems: "center", padding: "12px 0", borderTop: i > 0 ? "1px solid #EEF0F3" : "none" }}
+                  >
+                    <span style={{ fontSize: 14, fontWeight: 600, color: i === 0 ? brand : "#5A6270", fontVariantNumeric: "tabular-nums", textAlign: "center" }}>
                       {i + 1}
                     </span>
-                    {book.coverUrl ? (
-                      <img
-                        src={book.coverUrl}
-                        alt={book.title}
-                        className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div
-                        className="w-10 h-10 rounded-lg flex-shrink-0"
-                        style={{ background: brand + "18" }}
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate" style={{ color: "#14181F" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "#14181F" }}>
                         {book.title}
-                      </div>
-                      <div className="text-xs truncate" style={{ color: "#9EA6B3" }}>
-                        {book.author}
-                      </div>
+                      </span>
+                      <span style={{ fontSize: 13, color: "#5A6270" }}>{book.listenerCount} dinleyici</span>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-sm font-semibold" style={{ color: "#14181F" }}>
-                        {fmtHours(book.listenedSec)}
-                      </div>
-                      <div className="text-xs" style={{ color: "#9EA6B3" }}>
-                        {book.listenerCount} dinleyici
-                      </div>
+                    <div style={{ height: 8, borderRadius: 999, background: "#E9ECF0", overflow: "hidden" }}>
+                      <div style={{ width: `${book.pct}%`, height: "100%", borderRadius: 999, background: brand }} />
                     </div>
+                    <span style={{ fontSize: 14, fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#14181F" }}>
+                      {fmtHours(book.listenedSec)}
+                    </span>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </section>
+
+          {/* Dipnot */}
+          <p style={{ margin: 0, fontSize: 12, color: "#9EA6B3" }}>
+            Dinleme süreleri{data.firstV2Date ? ` ${fmtDate(data.firstV2Date)} itibarıyla` : ""} gerçek dinlenen süreye göre hesaplanır; ileri sarılan bölümler sayılmaz.
+          </p>
         </>
       )}
     </div>
@@ -264,38 +322,25 @@ function StatCard({
   value,
   sub,
   brand,
-  extra,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string | number;
   sub: string;
   brand: string;
-  extra?: React.ReactNode;
 }) {
   return (
-    <div
-      className="rounded-2xl p-5 flex flex-col"
-      style={{ background: "#fff", border: "1px solid #E3E6EA" }}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-medium uppercase tracking-wide" style={{ color: "#5A6270" }}>
-          {label}
-        </span>
-        <span
-          className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ background: brand + "14", color: brand }}
-        >
+    <div style={{ background: "#FFFFFF", border: "1px solid #E3E6EA", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 13, color: "#5A6270" }}>{label}</span>
+        <span style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: brand + "14", color: brand }}>
           {icon}
         </span>
       </div>
-      <div className="text-2xl font-semibold" style={{ color: "#14181F", fontVariantNumeric: "tabular-nums" }}>
+      <span style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", color: "#14181F" }}>
         {value}
-      </div>
-      <div className="text-xs mt-0.5" style={{ color: "#9EA6B3" }}>
-        {sub}
-      </div>
-      {extra}
+      </span>
+      <span style={{ fontSize: 13, fontWeight: 500, color: "#9EA6B3" }}>{sub}</span>
     </div>
   );
 }
@@ -304,33 +349,42 @@ function FunnelViz({
   funnel,
   brand,
 }: {
-  funnel: { seats: number; hasPlayed: number; completed: number };
+  funnel: MetricsData["funnel"];
   brand: string;
 }) {
-  const max = Math.max(funnel.seats, 1);
+  const max = Math.max(funnel.invitesSent, 1);
   const steps = [
-    { label: "Erişim (Koltuk)", value: funnel.seats, pct: 100 },
-    { label: "En az 1 dinleme", value: funnel.hasPlayed, pct: Math.round((funnel.hasPlayed / max) * 100) },
-    { label: "Kitap tamamladı", value: funnel.completed, pct: Math.round((funnel.completed / max) * 100) },
+    { label: "Davet gönderildi", value: funnel.invitesSent, pct: 100, color: "#9AA3AF" },
+    { label: "Davet kabul edildi", value: funnel.invitesAccepted, pct: Math.round((funnel.invitesAccepted / max) * 100), color: "#5C7FB8" },
+    { label: "En az bir kez dinledi", value: funnel.hasPlayedEver, pct: Math.round((funnel.hasPlayedEver / max) * 100), color: brand },
+    { label: "Aktif (bu dönem)", value: funnel.activeInPeriod, pct: Math.round((funnel.activeInPeriod / max) * 100), color: "#123E78" },
   ];
   return (
-    <div className="flex flex-col gap-3 flex-1 justify-center">
-      {steps.map((s, i) => (
-        <div key={i}>
-          <div className="flex justify-between text-xs mb-1">
-            <span style={{ color: "#5A6270" }}>{s.label}</span>
-            <span className="font-medium" style={{ color: "#14181F" }}>
-              {s.value}
-            </span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1 }}>
+      {steps.map((s) => (
+        <div key={s.label} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
+            <span style={{ color: "#3A414C" }}>{s.label}</span>
+            <span style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums", color: "#14181F" }}>{s.value.toLocaleString("tr-TR")}</span>
           </div>
-          <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "#F0F2F5" }}>
-            <div
-              className="h-full rounded-full transition-all"
-              style={{ width: `${s.pct}%`, background: brand, opacity: 1 - i * 0.25 }}
-            />
+          <div style={{ height: 6, borderRadius: 999, background: "#E9ECF0", overflow: "hidden" }}>
+            <div style={{ width: `${s.pct}%`, height: "100%", borderRadius: 999, background: s.color }} />
           </div>
         </div>
       ))}
+      {funnel.neverPlayed > 0 && (
+        <div style={{ marginTop: 8, background: "#FFF6EC", borderRadius: 10, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+          <span style={{ fontSize: 13, color: "#6B3A10" }}>
+            <strong>{funnel.neverPlayed.toLocaleString("tr-TR")} kişi</strong> davetini kabul etti ama hiç dinlemedi.
+          </span>
+          <Link
+            href="/dashboard/admin/users?filter=never_played"
+            style={{ alignSelf: "flex-start", fontSize: 14, fontWeight: 600, minHeight: 44, display: "flex", alignItems: "center", textDecoration: "none", color: "#8A4A0F" }}
+          >
+            Hatırlatma gönder →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

@@ -33,28 +33,11 @@ export function sumListenedSec(rows: MetricRow[], from: Date, to: Date): number 
 }
 
 // ── Tamamlanan kitap sayısı ────────────────────────────────────────────────────
-// Bir kullanıcı için bir kitabın TÜM bölümlerinde completedPct >= 90 ise tamamlandı sayılır.
-// rows: yalnızca söz konusu kullanıcının ve kitabın bölüm bazlı kayıtları
-export function countCompletedBooks(
-  rows: MetricRow[],
-  from: Date,
-  to: Date,
-  chaptersByBook: Map<string, number>
-): number {
-  // bookId → userId → en yüksek completedPct
-  const userBookPct = new Map<string, Map<string, number>>();
-  for (const r of rows) {
-    if (r.playedAt < from || r.playedAt > to) continue;
-    const key = `${r.userId}::${r.bookId}`;
-    const cur = userBookPct.get(key) ?? new Map();
-    // Her bölümü ayrı tutmak yerine kitap bazında max completedPct alıyoruz
-    // (schema: completedPct = bu oturumda tamamlanan yüzde, kümülatif değil)
-    // Gerçek tamamlamayı PlayerState.completedPct > 90 ile ölçeceğiz —
-    // burada basit yaklaşım: aynı userId+bookId için completedPct >= 90 olan en az 1 kayıt
-    userBookPct.set(key, cur);
-  }
-
-  // Kullanıcı+kitap kombinasyonlarında completedPct >= 90 olanları say
+// Bir kullanıcı+kitap çifti için PlayHistory kayıtları arasında max(completedPct) ≥ 90
+// olan her benzersiz userId+bookId kombinasyonu "tamamlandı" sayılır.
+// Not: clientVersion=2 ile gelen completedPct o kitapta ulaşılan kümülatif
+// tamamlanma yüzdesini temsil eder; ≥ 90 = tüm kitap büyük ölçüde dinlendi.
+export function countCompletedBooks(rows: MetricRow[], from: Date, to: Date): number {
   const completed = new Set<string>();
   for (const r of rows) {
     if (r.playedAt < from || r.playedAt > to) continue;
@@ -66,19 +49,16 @@ export function countCompletedBooks(
 }
 
 // ── Haftalık trend ─────────────────────────────────────────────────────────────
-// Son N haftayı Europe/Istanbul, Pazartesi başlangıçlı döndürür
+// Son N haftayı Pazartesi başlangıçlı döndürür
 export function weeklyTrend(
   rows: MetricRow[],
   weeks: number,
   now: Date
 ): Array<{ weekStart: string; listenedSec: number; activeUsers: number }> {
-  // ISO hafta: Pazartesi = 0
   const MS = 7 * 24 * 60 * 60 * 1000;
-  const nowMs = now.getTime();
-  // Şu anın Pazartesi'sini bul
   const day = now.getUTCDay(); // 0=Pazar
-  const daysToMonday = (day === 0 ? 6 : day - 1);
-  const thisMonday = new Date(nowMs - daysToMonday * 86400000);
+  const daysToMonday = day === 0 ? 6 : day - 1;
+  const thisMonday = new Date(now.getTime() - daysToMonday * 86400000);
   thisMonday.setUTCHours(0, 0, 0, 0);
 
   const result: Array<{ weekStart: string; listenedSec: number; activeUsers: number }> = [];
@@ -124,15 +104,25 @@ export function topBooks(
 }
 
 // ── Huni metrikleri ───────────────────────────────────────────────────────────
-// Erişim sağlayan → en az 1 dinleme → kitap tamamlayan
 export function funnelMetrics(
   totalSeats: number,
+  invitesSent: number,
+  invitesAccepted: number,
   rows: MetricRow[],
   from: Date,
-  to: Date,
-  chaptersByBook: Map<string, number>
-): { seats: number; hasPlayed: number; completed: number } {
-  const hasPlayed = countActiveListeners(rows, from, to);
-  const completed = countCompletedBooks(rows, from, to, chaptersByBook);
-  return { seats: totalSeats, hasPlayed, completed };
+  to: Date
+): {
+  seats: number;
+  invitesSent: number;
+  invitesAccepted: number;
+  hasPlayedEver: number;
+  activeInPeriod: number;
+  neverPlayed: number;
+} {
+  const activeInPeriod = countActiveListeners(rows, from, to);
+  // Hiç dinlememiş = davet kabul etmiş ama hiç v2 kaydı yok
+  const everPlayedUsers = new Set(rows.map((r) => r.userId));
+  const hasPlayedEver = everPlayedUsers.size;
+  const neverPlayed = Math.max(0, invitesAccepted - hasPlayedEver);
+  return { seats: totalSeats, invitesSent, invitesAccepted, hasPlayedEver, activeInPeriod, neverPlayed };
 }
