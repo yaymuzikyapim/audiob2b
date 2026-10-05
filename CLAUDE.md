@@ -40,3 +40,12 @@ Ekran görüntüsü gerektiren görevler için kural:
 4. Dev ve production aynı DB'yi kullandığından geçici hesaplar canlıda da geçerlidir — geciktirme yok
 
 Bu kural `TEST_USER_PASSWORD` için de geçerlidir: değerini okuyabilirsin ama asla çıktıya yansıtma.
+
+## Deneme Şirketleri Kısıtlaması
+
+**review-company-001 ve TRIAL türündeki şirketler gerçek deneme kullanıcıları içerir: bu şirketlerde test yapılmaz, devre dışı bırakılmaz, kullanıcı eklenip çıkarılmaz. Testler için ayrı QA şirketi kullanılır.**
+
+review-company-001'deki şu hesaplara şimdilik dokunma (kullanıcı kararı, 5 Ekim 2026):
+- audiob2b.com.tr EMPLOYEE: App Store inceleme hesabı — şirket, rol, veri değiştirilmez
+- iyzico.com EMPLOYEE: gerçek potansiyel müşteri — taşıma planı belirsiz
+- ~49 kurumsal alan adlı EMPLOYEE (tümü giriş yapmamış): şimdilik olduğu gibi kalır

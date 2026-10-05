@@ -227,13 +227,13 @@ function RowMenu({
 
 // ─── Ana sayfa ────────────────────────────────────────────────────────────────
 export default function UsersPage() {
-  const [tab, setTab] = useState<TabKey>(() => {
-    if (typeof window !== "undefined") {
-      const p = new URLSearchParams(window.location.search).get("tab") as TabKey;
-      if (["all","active","inactive","pending","never"].includes(p)) return p;
-    }
-    return "all";
-  });
+  const [tab, setTab] = useState<TabKey>("all");
+
+  // URL'den sekme oku (mount sonrası — hidrasyon uyuşmazlığını önler)
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("tab") as TabKey;
+    if (p && ["all","active","inactive","pending","never"].includes(p)) setTab(p);
+  }, []);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<PageData | null>(null);
   const [counts, setCounts] = useState<TabCounts | null>(null);
@@ -243,6 +243,7 @@ export default function UsersPage() {
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [confirmLeave, setConfirmLeave] = useState<string | null>(null);
+  const reqRef = useRef(0);
 
   // Filtreler
   const [search, setSearch] = useState("");
@@ -269,6 +270,7 @@ export default function UsersPage() {
   }, []);
 
   const loadData = useCallback(async () => {
+    const myReq = ++reqRef.current;
     setLoading(true);
     setSelected(new Set());
     try {
@@ -277,15 +279,23 @@ export default function UsersPage() {
       if (rolFilter) params.set("rol", rolFilter);
       if (lastPlayedFilter !== "any") params.set("lastPlayed", lastPlayedFilter);
       const res = await fetch(`/api/dashboard/admin/users?${params}`);
-      if (res.ok) setData(await res.json());
+      if (res.ok && myReq === reqRef.current) setData(await res.json());
     } finally {
-      setLoading(false);
+      if (myReq === reqRef.current) setLoading(false);
     }
   }, [tab, page, debouncedSearch, rolFilter, lastPlayedFilter]);
 
   useEffect(() => { loadCounts(); }, [loadCounts]);
   useEffect(() => { setPage(1); }, [tab, debouncedSearch, rolFilter, lastPlayedFilter]);
   useEffect(() => { loadData(); }, [loadData]);
+
+  function changeTab(key: TabKey) {
+    setTab(key);
+    const url = new URL(window.location.href);
+    if (key === "all") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", key);
+    history.replaceState(null, "", url.toString());
+  }
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -415,7 +425,7 @@ export default function UsersPage() {
           return (
             <button
               key={t.key}
-              onClick={() => setTab(t.key)}
+              onClick={() => changeTab(t.key)}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
                 padding: "10px 14px", background: "none", border: "none",
