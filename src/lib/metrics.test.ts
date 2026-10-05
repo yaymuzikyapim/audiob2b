@@ -25,85 +25,110 @@ function assert(label: string, condition: boolean, got?: unknown) {
   }
 }
 
-const JAN1 = new Date("2026-01-01T10:00:00Z");
-const JAN2 = new Date("2026-01-02T10:00:00Z");
-const JAN8 = new Date("2026-01-08T10:00:00Z");
-const FEB1 = new Date("2026-02-01T10:00:00Z");
-
-const rows: MetricRow[] = [
-  { userId: "u1", bookId: "b1", listenedSec: 3600, completedPct: 100, playedAt: JAN1 },
-  { userId: "u1", bookId: "b2", listenedSec: 1800, completedPct: 50, playedAt: JAN2 },
-  { userId: "u2", bookId: "b1", listenedSec: 3600, completedPct: 95, playedAt: JAN1 },
-  { userId: "u3", bookId: "b3", listenedSec: 900, completedPct: 30, playedAt: JAN8 },
-  { userId: "u4", bookId: "b1", listenedSec: 7200, completedPct: 100, playedAt: FEB1 },
-];
-
-const JAN_FROM = new Date("2026-01-01T00:00:00Z");
-const JAN_TO = new Date("2026-01-31T23:59:59Z");
+const D = (s: string) => new Date(s + "Z");
+const JAN1 = D("2026-01-01T10:00:00");
+const JAN2 = D("2026-01-02T10:00:00");
+const JAN8 = D("2026-01-08T10:00:00");
+const FEB1 = D("2026-02-01T10:00:00");
+const JAN_FROM = D("2026-01-01T00:00:00");
+const JAN_TO   = D("2026-01-31T23:59:59");
 
 // ── countActiveListeners ───────────────────────────────────────────────────────
 console.log("\ncountActiveListeners:");
-assert("Ocak'ta 3 aktif dinleyici", countActiveListeners(rows, JAN_FROM, JAN_TO) === 3, countActiveListeners(rows, JAN_FROM, JAN_TO));
-assert("Şubat dışı sayılmaz", countActiveListeners(rows, FEB1, FEB1) === 1);
+const lisRows: MetricRow[] = [
+  { userId: "u1", bookId: "b1", chapterId: "c1", listenedSec: 3600, completedPct: 100, playedAt: JAN1 },
+  { userId: "u2", bookId: "b1", chapterId: "c1", listenedSec: 1800, completedPct: 50,  playedAt: JAN2 },
+  { userId: "u3", bookId: "b2", chapterId: "c3", listenedSec: 900,  completedPct: 30,  playedAt: JAN8 },
+  { userId: "u4", bookId: "b1", chapterId: "c1", listenedSec: 7200, completedPct: 100, playedAt: FEB1 },
+];
+assert("Ocak'ta 3 aktif dinleyici", countActiveListeners(lisRows, JAN_FROM, JAN_TO) === 3, countActiveListeners(lisRows, JAN_FROM, JAN_TO));
+assert("Şubat'ta 1 aktif dinleyici", countActiveListeners(lisRows, FEB1, FEB1) === 1);
 assert("Boş aralık → 0", countActiveListeners([], JAN_FROM, JAN_TO) === 0);
 
 // ── sumListenedSec ─────────────────────────────────────────────────────────────
 console.log("\nsumListenedSec:");
-const janSum = sumListenedSec(rows, JAN_FROM, JAN_TO);
-assert("Ocak toplamı = 9900s", janSum === 9900, janSum);
-assert("Şubat toplamı = 7200s", sumListenedSec(rows, FEB1, new Date("2026-02-28T23:59:59Z")) === 7200);
+assert("Ocak toplamı = 6300s", sumListenedSec(lisRows, JAN_FROM, JAN_TO) === 6300, sumListenedSec(lisRows, JAN_FROM, JAN_TO));
+assert("Şubat toplamı = 7200s", sumListenedSec(lisRows, FEB1, FEB1) === 7200);
 
 // ── countCompletedBooks ────────────────────────────────────────────────────────
 console.log("\ncountCompletedBooks:");
-const janCompleted = countCompletedBooks(rows, JAN_FROM, JAN_TO);
-// u1/b1(100%) + u2/b1(95%) = 2 benzersiz userId+bookId tamamlaması
-assert("Ocak'ta 2 tamamlanan", janCompleted === 2, janCompleted);
-assert("u1/b2 tamamlanmamış (50%)", countCompletedBooks(
-  [{ userId: "u1", bookId: "b2", listenedSec: 100, completedPct: 50, playedAt: JAN1 }],
-  JAN_FROM, JAN_TO
-) === 0);
-// max(completedPct) testi: iki kayıt, ikisi de < 90 ama toplam > 90 — hâlâ 0 olmalı
-assert("İki oturum, her biri < 90 → tamamlanmadı", countCompletedBooks(
-  [
-    { userId: "u5", bookId: "b4", listenedSec: 1000, completedPct: 60, playedAt: JAN1 },
-    { userId: "u5", bookId: "b4", listenedSec: 1000, completedPct: 40, playedAt: JAN2 },
-  ],
-  JAN_FROM, JAN_TO
-) === 0);
-// Aynı kitap ikinci oturumda 90'a ulaştı → 1 olmalı
-assert("Sonraki oturumda ≥90 → tamamlandı", countCompletedBooks(
-  [
-    { userId: "u5", bookId: "b4", listenedSec: 1000, completedPct: 60, playedAt: JAN1 },
-    { userId: "u5", bookId: "b4", listenedSec: 1000, completedPct: 92, playedAt: JAN2 },
-  ],
-  JAN_FROM, JAN_TO
-) === 1);
+
+// 3 bölümlü kitap b1: c1, c2, c3
+const ch3 = new Map<string, Set<string>>([["b1", new Set(["c1","c2","c3"])]]);
+
+// (a) 3 bölümlü kitapta sadece 1. bölüm 100 → tamamlanmadı
+const caseA: MetricRow[] = [
+  { userId: "u1", bookId: "b1", chapterId: "c1", listenedSec: 100, completedPct: 100, playedAt: JAN1 },
+];
+assert("(a) Sadece 1 bölüm tam → tamamlanmadı", countCompletedBooks(caseA, JAN_FROM, JAN_TO, ch3) === 0, countCompletedBooks(caseA, JAN_FROM, JAN_TO, ch3));
+
+// (b) 3 bölümün hepsi ≥ 90 → tamamlandı
+const caseB: MetricRow[] = [
+  { userId: "u1", bookId: "b1", chapterId: "c1", listenedSec: 100, completedPct: 100, playedAt: JAN1 },
+  { userId: "u1", bookId: "b1", chapterId: "c2", listenedSec: 100, completedPct: 95,  playedAt: JAN1 },
+  { userId: "u1", bookId: "b1", chapterId: "c3", listenedSec: 100, completedPct: 91,  playedAt: JAN2 },
+];
+assert("(b) 3 bölüm hepsi ≥ 90 → tamamlandı", countCompletedBooks(caseB, JAN_FROM, JAN_TO, ch3) === 1, countCompletedBooks(caseB, JAN_FROM, JAN_TO, ch3));
+
+// (c) aynı bölümde iki kayıt 50 ve 95 → o bölüm tamam sayılır (max kullanılır)
+const caseC: MetricRow[] = [
+  { userId: "u1", bookId: "b1", chapterId: "c1", listenedSec: 100, completedPct: 50, playedAt: JAN1 },
+  { userId: "u1", bookId: "b1", chapterId: "c1", listenedSec: 100, completedPct: 95, playedAt: JAN2 }, // max → 95
+  { userId: "u1", bookId: "b1", chapterId: "c2", listenedSec: 100, completedPct: 92, playedAt: JAN1 },
+  { userId: "u1", bookId: "b1", chapterId: "c3", listenedSec: 100, completedPct: 90, playedAt: JAN2 },
+];
+assert("(c) 2 kayıt 50+95 → max=95, bölüm tamam → kitap tamamlandı", countCompletedBooks(caseC, JAN_FROM, JAN_TO, ch3) === 1, countCompletedBooks(caseC, JAN_FROM, JAN_TO, ch3));
+
+// chapterId=null kayıtlar göz ardı edilmeli
+const caseNull: MetricRow[] = [
+  { userId: "u1", bookId: "b1", chapterId: null, listenedSec: 100, completedPct: 100, playedAt: JAN1 },
+];
+assert("chapterId=null olan kayıtlar sayılmaz", countCompletedBooks(caseNull, JAN_FROM, JAN_TO, ch3) === 0);
+
+// İki farklı kullanıcı, ikisi de tamamladı → 2
+const case2users: MetricRow[] = [
+  ...caseB,
+  { userId: "u2", bookId: "b1", chapterId: "c1", listenedSec: 100, completedPct: 100, playedAt: JAN1 },
+  { userId: "u2", bookId: "b1", chapterId: "c2", listenedSec: 100, completedPct: 90,  playedAt: JAN1 },
+  { userId: "u2", bookId: "b1", chapterId: "c3", listenedSec: 100, completedPct: 93,  playedAt: JAN1 },
+];
+assert("İki kullanıcı aynı kitabı tamamladı → 2", countCompletedBooks(case2users, JAN_FROM, JAN_TO, ch3) === 2, countCompletedBooks(case2users, JAN_FROM, JAN_TO, ch3));
 
 // ── weeklyTrend ────────────────────────────────────────────────────────────────
 console.log("\nweeklyTrend:");
-const now = new Date("2026-01-14T00:00:00Z");
-const trend = weeklyTrend(rows, 12, now);
+const now = D("2026-01-14T00:00:00");
+const trend = weeklyTrend(lisRows, 12, now);
 assert("12 hafta döndürür", trend.length === 12, trend.length);
 assert("Hepsi YYYY-MM-DD formatında", trend.every(t => /^\d{4}-\d{2}-\d{2}$/.test(t.weekStart)));
-assert("Artan weekStart sırası", trend.every((t, i) => i === 0 || t.weekStart > trend[i - 1].weekStart));
+assert("Artan sırada weekStart", trend.every((t, i) => i === 0 || t.weekStart > trend[i - 1].weekStart));
 
 // ── topBooks ──────────────────────────────────────────────────────────────────
 console.log("\ntopBooks:");
-const top = topBooks(rows, JAN_FROM, JAN_TO, 3);
-assert("limit 3'e uyuyor", top.length <= 3, top.length);
-assert("b1 birinci sırada (7200s)", top[0]?.bookId === "b1", top[0]?.bookId);
+const top = topBooks(lisRows, JAN_FROM, JAN_TO, 3);
+assert("Limit 3'e uyuyor", top.length <= 3, top.length);
+assert("b1 birinci sırada", top[0]?.bookId === "b1", top[0]?.bookId);
 assert("b1'de 2 dinleyici", top[0]?.listenerCount === 2, top[0]?.listenerCount);
 
 // ── funnelMetrics ─────────────────────────────────────────────────────────────
 console.log("\nfunnelMetrics:");
-const f = funnelMetrics(10, 8, 6, rows, JAN_FROM, JAN_TO);
-assert("seats = 10", f.seats === 10);
-assert("invitesSent = 8", f.invitesSent === 8);
-assert("invitesAccepted = 6", f.invitesAccepted === 6);
-assert("activeInPeriod = 3", f.activeInPeriod === 3, f.activeInPeriod);
-// neverPlayed = accepted - hasPlayedEver (all 4 users in rows, but only 3 in JAN scope)
-// hasPlayedEver = distinct userIds in ALL rows = 4
-assert("neverPlayed = max(0, 6-4) = 2", f.neverPlayed === 2, f.neverPlayed);
+// Normal durum: invitesSent < invitesAccepted → invitesSent yükseltilir
+const f1 = funnelMetrics(10, 5, 8, lisRows, JAN_FROM, JAN_TO);
+assert("invitesSent = max(5,8) = 8 (huni artmaz)", f1.invitesSent === 8, f1.invitesSent);
+assert("invitesAccepted = 8", f1.invitesAccepted === 8, f1.invitesAccepted);
+assert("activeInPeriod = 3", f1.activeInPeriod === 3, f1.activeInPeriod);
+
+// invitesSent > invitesAccepted → normal
+const f2 = funnelMetrics(20, 15, 10, lisRows, JAN_FROM, JAN_TO);
+assert("invitesSent = 15 (zaten büyük)", f2.invitesSent === 15, f2.invitesSent);
+
+// Huni monoton azalma kontrolü
+const f3 = funnelMetrics(20, 8, 6, lisRows, JAN_FROM, JAN_TO);
+assert("Huni: seats ≥ invitesSent ≥ accepted ≥ played ≥ active",
+  f3.seats >= f3.invitesSent &&
+  f3.invitesSent >= f3.invitesAccepted &&
+  f3.invitesAccepted >= f3.hasPlayedEver &&
+  f3.hasPlayedEver >= f3.activeInPeriod,
+  JSON.stringify(f3));
 
 // ── Sonuç ──────────────────────────────────────────────────────────────────────
 console.log(`\n${passed + failed} testten ${passed} geçti, ${failed} başarısız.`);

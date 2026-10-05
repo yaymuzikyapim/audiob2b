@@ -17,14 +17,11 @@ function parsePeriod(period: string, now: Date): { from: Date; to: Date } {
   const to = now;
   if (period === "quarter") {
     const q = Math.floor(now.getMonth() / 3);
-    const from = new Date(now.getFullYear(), q * 3, 1);
-    return { from, to };
+    return { from: new Date(now.getFullYear(), q * 3, 1), to };
   }
   if (period === "year") {
-    const from = new Date(now.getFullYear(), 0, 1);
-    return { from, to };
+    return { from: new Date(now.getFullYear(), 0, 1), to };
   }
-  // default: 30d
   return { from: new Date(now.getTime() - 30 * 86400000), to };
 }
 
@@ -38,8 +35,9 @@ export async function GET(req: Request) {
   const period = url.searchParams.get("period") ?? "30d";
   const now = new Date();
   const { from, to } = parsePeriod(period, now);
+  const trendFrom = new Date(now.getTime() - 12 * 7 * 86400000);
 
-  const [companyUsers, company, inviteStats, firstV2] = await Promise.all([
+  const [companyUsers, company, invitesSentCount, firstV2] = await Promise.all([
     prisma.user.findMany({
       where: { companyId, isActive: true },
       select: { id: true },
@@ -48,99 +46,62 @@ export async function GET(req: Request) {
       where: { id: companyId },
       select: { name: true, brandColor: true, maxSeats: true, logoUrl: true, endDate: true },
     }),
-    // Davet istatistikleri
-    prisma.inviteToken.groupBy({
-      by: ["usedAt"],
-      where: { companyId },
-      _count: true,
-    }),
-    // İlk clientVersion=2 kaydının tarihi (dipnot için)
+    // Toplam gönderilmiş davet sayısı
+    prisma.inviteToken.count({ where: { companyId } }),
     prisma.playHistory.findFirst({
-      where: {
-        user: { companyId },
-        clientVersion: 2,
-      },
+      where: { user: { companyId }, clientVersion: 2 },
       orderBy: { playedAt: "asc" },
       select: { playedAt: true },
     }),
   ]);
 
   const userIds = companyUsers.map((u) => u.id);
+  // Huni: "Davet kabul edildi" = şirketteki aktif kullanıcı sayısı (davetsiz eklenenler dahil)
+  const invitesAccepted = userIds.length;
 
-  // Davet: gönderilen vs kabul edilen
-  const invitesSent = inviteStats.reduce((s, g) => s + g._count, 0);
-  const invitesAccepted = inviteStats
-    .filter((g) => g.usedAt !== null)
-    .reduce((s, g) => s + g._count, 0);
-  const pendingInvites = invitesSent - invitesAccepted;
-
-  // Trend için son 12 haftalık veri
-  const trendFrom = new Date(now.getTime() - 12 * 7 * 86400000);
-
-  const [rawHistory, rawHistoryAll, topBooksRaw] = await Promise.all([
-    // Dönem içi kayıtlar (metrikler için)
-    prisma.playHistory.findMany({
-      where: {
-        userId: { in: userIds },
-        clientVersion: 2,
-        playedAt: { gte: from, lte: to },
-      },
-      select: {
-        userId: true,
-        bookId: true,
-        listenedSec: true,
-        completedPct: true,
-        playedAt: true,
-      },
-    }),
-    // 12 haftalık trend verisi
-    prisma.playHistory.findMany({
-      where: {
-        userId: { in: userIds },
-        clientVersion: 2,
-        playedAt: { gte: trendFrom, lte: now },
-      },
-      select: {
-        userId: true,
-        bookId: true,
-        listenedSec: true,
-        completedPct: true,
-        playedAt: true,
-      },
-    }),
-    // Top 5 kitap başlık bilgisi için distinct bookId listesi
+  const [rawHistory, rawHistoryAll] = await Promise.all([
     prisma.playHistory.findMany({
       where: { userId: { in: userIds }, clientVersion: 2, playedAt: { gte: from, lte: to } },
-      select: { bookId: true },
-      distinct: ["bookId"],
+      select: { userId: true, bookId: true, chapterId: true, listenedSec: true, completedPct: true, playedAt: true },
+    }),
+    prisma.playHistory.findMany({
+      where: { userId: { in: userIds }, clientVersion: 2, playedAt: { gte: trendFrom, lte: now } },
+      select: { userId: true, bookId: true, chapterId: true, listenedSec: true, completedPct: true, playedAt: true },
     }),
   ]);
 
-  const rows: MetricRow[] = rawHistory.map((r) => ({
+  const toRow = (r: typeof rawHistory[0]): MetricRow => ({
     userId: r.userId,
     bookId: r.bookId,
+    chapterId: r.chapterId,
     listenedSec: r.listenedSec,
     completedPct: r.completedPct,
     playedAt: r.playedAt,
-  }));
-
-  const trendRows: MetricRow[] = rawHistoryAll.map((r) => ({
-    userId: r.userId,
-    bookId: r.bookId,
-    listenedSec: r.listenedSec,
-    completedPct: r.completedPct,
-    playedAt: r.playedAt,
-  }));
-
-  const top5BookIds = topBooks(rows, from, to, 5).map((b) => b.bookId);
-  const bookTitles = await prisma.book.findMany({
-    where: { id: { in: top5BookIds } },
-    select: { id: true, title: true, author: true, coverUrl: true },
   });
-  const bookMap = new Map(bookTitles.map((b) => [b.id, b]));
 
-  const maxListenedSec = Math.max(1, ...topBooks(rows, from, to, 5).map((b) => b.listenedSec));
-  const top5 = topBooks(rows, from, to, 5).map((b) => ({
+  const rows = rawHistory.map(toRow);
+  const trendRows = rawHistoryAll.map(toRow);
+
+  // Chapter listesi: dönemdeki kitapların bölüm sayıları
+  const bookIds = [...new Set(rows.filter(r => r.chapterId).map(r => r.bookId))];
+  const chapters = bookIds.length > 0
+    ? await prisma.chapter.findMany({ where: { bookId: { in: bookIds } }, select: { bookId: true, id: true } })
+    : [];
+  const chaptersByBook = new Map<string, Set<string>>();
+  for (const ch of chapters) {
+    if (!chaptersByBook.has(ch.bookId)) chaptersByBook.set(ch.bookId, new Set());
+    chaptersByBook.get(ch.bookId)!.add(ch.id);
+  }
+
+  // Top 5 kitap
+  const top5Raw = topBooks(rows, from, to, 5);
+  const top5BookIds = top5Raw.map(b => b.bookId);
+  const bookTitles = top5BookIds.length > 0
+    ? await prisma.book.findMany({ where: { id: { in: top5BookIds } }, select: { id: true, title: true, author: true, coverUrl: true } })
+    : [];
+  const bookMap = new Map(bookTitles.map(b => [b.id, b]));
+  const maxListenedSec = Math.max(1, ...top5Raw.map(b => b.listenedSec));
+  const top5 = top5Raw.map(b => ({
     ...b,
     title: bookMap.get(b.bookId)?.title ?? "—",
     author: bookMap.get(b.bookId)?.author ?? "",
@@ -151,10 +112,10 @@ export async function GET(req: Request) {
   const trend = weeklyTrend(trendRows, 12, now);
   const funnel = funnelMetrics(
     company?.maxSeats ?? 0,
-    invitesSent,
+    invitesSentCount,
     invitesAccepted,
-    trendRows, // tüm geçmiş, "hiç dinlemedi" doğru hesaplansın
-    new Date(0), // başlangıçtan beri
+    trendRows,
+    new Date(0),
     now
   );
 
@@ -162,15 +123,13 @@ export async function GET(req: Request) {
     period,
     from: from.toISOString(),
     to: to.toISOString(),
-    company: company
-      ? { ...company, endDate: company.endDate.toISOString() }
-      : null,
+    company: company ? { ...company, endDate: company.endDate.toISOString() } : null,
     activeListeners: countActiveListeners(rows, from, to),
     totalListenedSec: sumListenedSec(rows, from, to),
-    completedBooks: countCompletedBooks(rows, from, to),
+    completedBooks: countCompletedBooks(rows, from, to, chaptersByBook),
     totalSeats: company?.maxSeats ?? 0,
     occupiedSeats: userIds.length,
-    pendingInvites,
+    pendingInvites: Math.max(0, invitesSentCount - invitesAccepted),
     firstV2Date: firstV2?.playedAt?.toISOString() ?? null,
     trend,
     funnel,

@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) return auth.response;
   const { user } = auth;
 
-  const { bookId, listenedSec, contentSec, completedPct, listenedAt, v, clientId } = await req.json();
+  const { bookId, chapterId, listenedSec, contentSec, completedPct, listenedAt, v, clientId } = await req.json();
   if (!bookId || !listenedSec || listenedSec < 5) {
     return NextResponse.json({ ok: true });
   }
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
   const data = {
     userId: user.id,
     bookId,
+    ...(chapterId && typeof chapterId === "string" ? { chapterId } : {}),
     listenedSec: Math.floor(listenedSec),
     contentSec: Math.floor(contentSec ?? 0),
     completedPct: Math.min(100, Math.max(0, completedPct ?? 0)),

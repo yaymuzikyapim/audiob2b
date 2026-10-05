@@ -177,9 +177,10 @@ model PlayHistory {
   clientId      String?  @unique // istemci UUID; çift kayıt önleme
   userId        String
   bookId        String
+  chapterId     String?  // hangi bölümde kaydedildi; NULL = eski/bölümsüz kayıt
   listenedSec   Int      @default(0) // bu oturumda gerçekten dinlenen süre (delta, saniye)
   contentSec    Int      @default(0) // tüketilen içerik süresi (listenedSec × hız)
-  completedPct  Float    @default(0) // tamamlanma yüzdesi (0-100)
+  completedPct  Float    @default(0) // bölüm tamamlanma yüzdesi (0-100); chapterId varsa bölüme, yoksa kitaba göre
   clientVersion Int      @default(1) // 1=eski (pozisyon), 2=yeni (delta); rapor filtrelemesi için
   playedAt      DateTime @default(now())
 
