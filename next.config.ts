@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/tpao-teklif": ["./private/**/*"],
     "/katalog": ["./private/**/*"],
+    "/api/dashboard/admin/reports/pdf": ["./src/assets/fonts/*.ttf"],
   },
   images: {
     unoptimized: true,
