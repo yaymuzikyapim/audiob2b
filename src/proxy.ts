@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/session";
 
 const PUBLIC_EXACT = ["/", "/privacy"];
-const PUBLIC_PREFIXES = ["/login", "/invite", "/api/auth/login", "/api/invite", "/api/mobile/auth/login", "/api/covers", "/tpao-teklif", "/p/", "/api/p/"];
+const PUBLIC_PREFIXES = ["/login", "/invite", "/api/auth/login", "/api/invite", "/api/mobile/auth/login", "/api/covers", "/api/demo-request", "/tpao-teklif", "/p/", "/api/p/"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -18,7 +18,10 @@ export async function proxy(req: NextRequest) {
     pathname.startsWith("/api/invite") ||
     pathname.startsWith("/p/") ||
     pathname.startsWith("/api/p/") ||
-    pathname.startsWith("/tpao-teklif")
+    pathname.startsWith("/tpao-teklif") ||
+    pathname.startsWith("/api/demo-request") ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml"
   ) {
     return NextResponse.next();
   }

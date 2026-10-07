@@ -1,10 +1,12 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import DemoRequestForm from "@/components/DemoRequestForm";
+import FAQSection from "@/components/FAQSection";
+import { FAQS } from "@/data/faqs";
 
-export const metadata = {
-  title: "AudioB2B — Kurumsal Sesli Kitap Platformu",
-  description:
-    "Şirketinizin çalışanlarına sesli kitap kütüphanesi sunun. Kurumsal lisans, kolay yönetim, mobil uygulama.",
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
 };
 
 const APP_STORE_URL  = "https://apps.apple.com/tr/app/audiob2b/id6801790848?l=tr";
@@ -28,20 +30,74 @@ const COVERS = [
 // Sonsuz marquee için listeyi çiftleriz
 const COVERS_DOUBLED = [...COVERS, ...COVERS];
 
+const ORGANIZATION_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "AudioB2B",
+  legalName:
+    "YAY Prodüksiyon Yapım Müzik Film Organizasyon Reklam İç ve Dış Ticaret Limited Şirketi",
+  url: "https://www.audiob2b.com.tr",
+  logo: "https://www.audiob2b.com.tr/logo.png",
+  description:
+    "Şirketlerin çalışanlarına kurumsal sesli kitap kütüphanesi sunduğu B2B platform.",
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "sales",
+    email: "satis@audiob2b.com.tr",
+    availableLanguage: "Turkish",
+  },
+};
+
+const FAQ_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+};
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-white text-gray-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_SCHEMA) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_SCHEMA) }}
+      />
       {/* NAV */}
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
         <div className="flex items-center gap-2">
           <Image src="/logo.png" alt="AudioB2B" width={56} height={56} className="rounded-xl" priority />
         </div>
-        <Link
-          href="/login"
-          className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          Giriş Yap →
-        </Link>
+        <div className="flex items-center gap-3 sm:gap-6">
+          <a
+            href="#sss"
+            className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors hidden md:inline-block"
+          >
+            Sıkça Sorulan Sorular
+          </a>
+          <a
+            href="#demo"
+            className="text-sm font-medium text-orange-600 hover:text-orange-700 bg-orange-50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg transition-colors"
+          >
+            <span className="sm:hidden">Demo İste</span>
+            <span className="hidden sm:inline">Demo Talep Et</span>
+          </a>
+          <Link
+            href="/login"
+            className="text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-200 px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-lg hover:border-gray-300 transition-colors"
+          >
+            Giriş Yap →
+          </Link>
+        </div>
       </nav>
 
       {/* HERO */}
@@ -58,7 +114,7 @@ export default function Home() {
           sunduğu B2B platformdur. Kolay yönetim, mobil uygulama, detaylı raporlama.
         </p>
         <a
-          href="mailto:satis@audiob2b.com.tr?subject=AudioB2B Demo Talebi"
+          href="#demo"
           className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-4 rounded-xl transition-colors text-base"
         >
           Demo Talep Et
@@ -201,7 +257,7 @@ export default function Home() {
               {
                 icon: "🏢",
                 title: "Marka Uyumu",
-                desc: "Şirket logonuz ve kurumsal renk palet ile kişiselleştirilmiş deneyim.",
+                desc: "Şirket logonuz ve kurumsal renk paletiniz ile kişiselleştirilmiş deneyim.",
               },
             ].map((f) => (
               <div key={f.title} className="bg-gray-50 rounded-2xl p-6 shadow-sm">
@@ -233,6 +289,20 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* DEMO FORM */}
+      <section id="demo" className="py-20 bg-gray-50 scroll-mt-4">
+        <div className="max-w-xl mx-auto px-6">
+          <h2 className="text-3xl font-bold text-center mb-3">Demo Talep Edin</h2>
+          <p className="text-gray-500 text-center mb-8">
+            Formu doldurun, size uygun paketi birlikte belirleyelim.
+          </p>
+          <DemoRequestForm />
+        </div>
+      </section>
+
+      {/* SSS / FAQ */}
+      <FAQSection />
 
       {/* APP DOWNLOAD CTA */}
       <section className="bg-gray-900 py-20 text-center">
