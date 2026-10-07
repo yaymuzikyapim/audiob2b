@@ -7,8 +7,8 @@
  */
 
 // .env.local'daki QA_ADMIN_* değişkenlerini yükle (dotenvx sadece .env yüklüyor)
-import { config as loadEnvLocal } from "/Users/aliye/Desktop/audiob2b/node_modules/dotenv/lib/main.js";
-loadEnvLocal({ path: "/Users/aliye/Desktop/audiob2b/.env.local", override: false });
+import { config as loadEnvLocal } from "dotenv";
+loadEnvLocal({ path: new URL("../.env.local", import.meta.url).pathname, override: false });
 
 import crypto from "crypto";
 import assert from "assert";
