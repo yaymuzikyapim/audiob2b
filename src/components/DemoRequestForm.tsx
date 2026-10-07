@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const inputCls =
   "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400";
@@ -20,12 +20,13 @@ interface SubmittedPayload {
 export default function DemoRequestForm() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [error, setError] = useState("");
-  const [formLoadedAt, setFormLoadedAt] = useState<number>(0);
-  const [lastSubmittedData, setLastSubmittedData] = useState<Record<string, string>>({});
+  const formLoadedAtRef = useRef(0);
 
   useEffect(() => {
-    setFormLoadedAt(Date.now());
+    formLoadedAtRef.current = Date.now();
   }, []);
+
+  const [lastSubmittedData, setLastSubmittedData] = useState<Record<string, string>>({});
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -44,7 +45,7 @@ export default function DemoRequestForm() {
       message: String(formData.get("message") || ""),
       website: String(formData.get("website") || ""),
       kvkkAccepted: formData.get("kvkkAccepted") === "on",
-      formLoadedAt,
+      formLoadedAt: formLoadedAtRef.current,
     };
 
     setLastSubmittedData({
