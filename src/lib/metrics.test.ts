@@ -11,6 +11,7 @@ import {
   funnelMetrics,
 } from "./metrics";
 import type { MetricRow } from "./metrics";
+import { parsePeriod } from "./tz-utils";
 
 let passed = 0;
 let failed = 0;
@@ -129,6 +130,53 @@ assert("Huni: seats ≥ invitesSent ≥ accepted ≥ played ≥ active",
   f3.invitesAccepted >= f3.hasPlayedEver &&
   f3.hasPlayedEver >= f3.activeInPeriod,
   JSON.stringify(f3));
+
+// ── parsePeriod (Istanbul saat dilimi) ────────────────────────────────────────
+// Sunucu "now" olarak sabit bir UTC zamanı kullanılıyor:
+//   2026-10-07T15:00:00Z  →  Istanbul 2026-10-07 18:00 (Q4, yılın 10. ayı)
+console.log("\nparsePeriod:");
+
+const NOW_UTC = new Date("2026-10-07T15:00:00.000Z");
+
+// quarter: Q4 başlangıcı = 1 Eki 00:00 Istanbul = 30 Eyl 21:00 UTC
+const q = parsePeriod("quarter", null, null, NOW_UTC);
+assert(
+  "quarter.from = 2026-09-30T21:00:00Z (Istanbul 1 Eki gece yarısı)",
+  q.from.toISOString() === "2026-09-30T21:00:00.000Z",
+  q.from.toISOString(),
+);
+assert("quarter.to = now", q.to === NOW_UTC);
+
+// year: 1 Oca 00:00 Istanbul = 31 Ara 2025 21:00 UTC
+const y = parsePeriod("year", null, null, NOW_UTC);
+assert(
+  "year.from = 2025-12-31T21:00:00Z (Istanbul 1 Oca gece yarısı)",
+  y.from.toISOString() === "2025-12-31T21:00:00.000Z",
+  y.from.toISOString(),
+);
+assert("year.to = now", y.to === NOW_UTC);
+
+// 30d: göreceli, gece yarısı sınırı yok
+const t30 = parsePeriod("30d", null, null, NOW_UTC);
+assert(
+  "30d.from = now - 30 gün",
+  t30.from.getTime() === NOW_UTC.getTime() - 30 * 86400000,
+  t30.from.toISOString(),
+);
+
+// custom: 2026-10-01 → 2026-10-07 Istanbul
+const c = parsePeriod("custom", "2026-10-01", "2026-10-07", NOW_UTC);
+assert(
+  "custom.from = 2026-09-30T21:00:00Z",
+  c.from.toISOString() === "2026-09-30T21:00:00.000Z",
+  c.from.toISOString(),
+);
+// to = 7 Eki 23:59:59.999 Istanbul = 8 Eki 00:00 Istanbul - 1ms = 7 Eki 21:00:00 UTC - 1ms = 7 Eki 20:59:59.999 UTC
+assert(
+  "custom.to = 2026-10-07T20:59:59.999Z",
+  c.to.toISOString() === "2026-10-07T20:59:59.999Z",
+  c.to.toISOString(),
+);
 
 // ── Sonuç ──────────────────────────────────────────────────────────────────────
 console.log(`\n${passed + failed} testten ${passed} geçti, ${failed} başarısız.`);

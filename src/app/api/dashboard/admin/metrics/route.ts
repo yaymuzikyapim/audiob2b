@@ -10,20 +10,9 @@ import {
   funnelMetrics,
   type MetricRow,
 } from "@/lib/metrics";
+import { parsePeriod } from "@/lib/tz-utils";
 
 export const dynamic = "force-dynamic";
-
-function parsePeriod(period: string, now: Date): { from: Date; to: Date } {
-  const to = now;
-  if (period === "quarter") {
-    const q = Math.floor(now.getMonth() / 3);
-    return { from: new Date(now.getFullYear(), q * 3, 1), to };
-  }
-  if (period === "year") {
-    return { from: new Date(now.getFullYear(), 0, 1), to };
-  }
-  return { from: new Date(now.getTime() - 30 * 86400000), to };
-}
 
 export async function GET(req: Request) {
   const auth = await requireUser({ roles: ["COMPANY_ADMIN"] });
@@ -34,7 +23,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const period = url.searchParams.get("period") ?? "30d";
   const now = new Date();
-  const { from, to } = parsePeriod(period, now);
+  const { from, to } = parsePeriod(period, null, null, now);
   const trendFrom = new Date(now.getTime() - 12 * 7 * 86400000);
 
   const [companyUsers, company, invitesSentCount, firstV2, firstChapter] = await Promise.all([

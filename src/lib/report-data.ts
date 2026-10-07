@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { countActiveListeners, sumListenedSec, countCompletedBooks, type MetricRow } from "@/lib/metrics";
+import { TZ_OFFSET_MS, toIstanbulDate } from "@/lib/tz-utils";
+export { parsePeriod } from "@/lib/tz-utils";
 
 export type ReportSummary = { totalListenedSec: number; activeListeners: number; distinctBooks: number; completedBooks: number };
 export type DailyChartPoint = { date: string; listeners: number; weekend: boolean };
@@ -17,19 +19,6 @@ export type ReportData = {
   firstV2Date: string | null;
 };
 
-export function parsePeriod(period: string, customFrom: string | null, customTo: string | null, now = new Date()): { from: Date; to: Date } {
-  if (period === "custom" && customFrom && customTo) {
-    return { from: new Date(customFrom + "T00:00:00Z"), to: new Date(customTo + "T23:59:59Z") };
-  }
-  if (period === "quarter") {
-    const q = Math.floor(now.getUTCMonth() / 3);
-    return { from: new Date(Date.UTC(now.getUTCFullYear(), q * 3, 1)), to: now };
-  }
-  if (period === "year") {
-    return { from: new Date(Date.UTC(now.getUTCFullYear(), 0, 1)), to: now };
-  }
-  return { from: new Date(now.getTime() - 30 * 86400000), to: now };
-}
 
 export async function computeReportData(companyId: string, from: Date, to: Date, period: string): Promise<ReportData> {
   const [companyUsers, company, firstChapter, firstV2] = await Promise.all([
@@ -64,10 +53,10 @@ export async function computeReportData(companyId: string, from: Date, to: Date,
   const completedBooks = countCompletedBooks(rows, from, to, chaptersByBook);
   const distinctBooks = new Set(rows.map(r => r.bookId)).size;
 
-  // Daily chart
+  // Daily chart — tarihler Istanbul gece yarısına göre gruplandırılır
   const dailyActiveMap = new Map<string, Set<string>>();
   for (const r of rows) {
-    const date = r.playedAt.toISOString().slice(0, 10);
+    const date = toIstanbulDate(r.playedAt);
     if (!dailyActiveMap.has(date)) dailyActiveMap.set(date, new Set());
     dailyActiveMap.get(date)!.add(r.userId);
   }
@@ -76,8 +65,9 @@ export async function computeReportData(companyId: string, from: Date, to: Date,
   const dayCount = Math.min(Math.ceil((to.getTime() - from.getTime()) / dayMs) + 1, 366);
   for (let d = 0; d < dayCount; d++) {
     const dt = new Date(from.getTime() + d * dayMs);
-    const dateStr = dt.toISOString().slice(0, 10);
-    const dow = dt.getUTCDay();
+    // from Istanbul gece yarısı (UTC-3), +3h → Istanbul tarih etiketi
+    const dateStr = new Date(dt.getTime() + TZ_OFFSET_MS).toISOString().slice(0, 10);
+    const dow = new Date(dt.getTime() + TZ_OFFSET_MS).getUTCDay();
     dailyChart.push({ date: dateStr, listeners: dailyActiveMap.get(dateStr)?.size ?? 0, weekend: dow === 0 || dow === 6 });
   }
 
