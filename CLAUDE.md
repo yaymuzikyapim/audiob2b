@@ -49,3 +49,7 @@ review-company-001'deki şu hesaplara şimdilik dokunma (kullanıcı kararı, 5 
 - audiob2b.com.tr EMPLOYEE: App Store inceleme hesabı — şirket, rol, veri değiştirilmez
 - iyzico.com EMPLOYEE: gerçek potansiyel müşteri — taşıma planı belirsiz
 - ~49 kurumsal alan adlı EMPLOYEE (tümü giriş yapmamış): şimdilik olduğu gibi kalır
+
+## Commit Kapsam Kuralı
+
+**Bir commit'e sadece o işle ilgili dosyalar girer. İlgisiz veya commit edilmemiş kullanıcı dosyalarını commit'e ekleme; emin değilsen sor.**
