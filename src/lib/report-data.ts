@@ -22,11 +22,11 @@ export function parsePeriod(period: string, customFrom: string | null, customTo:
     return { from: new Date(customFrom + "T00:00:00Z"), to: new Date(customTo + "T23:59:59Z") };
   }
   if (period === "quarter") {
-    const q = Math.floor(now.getMonth() / 3);
-    return { from: new Date(now.getFullYear(), q * 3, 1), to: now };
+    const q = Math.floor(now.getUTCMonth() / 3);
+    return { from: new Date(Date.UTC(now.getUTCFullYear(), q * 3, 1)), to: now };
   }
   if (period === "year") {
-    return { from: new Date(now.getFullYear(), 0, 1), to: now };
+    return { from: new Date(Date.UTC(now.getUTCFullYear(), 0, 1)), to: now };
   }
   return { from: new Date(now.getTime() - 30 * 86400000), to: now };
 }
@@ -82,8 +82,10 @@ export async function computeReportData(companyId: string, from: Date, to: Date,
   }
 
   // Book breakdown
+  // bookFallbackPct: max completedPct per (bookId, userId) for null-chapterId rows (fallback when no chapter data)
   const bookBasic = new Map<string, { listeners: Set<string>; listenedSec: number }>();
   const bookChapState = new Map<string, Map<string, Map<string, number>>>();
+  const bookFallbackPct = new Map<string, Map<string, number>>(); // bookId → userId → maxPct
   for (const r of rows) {
     if (!bookBasic.has(r.bookId)) bookBasic.set(r.bookId, { listeners: new Set(), listenedSec: 0 });
     const b = bookBasic.get(r.bookId)!;
@@ -95,6 +97,10 @@ export async function computeReportData(companyId: string, from: Date, to: Date,
       if (!bs.has(r.userId)) bs.set(r.userId, new Map());
       const us = bs.get(r.userId)!;
       if (r.completedPct > (us.get(r.chapterId) ?? 0)) us.set(r.chapterId, r.completedPct);
+    } else {
+      if (!bookFallbackPct.has(r.bookId)) bookFallbackPct.set(r.bookId, new Map());
+      const bfp = bookFallbackPct.get(r.bookId)!;
+      if (r.completedPct > (bfp.get(r.userId) ?? 0)) bfp.set(r.userId, r.completedPct);
     }
   }
   const allBookIds = [...bookBasic.keys()];
@@ -116,6 +122,11 @@ export async function computeReportData(companyId: string, from: Date, to: Date,
           if (maxPcts.length > 0) { totalProgress += maxPcts.reduce((a, b) => a + b, 0) / maxPcts.length; usersWithChap++; }
         }
       }
+      // Fallback: use max completedPct when no chapter data exists for this book
+      if (usersWithChap === 0) {
+        const bfp = bookFallbackPct.get(bookId);
+        if (bfp) { for (const pct of bfp.values()) { totalProgress += pct; usersWithChap++; } }
+      }
       const meta = bookDataMap.get(bookId);
       return {
         bookId, title: meta?.title ?? "—", author: meta?.author ?? "",
@@ -129,8 +140,10 @@ export async function computeReportData(companyId: string, from: Date, to: Date,
     .sort((a, b) => b.listenedSec - a.listenedSec);
 
   // User breakdown
+  // userFallbackPct: max completedPct per (userId, bookId) for null-chapterId rows
   const userBasic = new Map<string, { listenedSec: number; books: Set<string>; lastPlayedAt: Date }>();
   const userProgress = new Map<string, Map<string, Map<string, number>>>();
+  const userFallbackPct = new Map<string, Map<string, number>>(); // userId → bookId → maxPct
   for (const r of rows) {
     if (!userBasic.has(r.userId)) userBasic.set(r.userId, { listenedSec: 0, books: new Set(), lastPlayedAt: r.playedAt });
     const u = userBasic.get(r.userId)!;
@@ -143,6 +156,10 @@ export async function computeReportData(companyId: string, from: Date, to: Date,
       if (!bm.has(r.bookId)) bm.set(r.bookId, new Map());
       const cm = bm.get(r.bookId)!;
       if (r.completedPct > (cm.get(r.chapterId) ?? 0)) cm.set(r.chapterId, r.completedPct);
+    } else {
+      if (!userFallbackPct.has(r.userId)) userFallbackPct.set(r.userId, new Map());
+      const ufp = userFallbackPct.get(r.userId)!;
+      if (r.completedPct > (ufp.get(r.bookId) ?? 0)) ufp.set(r.bookId, r.completedPct);
     }
   }
   const userDataArr = userBasic.size > 0
@@ -155,6 +172,11 @@ export async function computeReportData(companyId: string, from: Date, to: Date,
       const bm = userProgress.get(userId);
       let totalProgress = 0; let booksWithChap = 0;
       if (bm) { for (const [, cm] of bm) { const maxPcts = [...cm.values()]; if (maxPcts.length > 0) { totalProgress += maxPcts.reduce((a, b) => a + b, 0) / maxPcts.length; booksWithChap++; } } }
+      // Fallback: use max completedPct per book when no chapter data
+      if (booksWithChap === 0) {
+        const ufp = userFallbackPct.get(userId);
+        if (ufp) { for (const pct of ufp.values()) { totalProgress += pct; booksWithChap++; } }
+      }
       const meta = userDataMap.get(userId);
       return { userId, name: meta?.name ?? null, email: meta?.email ?? "", listenedSec: basic.listenedSec, distinctBooks: basic.books.size, lastPlayedAt: basic.lastPlayedAt.toISOString(), avgProgress: booksWithChap > 0 ? Math.round(totalProgress / booksWithChap) : 0 };
     })

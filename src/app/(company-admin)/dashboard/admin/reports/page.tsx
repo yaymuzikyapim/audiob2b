@@ -83,10 +83,12 @@ export default function ReportsPage() {
   const [view, setView] = useState<ViewKey>("books");
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
   const [dlState, setDlState] = useState<Record<string, boolean>>({});
   const reqRef = useRef(0);
 
-  // Initialize from URL
+  // Initialize from URL — set ready=true only after URL params are read, so the data
+  // load effect fires once with the correct period (never with the "30d" default first).
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const pr = (p.get("period") ?? "30d") as PeriodKey;
@@ -97,6 +99,7 @@ export default function ReportsPage() {
       setCustomTo(t); setPendingTo(t);
     }
     if (p.get("view") === "users") setView("users");
+    setReady(true);
   }, []);
 
   const loadData = useCallback(async (pr: PeriodKey, cf: string, ct: string) => {
@@ -113,6 +116,7 @@ export default function ReportsPage() {
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
     if (period !== "custom" || (customFrom && customTo)) {
       loadData(period, customFrom, customTo);
       // sync URL
@@ -128,7 +132,7 @@ export default function ReportsPage() {
       url.searchParams.set("view", view);
       history.replaceState(null, "", url.toString());
     }
-  }, [period, customFrom, customTo, loadData]);
+  }, [ready, period, customFrom, customTo, loadData]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
