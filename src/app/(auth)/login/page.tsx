@@ -76,6 +76,12 @@ function LoginForm() {
       >
         {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
       </button>
+
+      <div className="text-center">
+        <a href="/forgot-password" className="text-sm text-gray-400 hover:text-emerald-400 transition">
+          Şifremi unuttum
+        </a>
+      </div>
     </form>
   );
 }

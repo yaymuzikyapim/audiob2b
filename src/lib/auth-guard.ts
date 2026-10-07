@@ -11,6 +11,7 @@ const USER_SELECT = {
   role: true,
   isActive: true,
   companyId: true,
+  passwordChangedAt: true,
   company: {
     select: {
       id: true,
@@ -55,6 +56,20 @@ export async function requireUser(opts?: RequireUserOpts): Promise<RequireUserRe
   }
 
   const user = await fetchDbUser(session.id);
+
+  // Şifre değişikliği sonrası eski token'ları geçersiz kıl
+  if (user?.passwordChangedAt && session.iat) {
+    if (Math.floor(user.passwordChangedAt.getTime() / 1000) > session.iat) {
+      return {
+        ok: false,
+        user: null,
+        response: NextResponse.json(
+          { error: "Oturumunuz sona erdi. Lütfen tekrar giriş yapın.", code: "PASSWORD_CHANGED" },
+          { status: 401 },
+        ),
+      };
+    }
+  }
 
   if (!user || !user.isActive) {
     return {

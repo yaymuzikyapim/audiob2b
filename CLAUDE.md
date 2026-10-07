@@ -1,5 +1,13 @@
 @AGENTS.md
 
+## Veritabanı Migration Kuralı — RLS
+
+**Yeni tablo ekleyen her migration `ENABLE ROW LEVEL SECURITY` içerir.**
+Migration SQL'inin sonuna her yeni tablo için şu satır eklenir:
+```sql
+ALTER TABLE "TablAdı" ENABLE ROW LEVEL SECURITY;
+```
+
 ## Veritabanı Migration Kuralı
 
 Schema değişikliği yapıldığında deployment sırası:
@@ -15,6 +23,12 @@ Schema değişikliği yapıldığında deployment sırası:
 - `DIRECT_URL` → Supabase direct (port 5432) — migration'lar için
 
 Her iki değişken de Vercel Environment Variables'a eklenmiş olmalı.
+
+## Cron Güvenliği
+
+`/api/cron/cleanup` route'u `Authorization: Bearer <CRON_SECRET>` başlığı ister.
+`CRON_SECRET` değişkenini Vercel Environment Variables'a eklemeyi unutma (bir kez ayarla).
+Vercel, kendi cron job'larını bu başlıkla otomatik olarak çağırır.
 
 ## Push Öncesi Kontrol Listesi
 

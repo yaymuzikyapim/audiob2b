@@ -12,6 +12,7 @@ interface Branding {
 const NAV_EMPLOYEE = [
   { href: "/dashboard", label: "Ana Sayfa", icon: "▦" },
   { href: "/dashboard/library", label: "Kütüphane", icon: "🎧" },
+  { href: "/dashboard/account", label: "Hesabım", icon: "👤" },
 ];
 
 const NAV_ADMIN_EXTRA = [

@@ -23,13 +23,17 @@ model User {
   company   Company? @relation(fields: [companyId], references: [id])
   companyId String?
 
-  pushToken String?
+  pushToken         String?
+  passwordChangedAt DateTime?
 
-  playHistory      PlayHistory[]
-  bookmarks        Bookmark[]
-  playerStates     PlayerState[]
-  favorites        UserFavorite[]
-  notificationLogs NotificationLog[]
+  playHistory         PlayHistory[]
+  bookmarks           Bookmark[]
+  playerStates        PlayerState[]
+  favorites           UserFavorite[]
+  notificationLogs    NotificationLog[]
+  passwordResetTokens PasswordResetToken[]
+  passwordAuditLogs   PasswordAuditLog[]   @relation("PasswordAuditUser")
+  actedPasswordAudits PasswordAuditLog[]   @relation("PasswordAuditActor")
 }
 
 enum UserRole {
@@ -275,4 +279,53 @@ model NotificationLog {
   failed    Int
 
   admin User @relation(fields: [adminId], references: [id])
+}
+
+// ─── ŞİFRE YÖNETİMİ ──────────────────────────────────────────────
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RateLimit {
+  id          String   @id @default(cuid())
+  key         String
+  windowStart DateTime
+  count       Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([key, windowStart])
+  @@index([windowStart])
+}
+
+enum PasswordEvent {
+  RESET_REQUEST
+  RESET_COMPLETE
+  CHANGE
+  ADMIN_TRIGGER
+}
+
+model PasswordAuditLog {
+  id        String        @id @default(cuid())
+  userId    String
+  actorId   String?
+  event     PasswordEvent
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime      @default(now())
+
+  user  User  @relation("PasswordAuditUser", fields: [userId], references: [id], onDelete: Cascade)
+  actor User? @relation("PasswordAuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
 }

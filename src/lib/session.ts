@@ -9,6 +9,7 @@ export interface SessionPayload {
   name?: string | null;
   role: UserRole;
   companyId?: string | null;
+  iat?: number; // JWT iat (saniye), jose tarafından doldurulur
 }
 
 const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET!);

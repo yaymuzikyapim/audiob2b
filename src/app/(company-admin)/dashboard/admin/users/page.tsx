@@ -196,7 +196,7 @@ function RowMenu({
         <MoreHorizontal size={18} />
       </button>
       {open && (
-        <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", border: "1px solid #E3E6EA", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,.12)", zIndex: 50, minWidth: 190, padding: "4px 0" }}>
+        <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", border: "1px solid #E3E6EA", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,.12)", zIndex: 50, minWidth: 210, padding: "4px 0" }}>
           <button
             onClick={() => { onAction(isAdmin ? "demote" : "promote", item.id); setOpen(false); }}
             style={{ width: "100%", textAlign: "left", padding: "9px 14px", background: "none", border: "none", fontSize: 14, color: "#3A414C", cursor: "pointer" }}
@@ -211,6 +211,12 @@ function RowMenu({
               {item.isActive ? "Pasife al" : "Etkinleştir"}
             </button>
           )}
+          <button
+            onClick={() => { onAction("send-reset", item.id); setOpen(false); }}
+            style={{ width: "100%", textAlign: "left", padding: "9px 14px", background: "none", border: "none", fontSize: 14, color: "#3A414C", cursor: "pointer" }}
+          >
+            Şifre sıfırlama bağlantısı gönder
+          </button>
           {!isSelf && (
             <button
               onClick={() => { onAction("leave", item.id); setOpen(false); }}
@@ -305,6 +311,13 @@ export default function UsersPage() {
   async function handleAction(action: string, userId: string) {
     if (action === "leave") {
       setConfirmLeave(userId);
+      return;
+    }
+    if (action === "send-reset") {
+      const res = await fetch(`/api/dashboard/admin/users/${userId}/send-reset`, { method: "POST" });
+      const d = await res.json();
+      if (res.ok) showToast("Şifre sıfırlama bağlantısı gönderildi.");
+      else showToast(d.error ?? "Gönderilemedi.", false);
       return;
     }
     const body: Record<string, unknown> = {};
