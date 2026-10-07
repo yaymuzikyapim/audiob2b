@@ -329,6 +329,7 @@ export default function AdminOverviewPage() {
                           fill="url(#trendGrad)"
                           dot={false}
                           activeDot={{ r: 4, fill: brand }}
+                          isAnimationActive={false}
                         />
                       </AreaChart>
                     </ResponsiveContainer>

@@ -124,6 +124,27 @@ assert(
   trendTZ[0].weekStart,
 );
 
+// weeklyTrend bütünlük: sonlu sayılar, benzersiz artan anahtarlar, toplam tutarlılığı
+const trendData: MetricRow[] = [
+  { userId: "a", bookId: "b", chapterId: "c", listenedSec: 3600, completedPct: 100,
+    playedAt: D("2026-10-06T10:00:00") }, // İstanbul Sal (cari hafta)
+  { userId: "b", bookId: "b", chapterId: "c", listenedSec: 1800, completedPct: 50,
+    playedAt: D("2026-09-29T10:00:00") }, // geçen hafta
+];
+const trend12 = weeklyTrend(trendData, 12, NOW_IST);
+const allFinite = trend12.every(
+  t => Number.isFinite(t.listenedSec) && Number.isFinite(t.activeUsers)
+);
+assert("weeklyTrend: 12 eleman, hepsi sonlu", trend12.length === 12 && allFinite,
+  JSON.stringify(trend12.filter(t => !Number.isFinite(t.listenedSec))));
+const keysUniq = new Set(trend12.map(t => t.weekStart)).size === 12;
+const keysAsc  = trend12.every((t, i) => i === 0 || t.weekStart > trend12[i-1].weekStart);
+assert("weeklyTrend: 12 benzersiz artan weekStart", keysUniq && keysAsc,
+  trend12.map(t => t.weekStart).join(","));
+const totalSec = trend12.reduce((s, t) => s + t.listenedSec, 0);
+assert("weeklyTrend: toplam listenedSec = tüm satırların toplamı (5400)",
+  totalSec === 5400, totalSec);
+
 // ── topBooks ──────────────────────────────────────────────────────────────────
 console.log("\ntopBooks:");
 const top = topBooks(lisRows, JAN_FROM, JAN_TO, 3);
