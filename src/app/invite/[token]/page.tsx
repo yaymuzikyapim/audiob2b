@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import AcceptInviteForm from "@/components/AcceptInviteForm";
+
+export const metadata: Metadata = {
+  title: "Davet Kabul — AudioB2B",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;

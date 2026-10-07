@@ -7,7 +7,7 @@ const PUBLIC_PREFIXES = [
   "/forgot-password", "/reset-password",
   "/api/auth/login", "/api/auth/forgot-password", "/api/auth/reset-password",
   "/api/cron/cleanup",
-  "/api/invite", "/api/mobile/auth/login", "/api/covers",
+  "/api/invite", "/api/mobile/auth/login", "/api/covers", "/api/demo-request",
   "/tpao-teklif", "/p/", "/api/p/",
 ];
 
@@ -25,7 +25,10 @@ export async function proxy(req: NextRequest) {
     pathname.startsWith("/api/invite") ||
     pathname.startsWith("/p/") ||
     pathname.startsWith("/api/p/") ||
-    pathname.startsWith("/tpao-teklif")
+    pathname.startsWith("/tpao-teklif") ||
+    pathname.startsWith("/api/demo-request") ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml"
   ) {
     return NextResponse.next();
   }
