@@ -17,7 +17,7 @@ export const FAQS: FAQItem[] = [
   {
     question: "Yönetici panelinde hangi kullanım verilerini ve raporları takip edebiliriz?",
     answer:
-      "Yönetici panelinden şirket genelindeki toplam dinleme süresini, aktif kullanıcı sayısını, tamamlanan kitap sayısını ve en çok dinlenen eserleri takip edebilirsiniz.",
+      "Yönetici panelinden şirket genelindeki toplam dinleme süresini, aktif kullanıcı sayısını, tamamlanan kitap sayısını ve en çok dinlenen eserleri takip edebilirsiniz. Raporları Excel ve PDF olarak indirebilirsiniz.",
   },
   {
     question: "İnternet bağlantısı olmayan durumlarda (uçak, saha vb.) dinleme yapılabilir mi?",
