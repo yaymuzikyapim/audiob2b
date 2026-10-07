@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
       to: SALES_EMAIL,
       subject,
       html,
-      replyTo: d.email,
     });
   } catch (err: unknown) {
     // KVKK gereği kişisel veriyi loga basmıyoruz, sadece teknik hata mesajını logluyoruz
