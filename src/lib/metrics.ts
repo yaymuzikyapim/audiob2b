@@ -1,8 +1,9 @@
 /**
  * Müşteri Admin Paneli metrik fonksiyonları
  * Tüm sorgular yalnızca clientVersion=2 kayıtlarını kullanır.
- * Birim test: npx tsx src/lib/metrics.test.ts
+ * Birim test: npm test
  */
+import { TZ_OFFSET_MS } from "@/lib/tz-utils";
 
 export interface MetricRow {
   userId: string;
@@ -74,17 +75,22 @@ export function weeklyTrend(
   now: Date
 ): Array<{ weekStart: string; listenedSec: number; activeUsers: number }> {
   const MS = 7 * 24 * 60 * 60 * 1000;
-  const day = now.getUTCDay();
-  const daysToMonday = day === 0 ? 6 : day - 1;
-  const thisMonday = new Date(now.getTime() - daysToMonday * 86400000);
-  thisMonday.setUTCHours(0, 0, 0, 0);
+  // Hafta sınırları process.env.TZ'den bağımsız: İstanbul gece yarısı (UTC−3)
+  const nowIst = new Date(now.getTime() + TZ_OFFSET_MS);
+  const istDay = nowIst.getUTCDay(); // İstanbul'da haftanın günü
+  const daysToMonday = istDay === 0 ? 6 : istDay - 1;
+  const istMonday = new Date(nowIst.getTime() - daysToMonday * 86400000);
+  // İstanbul Pazartesi 00:00 → UTC
+  const thisMondayUTC = new Date(
+    Date.UTC(istMonday.getUTCFullYear(), istMonday.getUTCMonth(), istMonday.getUTCDate()) - TZ_OFFSET_MS
+  );
 
   const result: Array<{ weekStart: string; listenedSec: number; activeUsers: number }> = [];
 
   for (let i = weeks - 1; i >= 0; i--) {
-    const from = new Date(thisMonday.getTime() - i * MS);
+    const from = new Date(thisMondayUTC.getTime() - i * MS);
     const to = new Date(from.getTime() + MS);
-    const weekStart = from.toISOString().slice(0, 10);
+    const weekStart = new Date(from.getTime() + TZ_OFFSET_MS).toISOString().slice(0, 10);
 
     let listenedSec = 0;
     const users = new Set<string>();

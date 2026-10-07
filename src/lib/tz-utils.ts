@@ -1,5 +1,4 @@
-// Europe/Istanbul = UTC+3, kalıcı (2016'dan beri DST yok)
-export const TZ_OFFSET_MS = 3 * 3600 * 1000;
+export const TZ_OFFSET_MS = 3 * 3600 * 1000; // Türkiye 2016'dan beri kalıcı UTC+3, yaz saati yok.
 
 /** UTC içinde Istanbul gece yarısını döner.
  *  istanbulMidnightUTC(2026, 9, 1) → 2026-09-30T21:00:00.000Z */

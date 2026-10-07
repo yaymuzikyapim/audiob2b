@@ -103,6 +103,27 @@ assert("12 hafta döndürür", trend.length === 12, trend.length);
 assert("Hepsi YYYY-MM-DD formatında", trend.every(t => /^\d{4}-\d{2}-\d{2}$/.test(t.weekStart)));
 assert("Artan sırada weekStart", trend.every((t, i) => i === 0 || t.weekStart > trend[i - 1].weekStart));
 
+// İstanbul saat dilimi sınırı: UTC Pazar 22:00 = İstanbul Pazartesi 01:00
+// → o haftanın içinde sayılmalı (process.env.TZ = UTC'de de aynı sonuç)
+const NOW_IST = D("2026-10-07T15:00:00"); // İstanbul Çarşamba 18:00
+// İstanbul Pazartesi gece yarısı = 2026-10-04T21:00:00Z; bu dakikadan sonraki kayıt o haftada
+const sundayEvening: MetricRow = {
+  userId: "u_tz", bookId: "b_tz", chapterId: "c_tz",
+  listenedSec: 60, completedPct: 0,
+  playedAt: D("2026-10-04T22:00:00"), // UTC Pazar 22:00 = İstanbul Pzt 01:00
+};
+const trendTZ = weeklyTrend([sundayEvening], 1, NOW_IST);
+assert(
+  "weeklyTrend: UTC Pazar 22:00 = İstanbul Pzt 01:00 → bu hafta sayılır",
+  trendTZ[0].activeUsers === 1,
+  `activeUsers=${trendTZ[0].activeUsers} weekStart=${trendTZ[0].weekStart}`,
+);
+assert(
+  "weeklyTrend: weekStart İstanbul Pazartesi tarihi = 2026-10-05",
+  trendTZ[0].weekStart === "2026-10-05",
+  trendTZ[0].weekStart,
+);
+
 // ── topBooks ──────────────────────────────────────────────────────────────────
 console.log("\ntopBooks:");
 const top = topBooks(lisRows, JAN_FROM, JAN_TO, 3);

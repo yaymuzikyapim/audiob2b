@@ -7,6 +7,7 @@
     "build": "next build",
     "postinstall": "prisma generate",
     "start": "next start",
+    "test": "TZ=UTC npx tsx src/lib/metrics.test.ts",
     "lint": "eslint",
     "seed": "dotenv -e .env -- npx tsx prisma/seed.ts",
     "seed:categories": "dotenv -e .env -- npx tsx prisma/seed-categories.ts",

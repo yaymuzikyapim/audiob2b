@@ -53,3 +53,9 @@ review-company-001'deki şu hesaplara şimdilik dokunma (kullanıcı kararı, 5 
 ## Commit Kapsam Kuralı
 
 **Bir commit'e sadece o işle ilgili dosyalar girer. İlgisiz veya commit edilmemiş kullanıcı dosyalarını commit'e ekleme; emin değilsen sor.**
+
+## QA Admin Hesabı
+
+Admin paneli kontrolleri QA_ADMIN_* hesabıyla yapılır (.env.local: QA_ADMIN_EMAIL / QA_ADMIN_PASSWORD).
+Şirket: AudioB2B QA (id: cmbqr6l9nxbmjh8kztutjmmds) — COMPANY_ADMIN rolü.
+Bu şifre rastgele üretilmiştir; gerektiğinde DB'de bcryptjs ile yenilenebilir.
