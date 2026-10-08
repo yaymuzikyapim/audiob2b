@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
+import { newPasswordSchema, isCommonPassword } from "@/lib/password";
 
 export async function POST(req: NextRequest) {
   const { token, name, password } = await req.json();
@@ -11,13 +12,18 @@ export async function POST(req: NextRequest) {
   if (!token || !name || !password) {
     return NextResponse.json({ error: "Tüm alanlar zorunlu." }, { status: 400 });
   }
-  if (password.length < 8) {
-    return NextResponse.json({ error: "Şifre en az 8 karakter olmalı." }, { status: 400 });
+
+  const pwResult = newPasswordSchema.safeParse(password);
+  if (!pwResult.success) {
+    return NextResponse.json(
+      { error: pwResult.error.issues[0]?.message ?? "Geçersiz şifre." },
+      { status: 400 }
+    );
   }
 
   const invite = await prisma.inviteToken.findUnique({
     where: { token },
-    include: { company: { select: { id: true, isActive: true } } },
+    include: { company: { select: { id: true, isActive: true, name: true } } },
   });
 
   if (!invite || invite.usedAt || invite.expiresAt < new Date()) {
@@ -26,6 +32,10 @@ export async function POST(req: NextRequest) {
 
   if (!invite.company.isActive) {
     return NextResponse.json({ error: "Şirket hesabı aktif değil." }, { status: 400 });
+  }
+
+  if (isCommonPassword(password, invite.company.name)) {
+    return NextResponse.json({ error: "Bu şifre çok yaygın veya tahmin edilmesi kolay. Lütfen daha güçlü bir şifre seçin." }, { status: 400 });
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);

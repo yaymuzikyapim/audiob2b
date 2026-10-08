@@ -77,6 +77,7 @@ function ResetForm() {
           onChange={(e) => setPassword(e.target.value)}
           required
           minLength={8}
+          maxLength={72}
           className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
           placeholder="En az 8 karakter, büyük harf ve rakam"
         />

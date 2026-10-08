@@ -32,7 +32,10 @@ export function isCommonPassword(password: string, companyName?: string): boolea
 export const newPasswordSchema = z
   .string()
   .min(8, "Şifre en az 8 karakter olmalı.")
-  .max(72, "Şifre en fazla 72 karakter olabilir.")
+  .refine(
+    (v) => Buffer.byteLength(v, "utf8") <= 72,
+    "Şifre en fazla 72 bayt olabilir; Türkçe karakterler 2 bayt sayılır."
+  )
   .refine((v) => /[A-Z]/.test(v), "En az bir büyük harf içermeli.")
   .refine((v) => /[0-9]/.test(v), "En az bir rakam içermeli.");
 

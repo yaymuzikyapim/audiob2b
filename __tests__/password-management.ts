@@ -42,7 +42,10 @@ ok("8+ karakter geçerli", newPasswordSchema.safeParse("Password1").success);
 ok("Büyük harf olmadan geçersiz", !newPasswordSchema.safeParse("password1").success);
 ok("Rakam olmadan geçersiz", !newPasswordSchema.safeParse("Password").success);
 ok("7 karakter geçersiz", !newPasswordSchema.safeParse("Pass1Ab").success);
-ok("72 karakter sınırı", !newPasswordSchema.safeParse("A1" + "x".repeat(72)).success);
+ok("74 ASCII bayt → geçersiz", !newPasswordSchema.safeParse("A1" + "x".repeat(72)).success);
+ok("40 × 'ğ' (80 UTF-8 bayt) → geçersiz", !newPasswordSchema.safeParse("A1" + "ğ".repeat(40)).success);
+ok("36 × 'ğ' (72 UTF-8 bayt) + 'A1' → geçersiz (74 bayt)", !newPasswordSchema.safeParse("A1" + "ğ".repeat(36)).success);
+ok("Tam 72 bayt ASCII → geçerli", newPasswordSchema.safeParse("A1" + "x".repeat(70)).success);
 
 // ── 2. Yaygın şifre tespiti ──────────────────────────────────────────────────
 console.log("\n2. Yaygın şifre tespiti");

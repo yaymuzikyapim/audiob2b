@@ -41,9 +41,10 @@ export default function AcceptInviteForm({ token, email }: { token: string; emai
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1.5">Şifre *</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8}
+        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} maxLength={72}
           className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
-          placeholder="En az 8 karakter" />
+          placeholder="En az 8 karakter, büyük harf ve rakam" />
+        <p className="mt-1.5 text-xs text-gray-500">En az 8 karakter, bir büyük harf ve bir rakam içermeli.</p>
       </div>
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm">{error}</div>
