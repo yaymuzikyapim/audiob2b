@@ -19,7 +19,10 @@ export async function POST(req: NextRequest) {
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    return NextResponse.json({ error: "Bu e-posta zaten kayıtlı." }, { status: 409 });
+    return NextResponse.json(
+      { error: "Bu e-posta adresine davet gönderilemiyor. Destek için satis@audiob2b.com.tr ile iletişime geçin." },
+      { status: 409 }
+    );
   }
 
   const EXPIRES_DAYS = 7;

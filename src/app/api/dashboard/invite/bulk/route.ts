@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   const toInvite = validInvites.filter((i) => !registeredEmails.has(i.email));
   for (const { email } of validInvites.filter((i) => registeredEmails.has(i.email))) {
-    skippedResults.push({ email, status: "skipped", reason: "Zaten kayıtlı" });
+    skippedResults.push({ email, status: "skipped", reason: "Davet gönderilemedi" });
   }
 
   if (toInvite.length === 0) {

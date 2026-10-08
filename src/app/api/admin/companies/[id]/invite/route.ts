@@ -20,8 +20,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
     if (!company) return NextResponse.json({ error: "Şirket bulunamadı." }, { status: 404 });
 
-    const existing = await prisma.user.findFirst({ where: { email, companyId } });
-    if (existing) return NextResponse.json({ error: "Bu e-posta zaten kayıtlı." }, { status: 400 });
+    const existing = await prisma.user.findUnique({
+      where: { email },
+      include: { company: { select: { name: true } } },
+    });
+    if (existing) {
+      return NextResponse.json(
+        { error: `Bu e-posta ${existing.company.name} şirketinde kayıtlı.` },
+        { status: 409 }
+      );
+    }
 
     const existingInvite = await prisma.inviteToken.findFirst({
       where: { email, companyId, usedAt: null, expiresAt: { gt: new Date() } },
