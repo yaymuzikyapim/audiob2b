@@ -32,7 +32,12 @@ export const FAQS: FAQItem[] = [
   {
     question: "Kişisel veriler ve KVKK süreçleri nasıl işletiliyor?",
     answer:
-      "Hizmetin sunulması için çalışanın adı, kurumsal e-posta adresi ve dinleme geçmişi işlenir; kimlik numarası, sağlık verisi veya finansal veri toplanmaz. Veriler şifreli bağlantı (HTTPS/TLS) üzerinden iletilir, parolalar geri döndürülemez biçimde (bcrypt) saklanır. Ayrıntılar için Gizlilik Politikası ve Aydınlatma Metnimizi inceleyebilirsiniz.",
+      "Hizmetin sunulması için çalışanın adı, kurumsal e-posta adresi ve dinleme geçmişi işlenir; kimlik numarası, sağlık verisi veya finansal veri toplanmaz. Veriler şifreli bağlantı (HTTPS/TLS) üzerinden iletilir, parolalar geri döndürülemez biçimde (bcrypt) saklanır. Veritabanı ve ses dosyaları Avrupa Birliği'nde (Frankfurt) barındırılır; web barındırma ve e-posta iletimi için ABD merkezli hizmet sağlayıcılar kullanılır. Ayrıntılar için Gizlilik Politikası ve Aydınlatma Metnimizi inceleyebilirsiniz.",
+  },
+  {
+    question: "Lisanslama ve fiyatlandırma nasıl işliyor?",
+    answer:
+      "AudioB2B kişi başı, yıllık lisans modeliyle sunulur. En az kullanıcı sayısı şartı yoktur; kurumunuzun ihtiyacına göre istediğiniz sayıda lisansla başlayabilir, yıl içinde ek lisans alabilirsiniz. Fiyatlandırma kullanıcı sayısı ve sözleşme koşullarına göre kurumunuza özel olarak hazırlanır. Teklif almak için demo formunu doldurmanız yeterlidir.",
   },
   {
     question: "Kurumsal deneme veya demo talep edebilir miyiz?",

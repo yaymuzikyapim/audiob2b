@@ -88,7 +88,7 @@ export default function Home() {
             href="#demo"
             className="text-sm font-medium text-orange-600 hover:text-orange-700 bg-orange-50 sm:bg-transparent px-3 py-1.5 sm:p-0 rounded-lg transition-colors"
           >
-            <span className="sm:hidden">Demo İste</span>
+            <span className="sm:hidden">Demo</span>
             <span className="hidden sm:inline">Demo Talep Et</span>
           </a>
           <Link
@@ -163,7 +163,7 @@ export default function Home() {
       <section className="py-14 bg-gray-50 overflow-hidden">
         <div className="max-w-6xl mx-auto px-6 text-center mb-10">
           <h2 className="text-3xl font-bold mb-3">Kütüphanemizden Seçmeler</h2>
-          <p className="text-gray-500 text-lg">Yüzlerce sesli kitap, çalışanlarınızın parmaklarının ucunda</p>
+          <p className="text-gray-500 text-lg">1.000&apos;i aşkın sesli kitap, çalışanlarınızın parmaklarının ucunda</p>
         </div>
 
         {/* Sonsuz marquee şeridi */}
@@ -242,7 +242,7 @@ export default function Home() {
               {
                 icon: "📊",
                 title: "Yönetim Paneli",
-                desc: "Kullanıcı daveti, dinleme raporları ve lisans yönetimi tek panelden.",
+                desc: "Kullanıcı daveti, dinleme raporları (Excel ve PDF) ve lisans yönetimi tek panelden.",
               },
               {
                 icon: "🔒",
@@ -252,7 +252,7 @@ export default function Home() {
               {
                 icon: "🎧",
                 title: "Kesintisiz Dinleme",
-                desc: "Kaldığınız yerden devam, uyku zamanlayıcı, hız kontrolü.",
+                desc: "Kaldığınız yerden devam, çevrimdışı dinleme, cihazlar arası senkronizasyon, uyku zamanlayıcı ve hız kontrolü.",
               },
               {
                 icon: "🏢",

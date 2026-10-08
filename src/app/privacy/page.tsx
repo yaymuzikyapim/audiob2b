@@ -55,7 +55,7 @@ export default function PrivacyPage() {
                 <b>Kullanım Verileri:</b> Oturum açma tarihleri, dinlenen kitaplar, dinleme süreleri ve favoriler.
               </li>
               <li>
-                <b>Teknik Veriler ve Çerezler:</b> IP adresi, sistem erişim logları ve mobil bildirim izinlerine bağlı anlık bildirim belirteci (push token). Platformda yalnızca oturumun sürdürülmesi için gerekli teknik çerezler kullanılır; reklam veya hedefleme çerezleri kullanılmaz.
+                <b>Teknik Veriler ve Çerezler:</b> IP adresi, sistem erişim logları ve mobil bildirim izinlerine bağlı anlık bildirim belirteci (push token). Şifre sıfırlama ve değiştirme işlemlerinde güvenlik amacıyla IP adresi ve tarayıcı bilgisi kaydedilir. Platformda yalnızca oturumun sürdürülmesi için gerekli teknik çerezler kullanılır; reklam veya hedefleme çerezleri kullanılmaz.
               </li>
             </ul>
           </div>
@@ -99,6 +99,9 @@ export default function PrivacyPage() {
                 <b>Expo / 650 Industries Inc. (ABD):</b> Mobil cihazlara anlık bildirim iletimi.
               </li>
               <li>
+                <b>Apple (APNs) ve Google (Firebase Cloud Messaging):</b> Expo üzerinden iletilen anlık bildirimlerin cihazlara ulaştırılması.
+              </li>
+              <li>
                 <b>Supabase Inc. & AWS (Frankfurt, Almanya / AB):</b> Veritabanı ve dosya depolama altyapısı.
               </li>
             </ul>
@@ -117,6 +120,9 @@ export default function PrivacyPage() {
               </li>
               <li>
                 <b>Kullanıcı ve Dinleme Verileri:</b> Kurumsal müşteri ile yürütülen sözleşme süresince ve sözleşmenin sona ermesini takiben yasal zamanaşımı süreleri boyunca saklanır.
+              </li>
+              <li>
+                <b>Güvenlik kayıtları (şifre işlemleri):</b> 1 yıl. IP adresi ve tarayıcı bilgisi 1 yılın sonunda anonim hale getirilir; kayıt satırı silinmez.
               </li>
             </ul>
           </div>
