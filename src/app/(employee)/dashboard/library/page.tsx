@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
@@ -179,7 +181,7 @@ async function LibraryContent({ searchParams }: { searchParams: Promise<{ q?: st
 
   const orderedCats = [
     ...CATEGORY_ORDER.filter((k) => byCategory.has(k)),
-    ...[...byCategory.keys()].filter((k) => !CATEGORY_ORDER.includes(k) && !CATEGORY_LAST.includes(k)),
+    ...[...byCategory.keys()].filter((k) => !CATEGORY_ORDER.includes(k) && !CATEGORY_LAST.includes(k)).sort((a, b) => a.localeCompare(b, "tr-TR")),
     ...CATEGORY_LAST.filter((k) => byCategory.has(k)),
   ];
 

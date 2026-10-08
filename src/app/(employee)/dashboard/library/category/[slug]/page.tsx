@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
@@ -6,7 +8,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import BookCard, { BookCardItem } from "@/components/library/BookCard";
 import LibrarySearch from "@/components/library/LibrarySearch";
-import { slugToCategory } from "@/lib/category-slugs";
+import { categoryToSlug } from "@/lib/category-slugs";
 
 const PER_PAGE = 48;
 
@@ -24,9 +26,6 @@ async function CategoryContent({
   const { slug } = await params;
   const { q: rawQ, page: rawPage } = await searchParams;
 
-  const catName = slugToCategory(slug);
-  if (!catName) notFound();
-
   const q = rawQ?.trim() ?? "";
   const page = Math.max(1, parseInt(rawPage ?? "1", 10) || 1);
 
@@ -34,12 +33,20 @@ async function CategoryContent({
     where: { id: session.companyId },
     select: {
       brandColor: true,
-      package: { select: { id: true, name: true } },
+      package: { select: { id: true } },
     },
   });
 
   const pkgId = company?.package?.id;
   if (!pkgId) redirect("/dashboard/library");
+
+  // Slug'a karşılık gelen kategori adını DB'den bul (sabit eşleme yok)
+  const pkgCategories = await prisma.category.findMany({
+    where: { books: { some: { packages: { some: { packageId: pkgId } } } } },
+    select: { name: true },
+  });
+  const catName = pkgCategories.find((c) => categoryToSlug(c.name) === slug)?.name;
+  if (!catName) notFound();
 
   const color = company?.brandColor ?? "#2563eb";
 
@@ -101,7 +108,6 @@ async function CategoryContent({
 
   return (
     <div>
-      {/* Header */}
       <div className="mb-6">
         <Link
           href="/dashboard/library"
@@ -128,7 +134,6 @@ async function CategoryContent({
             ))}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-8">
               {page > 1 && (

@@ -6,38 +6,19 @@ export const CATEGORY_ORDER = [
 export const CATEGORY_LAST = ["İngilizce Kitaplar"];
 export const SHELF_LIMIT = 10;
 
-const SLUG_MAP: Record<string, string> = {
-  "Roman": "roman",
-  "İş/Gelişim": "is-gelisim",
-  "Anı/Biyografi": "ani-biyografi",
-  "Tarih/Mitoloji": "tarih-mitoloji",
-  "Öykü/Hikâye": "oyku-hikaye",
-  "Din/Tasavvuf": "din-tasavvuf",
-  "Polisiye": "polisiye",
-  "Felsefe": "felsefe",
-  "Bilim/Bilimkurgu": "bilim-bilimkurgu",
-  "Çocuk": "cocuk",
-  "Genç Okurlar": "genc-okurlar",
-  "Dünya Klasikleri": "dunya-klasikleri",
-  "Şiir": "siir",
-  "Radyo Tiyatrosu": "radyo-tiyatrosu",
-  "Dil Öğrenme": "dil-ogrenme",
-  "İngilizce Kitaplar": "ingilizce-kitaplar",
-};
-
-const NAME_MAP: Record<string, string> = Object.fromEntries(
-  Object.entries(SLUG_MAP).map(([name, slug]) => [slug, name])
-);
-
+// Kategori adından slug üret — sabit eşleme değil, her zaman algoritmik.
+// Türkçe karakter dönüşümü: ç→c, ğ→g, ı→i, ö→o, ş→s, ü→u, â→a
+// "/" ve boşluk ve diğer özel karakterler → "-"; küçük harf
 export function categoryToSlug(name: string): string {
-  return SLUG_MAP[name] ?? name
+  return name
     .toLowerCase()
-    .replace(/ğ/g, "g").replace(/ü/g, "u").replace(/ş/g, "s")
-    .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ç/g, "c")
+    .replace(/ç/g, "c")
+    .replace(/ğ/g, "g")
+    .replace(/ı/g, "i")
+    .replace(/ö/g, "o")
+    .replace(/ş/g, "s")
+    .replace(/ü/g, "u")
+    .replace(/â/g, "a")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
-}
-
-export function slugToCategory(slug: string): string | null {
-  return NAME_MAP[slug] ?? null;
 }

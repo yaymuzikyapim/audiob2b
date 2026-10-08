@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
@@ -6,7 +8,7 @@ import { getCurrentUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import BookCard, { BookCardItem } from "@/components/library/BookCard";
 import LibrarySearch from "@/components/library/LibrarySearch";
-import { slugToCategory } from "@/lib/category-slugs";
+import { categoryToSlug } from "@/lib/category-slugs";
 
 const PER_PAGE = 48;
 
@@ -24,9 +26,6 @@ async function AdminCategoryContent({
   const { slug } = await params;
   const { q: rawQ, page: rawPage } = await searchParams;
 
-  const catName = slugToCategory(slug);
-  if (!catName) notFound();
-
   const q = rawQ?.trim() ?? "";
   const page = Math.max(1, parseInt(rawPage ?? "1", 10) || 1);
 
@@ -40,6 +39,14 @@ async function AdminCategoryContent({
 
   const pkgId = company?.package?.id;
   if (!pkgId) redirect("/dashboard/admin/library");
+
+  // Slug'a karşılık gelen kategori adını DB'den bul (sabit eşleme yok)
+  const pkgCategories = await prisma.category.findMany({
+    where: { books: { some: { packages: { some: { packageId: pkgId } } } } },
+    select: { name: true },
+  });
+  const catName = pkgCategories.find((c) => categoryToSlug(c.name) === slug)?.name;
+  if (!catName) notFound();
 
   const color = company?.brandColor ?? "#2563eb";
 
@@ -77,7 +84,6 @@ async function AdminCategoryContent({
     }),
   ]);
 
-  // Listener counts for these books
   const bookIds = pkgBooks.map((pb) => pb.book.id);
   const listenerRows = bookIds.length > 0
     ? await prisma.playHistory.findMany({

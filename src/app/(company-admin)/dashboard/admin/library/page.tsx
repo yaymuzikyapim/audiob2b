@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth-guard";
@@ -115,7 +117,7 @@ async function AdminLibraryContent({ searchParams }: { searchParams: Promise<{ q
 
   const orderedCats = [
     ...CATEGORY_ORDER.filter((k) => byCategory.has(k)),
-    ...[...byCategory.keys()].filter((k) => !CATEGORY_ORDER.includes(k) && !CATEGORY_LAST.includes(k)),
+    ...[...byCategory.keys()].filter((k) => !CATEGORY_ORDER.includes(k) && !CATEGORY_LAST.includes(k)).sort((a, b) => a.localeCompare(b, "tr-TR")),
     ...CATEGORY_LAST.filter((k) => byCategory.has(k)),
   ];
 
