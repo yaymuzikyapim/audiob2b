@@ -13,6 +13,10 @@ const APP_STORE_URL  = "https://apps.apple.com/tr/app/audiob2b/id6801790848?l=tr
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.audiob2b.mobile&pcampaignid=web_share";
 
 const COVERS = [
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786257112000.png",  title: "Takım Çalışması" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255577238.jpg",  title: "Doğrudan Satışta Vizyonerin El Kitabı" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255577184.jpg",  title: "Ailenizin Kumandası" },
+  { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786257112017.jpg",  title: "Şu Hortumlu Dünyada Fil Yalnız Bir Hayvandır 1" },
   { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786055571344.png",  title: "İnsan Ne İle Yaşar" },
   { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786257888424.png",  title: "Sokrates'in Savunması" },
   { url: "https://audiob2b-audio-files.s3.eu-central-1.amazonaws.com/covers/9786255578853.jpg",  title: "Silahlara Veda" },
