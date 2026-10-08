@@ -6,6 +6,7 @@ export async function sendPasswordResetEmail(opts: {
   resetUrl: string;
 }) {
   const display = opts.name ?? opts.to;
+
   const html = `<!DOCTYPE html>
 <html lang="tr">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -42,17 +43,20 @@ export async function sendPasswordResetEmail(opts: {
             </table>
             <p style="margin:0 0 8px;font-size:13px;color:#64748b;line-height:1.5">
               Bu bağlantı <strong style="color:#94a3b8">1 saat</strong> geçerlidir.
-              Eğer bu isteği siz yapmadıysanız bu e-postayı görmezden gelebilirsiniz.
+              Bu isteği siz yapmadıysanız bu e-postayı dikkate almayabilirsiniz.
             </p>
             <p style="margin:24px 0 0;font-size:12px;color:#475569;word-break:break-all">
-              Bağlantı çalışmıyorsa kopyalayın: ${opts.resetUrl}
+              Bağlantı çalışmıyorsa kopyalayın: <a href="${opts.resetUrl}" style="color:#475569;">${opts.resetUrl}</a>
             </p>
           </td>
         </tr>
         <tr>
           <td style="padding:20px 32px;border-top:1px solid #334155">
+            <p style="margin:0 0 4px;font-size:12px;color:#475569">
+              AudioB2B · YAY Prodüksiyon
+            </p>
             <p style="margin:0;font-size:12px;color:#475569">
-              © ${new Date().getFullYear()} AudioB2B — Bu e-postayı almak istemiyorsanız hesabınızın şifresi değiştirilmemiştir.
+              Bu e-postayı AudioB2B hesabınız için gönderdik.
             </p>
           </td>
         </tr>
@@ -62,9 +66,22 @@ export async function sendPasswordResetEmail(opts: {
 </body>
 </html>`;
 
+  const text = `Merhaba ${display},
+
+AudioB2B hesabınız için şifre sıfırlama isteği aldık.
+
+Şifrenizi sıfırlamak için aşağıdaki bağlantıyı ziyaret edin:
+${opts.resetUrl}
+
+Bu bağlantı 1 saat geçerlidir. Bu isteği siz yapmadıysanız bu e-postayı dikkate almayabilirsiniz.
+
+AudioB2B · YAY Prodüksiyon
+Bu e-postayı AudioB2B hesabınız için gönderdik.`;
+
   return sendEmail({
     to: opts.to,
     subject: "AudioB2B – Şifre Sıfırlama",
     html,
+    text,
   });
 }

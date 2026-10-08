@@ -56,7 +56,7 @@ export function inviteEmailHtml({
                   <td align="center">
                     <a href="${inviteUrl}"
                       style="display:inline-block;background:#2563eb;color:#ffffff;font-size:15px;font-weight:600;padding:14px 36px;border-radius:10px;text-decoration:none;letter-spacing:0.2px;">
-                      Hesabımı Oluştur →
+                      Hesabımı Oluştur
                     </a>
                   </td>
                 </tr>
@@ -71,17 +71,21 @@ export function inviteEmailHtml({
           <!-- URL fallback -->
           <tr>
             <td style="padding:0 36px 20px;">
-              <p style="margin:0;font-size:12px;color:#374151;">Buton çalışmıyorsa bu linki kopyalayın:</p>
-              <p style="margin:6px 0 0;font-size:12px;color:#6b7280;word-break:break-all;">${inviteUrl}</p>
+              <p style="margin:0;font-size:12px;color:#374151;">Buton çalışmıyorsa bu bağlantıyı kopyalayın:</p>
+              <p style="margin:6px 0 0;font-size:12px;color:#6b7280;word-break:break-all;">
+                <a href="${inviteUrl}" style="color:#6b7280;">${inviteUrl}</a>
+              </p>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
             <td style="padding:20px 36px;border-top:1px solid #1f1f2e;">
+              <p style="margin:0 0 4px;font-size:12px;color:#374151;text-align:center;">
+                Bu e-postayı beklemiyorsanız dikkate almayabilirsiniz.
+              </p>
               <p style="margin:0;font-size:12px;color:#374151;text-align:center;">
-                Bu e-postayı beklemiyorsanız dikkate almayabilirsiniz. ·
-                <span style="color:#4b5563;">AudioB2B by SesleKitap</span>
+                AudioB2B · YAY Prodüksiyon · Bu e-postayı AudioB2B hesabınız için gönderdik.
               </p>
             </td>
           </tr>
@@ -92,4 +96,31 @@ export function inviteEmailHtml({
   </table>
 </body>
 </html>`;
+}
+
+export function inviteEmailText({
+  companyName,
+  inviteUrl,
+  role,
+  expiresInDays,
+}: {
+  companyName: string;
+  inviteUrl: string;
+  role: string;
+  expiresInDays: number;
+}) {
+  const roleLabel = role === "COMPANY_ADMIN" ? "Şirket Yöneticisi" : "Çalışan";
+  return `${companyName} sizi AudioB2B'ye davet etti
+
+${companyName} ekibine ${roleLabel} olarak katılmaya davet edildiniz.
+
+Hesabınızı oluşturmak için aşağıdaki bağlantıyı ziyaret edin:
+${inviteUrl}
+
+Bu bağlantı ${expiresInDays} gün içinde geçersiz olacak.
+
+Bu e-postayı beklemiyorsanız dikkate almayabilirsiniz.
+
+AudioB2B · YAY Prodüksiyon
+Bu e-postayı AudioB2B hesabınız için gönderdik.`;
 }

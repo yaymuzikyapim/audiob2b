@@ -10,6 +10,8 @@ export async function sendPasswordChangedEmail(opts: {
   const ipLine = opts.ipAddress
     ? `<p style="margin:0 0 8px;font-size:13px;color:#64748b">İşlem IP adresi: <strong style="color:#94a3b8">${opts.ipAddress}</strong></p>`
     : "";
+  const ipText = opts.ipAddress ? `İşlem IP adresi: ${opts.ipAddress}\n` : "";
+  const forgotUrl = `${getBaseUrl()}/forgot-password`;
 
   const html = `<!DOCTYPE html>
 <html lang="tr">
@@ -37,7 +39,7 @@ export async function sendPasswordChangedEmail(opts: {
             ${ipLine}
             <p style="margin:16px 0 0;font-size:13px;color:#64748b;line-height:1.5">
               Bu işlemi siz yapmadıysanız lütfen hemen
-              <a href="${getBaseUrl()}/forgot-password"
+              <a href="${forgotUrl}"
                  style="color:#60a5fa">şifrenizi sıfırlayın</a> ve
               destek ekibimizle iletişime geçin.
             </p>
@@ -45,8 +47,11 @@ export async function sendPasswordChangedEmail(opts: {
         </tr>
         <tr>
           <td style="padding:20px 32px;border-top:1px solid #334155">
+            <p style="margin:0 0 4px;font-size:12px;color:#475569">
+              AudioB2B · YAY Prodüksiyon
+            </p>
             <p style="margin:0;font-size:12px;color:#475569">
-              © ${new Date().getFullYear()} AudioB2B
+              Bu e-postayı AudioB2B hesabınız için gönderdik.
             </p>
           </td>
         </tr>
@@ -56,9 +61,20 @@ export async function sendPasswordChangedEmail(opts: {
 </body>
 </html>`;
 
+  const text = `Merhaba ${display},
+
+AudioB2B hesabınızın şifresi başarıyla değiştirildi.
+${ipText}
+Bu işlemi siz yapmadıysanız lütfen hemen şifrenizi sıfırlayın:
+${forgotUrl}
+
+AudioB2B · YAY Prodüksiyon
+Bu e-postayı AudioB2B hesabınız için gönderdik.`;
+
   return sendEmail({
     to: opts.to,
     subject: "AudioB2B – Şifreniz Değiştirildi",
     html,
+    text,
   });
 }

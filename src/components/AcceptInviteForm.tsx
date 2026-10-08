@@ -33,15 +33,17 @@ export default function AcceptInviteForm({ token, email }: { token: string; emai
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Hidden email field anchors browser autofill so it doesn't fill name with email */}
+      <input type="email" name="email" value={email} readOnly autoComplete="email" aria-hidden="true" style={{ display: "none" }} />
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1.5">Ad Soyad *</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} required
+        <input value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name"
           className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
           placeholder="Ahmet Yılmaz" />
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1.5">Şifre *</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} maxLength={72}
+        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} maxLength={72} autoComplete="new-password"
           className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
           placeholder="En az 8 karakter, büyük harf ve rakam" />
         <p className="mt-1.5 text-xs text-gray-500">En az 8 karakter, bir büyük harf ve bir rakam içermeli.</p>

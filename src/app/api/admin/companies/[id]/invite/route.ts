@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-guard";
 import { getBaseUrl } from "@/lib/base-url";
 import { sendEmail } from "@/lib/mailer";
-import { inviteEmailHtml } from "@/lib/emails/invite";
+import { inviteEmailHtml, inviteEmailText } from "@/lib/emails/invite";
 import { randomBytes } from "crypto";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -47,8 +47,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     try {
       await sendEmail({
         to: email,
-        subject: `${company.name} sizi AudioB2B'ye davet ediyor`,
+        subject: `${company.name} sizi AudioB2B'ye davet etti`,
         html: inviteEmailHtml({ companyName: company.name, inviteUrl, role, expiresInDays: 7 }),
+        text: inviteEmailText({ companyName: company.name, inviteUrl, role, expiresInDays: 7 }),
       });
       return NextResponse.json({ ok: true });
     } catch {

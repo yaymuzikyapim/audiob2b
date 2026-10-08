@@ -111,9 +111,19 @@ export async function POST(req: NextRequest) {
       <tr><td style="color:#666;"><b>KVKK Onayı:</b></td><td>Alındı (Aydınlatma Metni okundu)</td></tr>
     </table>`;
 
+  const text = `Yeni Kurumsal Demo Talebi
+
+Ad Soyad: ${d.name}
+Şirket: ${d.company}
+İş E-postası: ${d.email}
+Telefon: ${d.phone || "-"}
+Çalışan Sayısı: ${d.employeeCount || "-"}
+Mesaj: ${d.message || "-"}
+KVKK Onayı: Alındı (Aydınlatma Metni okundu)`;
+
   let emailError: string | null = null;
   try {
-    await sendEmail({ to: SALES_EMAIL, subject, html, replyTo: d.email });
+    await sendEmail({ to: SALES_EMAIL, subject, html, text, replyTo: d.email });
   } catch (err: unknown) {
     emailError = err instanceof Error ? err.message : "Bilinmeyen hata";
     console.error("[DemoRequest Email Error]:", emailError);

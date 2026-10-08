@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-guard";
 import { getBaseUrl } from "@/lib/base-url";
 import { sendEmail } from "@/lib/mailer";
-import { inviteEmailHtml } from "@/lib/emails/invite";
+import { inviteEmailHtml, inviteEmailText } from "@/lib/emails/invite";
 
 export async function POST(req: NextRequest) {
   const auth = await requireUser({ roles: ["COMPANY_ADMIN"] });
@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
       to: email,
       subject: `${companyName} sizi AudioB2B'ye davet etti`,
       html: inviteEmailHtml({ companyName, inviteUrl, role, expiresInDays: EXPIRES_DAYS }),
+      text: inviteEmailText({ companyName, inviteUrl, role, expiresInDays: EXPIRES_DAYS }),
     });
   } catch (err) {
     console.error("[Invite] E-posta gönderilemedi:", err);

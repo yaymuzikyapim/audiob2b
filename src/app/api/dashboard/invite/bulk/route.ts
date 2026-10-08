@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getBaseUrl } from "@/lib/base-url";
 import { requireUser } from "@/lib/auth-guard";
 import { sendEmail } from "@/lib/mailer";
-import { inviteEmailHtml } from "@/lib/emails/invite";
+import { inviteEmailHtml, inviteEmailText } from "@/lib/emails/invite";
 
 type InviteResult = { email: string; status: "ok" | "skipped" | "error"; reason?: string };
 
@@ -138,6 +138,7 @@ export async function POST(req: NextRequest) {
         to: email,
         subject: `${companyName} sizi AudioB2B'ye davet etti`,
         html: inviteEmailHtml({ companyName, inviteUrl, role, expiresInDays: EXPIRES_DAYS }),
+        text: inviteEmailText({ companyName, inviteUrl, role, expiresInDays: EXPIRES_DAYS }),
       });
       emailResults.push({ email, status: "ok" });
     } catch {
