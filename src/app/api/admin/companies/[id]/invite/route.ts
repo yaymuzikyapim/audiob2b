@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
     if (existing) {
       return NextResponse.json(
-        { error: `Bu e-posta ${existing.company.name} şirketinde kayıtlı.` },
+        { error: `Bu e-posta ${existing.company?.name ?? "başka bir şirket"} şirketinde kayıtlı.` },
         { status: 409 }
       );
     }
