@@ -73,3 +73,10 @@ review-company-001'deki şu hesaplara şimdilik dokunma (kullanıcı kararı, 5 
 Admin paneli kontrolleri QA_ADMIN_* hesabıyla yapılır (.env.local: QA_ADMIN_EMAIL / QA_ADMIN_PASSWORD).
 Şirket: AudioB2B QA (id: cmbqr6l9nxbmjh8kztutjmmds) — COMPANY_ADMIN rolü.
 Bu şifre rastgele üretilmiştir; gerektiğinde DB'de bcryptjs ile yenilenebilir.
+
+## Harici Test Servisi Davetleri
+
+mail-tester.com, Mailgun testleri veya benzeri harici servisler için yapılan davetler:
+- **Her zaman "Çalışan" (EMPLOYEE) rolüyle** gönderilir — yönetici rolü asla kullanılmaz.
+- Test tamamlanır tamamlanmaz davet tokeni `inviteToken.deleteMany` ile silinir.
+- Silme sonrası `/api/invite/accept` ile token'ın `"geçersiz veya süresi dolmuş"` döndürdüğü doğrulanır.
