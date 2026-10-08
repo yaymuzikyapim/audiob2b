@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { forgotPasswordSchema, generateResetToken } from "@/lib/password";
+import { getBaseUrl } from "@/lib/base-url";
 import { RATE_LIMIT } from "@/lib/rate-limit";
 import { sendPasswordResetEmail } from "@/lib/emails/reset-password";
 
@@ -48,8 +49,7 @@ export async function POST(req: NextRequest) {
         data: { userId: user.id, event: "RESET_REQUEST", ipAddress: ip },
       });
 
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://audiob2b.com.tr";
-      const resetUrl = `${baseUrl}/reset-password?token=${raw}`;
+      const resetUrl = `${getBaseUrl()}/reset-password?token=${raw}`;
 
       await sendPasswordResetEmail({ to: email, name: user.name, resetUrl });
     }

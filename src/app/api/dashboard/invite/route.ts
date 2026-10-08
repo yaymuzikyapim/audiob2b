@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-guard";
+import { getBaseUrl } from "@/lib/base-url";
 import { sendEmail } from "@/lib/mailer";
 import { inviteEmailHtml } from "@/lib/emails/invite";
 
@@ -78,8 +79,7 @@ export async function POST(req: NextRequest) {
   }
 
   // E-posta commit SONRASI gönderilir
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const inviteUrl = `${baseUrl}/invite/${invite.token}`;
+  const inviteUrl = `${getBaseUrl()}/invite/${invite.token}`;
 
   try {
     await sendEmail({

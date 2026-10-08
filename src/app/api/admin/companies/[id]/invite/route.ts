@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-guard";
+import { getBaseUrl } from "@/lib/base-url";
 import { sendEmail } from "@/lib/mailer";
 import { inviteEmailHtml } from "@/lib/emails/invite";
 import { randomBytes } from "crypto";
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     await prisma.inviteToken.create({ data: { token, email, role, companyId, expiresAt } });
 
-    const inviteUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/invite/${token}`;
+    const inviteUrl = `${getBaseUrl()}/invite/${token}`;
 
     try {
       await sendEmail({

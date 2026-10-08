@@ -1,4 +1,5 @@
 import { sendEmail } from "@/lib/mailer";
+import { getBaseUrl } from "@/lib/base-url";
 
 export async function sendPasswordChangedEmail(opts: {
   to: string;
@@ -36,7 +37,7 @@ export async function sendPasswordChangedEmail(opts: {
             ${ipLine}
             <p style="margin:16px 0 0;font-size:13px;color:#64748b;line-height:1.5">
               Bu işlemi siz yapmadıysanız lütfen hemen
-              <a href="${process.env.NEXT_PUBLIC_BASE_URL ?? "https://audiob2b.com.tr"}/forgot-password"
+              <a href="${getBaseUrl()}/forgot-password"
                  style="color:#60a5fa">şifrenizi sıfırlayın</a> ve
               destek ekibimizle iletişime geçin.
             </p>
