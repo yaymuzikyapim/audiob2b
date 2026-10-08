@@ -7,7 +7,7 @@ export const FAQS: FAQItem[] = [
   {
     question: "AudioB2B kütüphanesinde hangi kategorilerde içerikler bulunuyor?",
     answer:
-      "Kütüphanemizde roman ve kurgu, iş ve kişisel gelişim, tarih ve düşünce, dünya klasikleri ve çocuk edebiyatı gibi kategorilerde sesli kitaplar yer alır. Tüm içerikler yayınevlerinden lisanslıdır.",
+      "Kütüphanemizde roman ve kurgu, iş ve kişisel gelişim, tarih ve düşünce, dünya klasikleri ve çocuk edebiyatı gibi kategorilerde sesli kitaplar yer alır. Kütüphanemiz, yayınevleri ve hak sahipleriyle yapılan anlaşmalarla düzenli olarak genişletilmektedir.",
   },
   {
     question: "Sistemi şirketimize entegre etmek için IT / bilgi işlem desteği gerekir mi?",
