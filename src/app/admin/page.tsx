@@ -1,9 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-
-function formatDate(d: Date) {
-  return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));
-}
+import { fmtDate } from "@/lib/format-date";
 
 export default async function AdminDashboard() {
   const [companiesTotal, booksTotal, booksSilent, packagesTotal, usersTotal, activeCompanies, recentCompanies] =
@@ -76,7 +73,7 @@ export default async function AdminDashboard() {
             <Link key={c.id} href={`/admin/companies/${c.id}`} className="flex items-center justify-between px-6 py-4 hover:bg-gray-800/50 transition-colors">
               <div>
                 <div className="text-white font-medium text-sm">{c.name}</div>
-                <div className="text-gray-500 text-xs mt-0.5">{formatDate(c.createdAt)} · {c.maxSeats} koltuk · {c.licenseType === "PER_SEAT" ? "Koltuk Başı" : "Esnek Havuz"}</div>
+                <div className="text-gray-500 text-xs mt-0.5">{fmtDate(c.createdAt)} · {c.maxSeats} koltuk · {c.licenseType === "PER_SEAT" ? "Koltuk Başı" : "Esnek Havuz"}</div>
               </div>
               <span className={`text-xs px-2 py-1 rounded-full font-medium ${c.isActive ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
                 {c.isActive ? "Aktif" : "Pasif"}

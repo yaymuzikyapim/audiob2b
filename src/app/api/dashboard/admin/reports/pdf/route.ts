@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import path from "path";
 import React from "react";
+import { fmtDate } from "@/lib/format-date";
 import {
   Document, Page, View, Text, Svg, Rect, Line,
   Font, StyleSheet, renderToBuffer,
@@ -56,11 +57,6 @@ function secToHms(sec: number): string {
   return `${m}dk`;
 }
 
-function fmtDate(iso: string): string {
-  const months = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
-  const d = new Date(iso);
-  return `${d.getUTCDate()} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
-}
 
 const CHART_W = 515;
 const CHART_H = 90;
@@ -169,7 +165,7 @@ function ReportDoc({ data }: { data: ReportData }) {
         data.firstChapterDate
           ? React.createElement(Text, { style: s.footerText }, `* Tamamlanan kitap ve ortalama ilerleme, ${fmtDate(data.firstChapterDate)} tarihinden itibaren bölüm bazlı veride hesaplanmaktadır.`)
           : null,
-        React.createElement(Text, { style: { ...s.footerText, marginTop: 2 } }, `Rapor oluşturma tarihi: ${new Date().toLocaleDateString("tr-TR")}`),
+        React.createElement(Text, { style: { ...s.footerText, marginTop: 2 } }, `Rapor oluşturma tarihi: ${fmtDate(new Date())}`),
       ),
     ),
     // Page 2: user table
@@ -188,7 +184,7 @@ function ReportDoc({ data }: { data: ReportData }) {
               React.createElement(Text, { style: { ...s.tCell, flex: 2 } }, u.name ?? u.email.split("@")[0]),
               React.createElement(Text, { style: { ...s.tCell, flex: 1.5, textAlign: "right" } }, secToHms(u.listenedSec)),
               React.createElement(Text, { style: { ...s.tCell, flex: 1, textAlign: "right" } }, String(u.distinctBooks)),
-              React.createElement(Text, { style: { ...s.tCell, flex: 1.5, textAlign: "right" } }, new Date(u.lastPlayedAt).toLocaleDateString("tr-TR")),
+              React.createElement(Text, { style: { ...s.tCell, flex: 1.5, textAlign: "right" } }, fmtDate(u.lastPlayedAt)),
               React.createElement(Text, { style: { ...s.tCell, flex: 1, textAlign: "right" } }, `%${u.avgProgress}`),
             )
           ),

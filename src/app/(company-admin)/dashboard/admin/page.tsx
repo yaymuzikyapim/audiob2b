@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fmtLongDate } from "@/lib/format-date";
 import {
   AreaChart,
   Area,
@@ -74,8 +75,7 @@ function fmtWeekLabel(iso: string) {
 }
 
 function fmtDate(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+  return fmtLongDate(iso);
 }
 
 function fmtDateRange(from: string, to: string) {

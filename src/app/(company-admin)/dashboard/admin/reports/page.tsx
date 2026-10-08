@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { fmtDate } from "@/lib/format-date";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer,
 } from "recharts";
@@ -41,7 +42,7 @@ function fmtDateShort(iso: string): string {
 }
 
 function fmtDateFull(iso: string): string {
-  return new Date(iso).toLocaleDateString("tr-TR");
+  return fmtDate(iso);
 }
 
 function fmtXTick(date: string, prev: string | null): string {

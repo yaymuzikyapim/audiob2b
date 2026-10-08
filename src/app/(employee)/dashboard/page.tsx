@@ -2,16 +2,13 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { fmtLongDate } from "@/lib/format-date";
 
 function formatDuration(sec: number) {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   if (h > 0) return `${h}s ${m}dk`;
   return `${m}dk`;
-}
-
-function formatDate(d: Date) {
-  return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "long", year: "numeric" }).format(new Date(d));
 }
 
 export default async function DashboardHome() {
@@ -88,7 +85,7 @@ export default async function DashboardHome() {
             {daysLeft > 0 ? `${daysLeft} gün` : "Süresi doldu"}
           </div>
           <div className="text-white font-medium text-sm mt-1">Lisans Süresi</div>
-          <div className="text-gray-500 text-xs mt-0.5">{company ? formatDate(company.endDate) : ""}'e kadar</div>
+          <div className="text-gray-500 text-xs mt-0.5">{company ? fmtLongDate(company.endDate) : ""}'e kadar</div>
         </div>
       </div>
 

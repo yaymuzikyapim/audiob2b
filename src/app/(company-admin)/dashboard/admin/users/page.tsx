@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { fmtDate } from "@/lib/format-date";
 import {
   Users,
   UserCheck,
@@ -66,11 +67,6 @@ function fmtListened(sec: number): string {
   if (h > 0) return `${h} sa ${m} dk`;
   if (m > 0) return `${m} dk`;
   return `${sec} sn`;
-}
-
-function fmtDate(s: string | null) {
-  if (!s) return "—";
-  return new Date(s).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function roleTR(role: string) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth-guard";
 import { parsePeriod, computeReportData } from "@/lib/report-data";
 import ExcelJS from "exceljs";
+import { fmtDate } from "@/lib/format-date";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,7 @@ export async function GET(req: Request) {
     row.height = 22;
   }
 
-  const dateRange = `${from.toLocaleDateString("tr-TR")} – ${to.toLocaleDateString("tr-TR")}`;
+  const dateRange = `${fmtDate(from)} – ${fmtDate(to)}`;
 
   // --- Özet sheet ---
   const ws1 = wb.addWorksheet("Özet");
@@ -105,7 +106,7 @@ export async function GET(req: Request) {
       email: u.email,
       listenedSec: secToHms(u.listenedSec),
       distinctBooks: u.distinctBooks,
-      lastPlayedAt: new Date(u.lastPlayedAt).toLocaleDateString("tr-TR"),
+      lastPlayedAt: fmtDate(u.lastPlayedAt),
       avgProgress: u.avgProgress,
     });
   }

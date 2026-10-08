@@ -1,9 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-
-function formatDate(d: Date) {
-  return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));
-}
+import { fmtDate } from "@/lib/format-date";
 
 export default async function CompaniesPage() {
   const companies = await prisma.company.findMany({
@@ -63,7 +60,7 @@ export default async function CompaniesPage() {
                     {c.licenseType === "PER_SEAT" ? `${c.maxSeats} koltuk` : `${c.maxSeats} havuz`}
                   </td>
                   <td className="px-6 py-4 text-gray-400 text-sm">{c._count.users}</td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">{formatDate(c.endDate)}</td>
+                  <td className="px-6 py-4 text-gray-400 text-sm">{fmtDate(c.endDate)}</td>
                   <td className="px-6 py-4">
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${c.isActive ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
                       {c.isActive ? "Aktif" : "Pasif"}

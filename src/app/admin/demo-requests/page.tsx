@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { fmtDateTime } from "@/lib/format-date";
 
 export const metadata: Metadata = { title: "Demo Talepleri — Admin" };
-
-function fmt(d: Date) {
-  return new Intl.DateTimeFormat("tr-TR", {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  }).format(new Date(d));
-}
 
 export default async function DemoRequestsPage() {
   const requests = await prisma.demoRequest.findMany({
@@ -43,7 +37,7 @@ export default async function DemoRequestsPage() {
             <tbody className="divide-y divide-gray-800">
               {requests.map((r) => (
                 <tr key={r.id} className="bg-gray-950 hover:bg-gray-900 transition-colors">
-                  <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{fmt(r.createdAt)}</td>
+                  <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{fmtDateTime(r.createdAt)}</td>
                   <td className="px-4 py-3 text-white font-medium">{r.company}</td>
                   <td className="px-4 py-3 text-gray-200">{r.name}</td>
                   <td className="px-4 py-3">

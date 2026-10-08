@@ -2,13 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-guard";
 import { redirect } from "next/navigation";
 import NewLinkForm from "./NewLinkForm";
+import { fmtShortDateTime } from "@/lib/format-date";
 
 function fmt(d: Date | null) {
-  if (!d) return "—";
-  return new Date(d).toLocaleString("tr-TR", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
+  return fmtShortDateTime(d);
 }
 
 export default async function ProposalsPage() {

@@ -6,10 +6,7 @@ import AdminInviteButton from "@/components/admin/AdminInviteButton";
 import AddUserButton from "@/components/admin/AddUserButton";
 import CompanyBranding from "@/components/admin/CompanyBranding";
 import ResetPasswordButton from "@/components/admin/ResetPasswordButton";
-
-function formatDate(d: Date) {
-  return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "long", year: "numeric" }).format(new Date(d));
-}
+import { fmtLongDate, fmtDayMonth } from "@/lib/format-date";
 
 export default async function CompanyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -90,7 +87,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
         </div>
         <div className={`bg-gray-900 border rounded-2xl p-5 ${daysLeft < 30 ? "border-orange-500/30" : "border-gray-800"}`}>
           <div className="text-gray-500 text-xs uppercase tracking-wide mb-3">Sözleşme</div>
-          <div className="text-white font-semibold">{formatDate(company.endDate)}'e kadar</div>
+          <div className="text-white font-semibold">{fmtLongDate(company.endDate)}'e kadar</div>
           <div className={`text-sm mt-1 ${daysLeft < 30 ? "text-orange-400" : "text-gray-400"}`}>
             {daysLeft > 0 ? `${daysLeft} gün kaldı` : "Süresi doldu"}
           </div>
@@ -127,7 +124,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
                   <div>
                     <div className="text-white text-sm">{inv.email}</div>
                     <div className="text-gray-500 text-xs mt-0.5">
-                      {new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(inv.createdAt))} gönderildi
+                      {fmtDayMonth(inv.createdAt)} gönderildi
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -171,7 +168,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
                   <span className="text-gray-400 text-xs">{listeningLabel}</span>
                   <span className="text-gray-500 text-xs">
                     {u.lastLoginAt
-                      ? `Son giriş: ${new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(u.lastLoginAt))}`
+                      ? `Son giriş: ${fmtDayMonth(u.lastLoginAt)}`
                       : "Henüz giriş yapmadı"}
                   </span>
                   <span className="text-gray-500 text-xs">{u.role === "COMPANY_ADMIN" ? "Yönetici" : "Çalışan"}</span>

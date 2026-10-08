@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import { fmtDateTime } from "@/lib/format-date";
 
 interface Company { id: string; name: string; count: number; }
 interface Book { id: string; title: string; author: string; coverUrl: string | null; }
@@ -319,7 +320,7 @@ export default function NotificationsPage() {
                     <p className="text-sm text-white font-medium truncate">{log.title}</p>
                     <p className="text-xs text-gray-400 truncate mt-0.5">{log.body}</p>
                     <div className="flex flex-wrap gap-2 mt-1.5 text-xs text-gray-500">
-                      <span>{new Date(log.sentAt).toLocaleString("tr-TR")}</span>
+                      <span>{fmtDateTime(log.sentAt)}</span>
                       <span>·</span>
                       <span>{log.target === "company" ? (company?.name ?? log.companyId ?? "Şirket") : "Tüm kullanıcılar"}</span>
                       <span>·</span>
