@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { sendEmail } from "@/lib/mailer";
+import { prisma } from "@/lib/prisma";
+import { RATE_LIMIT } from "@/lib/rate-limit";
 
 const SALES_EMAIL = process.env.SALES_EMAIL || "satis@audiob2b.com.tr";
 
@@ -19,7 +21,6 @@ const schema = z.object({
 });
 
 function sanitizeHeader(str: string) {
-  // E-posta başlığında header injection (CRLF) engelleme
   return str.replace(/[\r\n]+/g, " ").trim();
 }
 
@@ -32,7 +33,26 @@ function esc(s: string) {
     .replace(/'/g, "&#39;");
 }
 
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+
+  // IP başına saatte 5 talep
+  const rl = await RATE_LIMIT.demoIp(ip);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Çok fazla talep gönderildi. Lütfen bir saat sonra tekrar deneyin." },
+      { status: 429 }
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -47,19 +67,38 @@ export async function POST(req: NextRequest) {
   }
   const d = parsed.data;
 
-  // Honeypot kontrolü: bot doldurduysa sahte başarı dön
+  // Honeypot: bot doldurduysa sahte başarı (rate limit sayacı artmış olsa da kayıt tutma)
   if (d.website) {
     return NextResponse.json({ ok: true });
   }
 
-  // Zaman kontrolü: form açılışından itibaren 1.5 saniyeden kısa sürede yollandıysa bot say
+  // Süre: 1.5 saniyeden kısa → bot say
   if (d.formLoadedAt && Date.now() - d.formLoadedAt < 1500) {
     return NextResponse.json({ ok: true });
   }
 
+  // DB'ye kaydet (e-posta başarısız olsa da kayıt kalır)
+  let dbError: string | null = null;
+  try {
+    await prisma.demoRequest.create({
+      data: {
+        name: d.name,
+        company: d.company,
+        email: d.email,
+        phone: d.phone || null,
+        employeeCount: d.employeeCount || null,
+        message: d.message || null,
+        kvkkAccepted: d.kvkkAccepted,
+      },
+    });
+  } catch (err: unknown) {
+    dbError = err instanceof Error ? err.message : "Bilinmeyen DB hatası";
+    console.error("[DemoRequest DB Error]:", dbError);
+  }
+
+  // E-posta gönder (kayıt başarısız olsa da denenir)
   const cleanCompany = sanitizeHeader(d.company);
   const subject = `AudioB2B Demo Talebi — ${cleanCompany}`;
-
   const html = `
     <h2>Yeni Kurumsal Demo Talebi</h2>
     <table cellpadding="6" style="font-family:sans-serif;font-size:14px;border-collapse:collapse;">
@@ -72,19 +111,18 @@ export async function POST(req: NextRequest) {
       <tr><td style="color:#666;"><b>KVKK Onayı:</b></td><td>Alındı (Aydınlatma Metni okundu)</td></tr>
     </table>`;
 
+  let emailError: string | null = null;
   try {
-    await sendEmail({
-      to: SALES_EMAIL,
-      subject,
-      html,
-      replyTo: d.email,
-    });
+    await sendEmail({ to: SALES_EMAIL, subject, html, replyTo: d.email });
   } catch (err: unknown) {
-    // KVKK gereği kişisel veriyi loga basmıyoruz, sadece teknik hata mesajını logluyoruz
-    const errorMessage = err instanceof Error ? err.message : "Bilinmeyen hata";
-    console.error("[DemoRequest API Error]: E-posta iletimi başarısız oldu:", errorMessage);
+    emailError = err instanceof Error ? err.message : "Bilinmeyen hata";
+    console.error("[DemoRequest Email Error]:", emailError);
+  }
+
+  // Her ikisi de başarısız olduysa kullanıcıya hata dön
+  if (dbError && emailError) {
     return NextResponse.json(
-      { error: "E-posta iletimi sırasında bir hata oluştu." },
+      { error: "Talebiniz iletilirken bir sorun oluştu." },
       { status: 500 }
     );
   }

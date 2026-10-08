@@ -315,6 +315,22 @@ enum PasswordEvent {
   ADMIN_TRIGGER
 }
 
+// ─── DEMO TALEPLERİ ───────────────────────────────────────────────
+
+model DemoRequest {
+  id            String   @id @default(cuid())
+  name          String
+  company       String
+  email         String
+  phone         String?
+  employeeCount String?
+  message       String?
+  kvkkAccepted  Boolean
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model PasswordAuditLog {
   id        String        @id @default(cuid())
   userId    String

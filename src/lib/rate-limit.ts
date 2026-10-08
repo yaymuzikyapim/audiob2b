@@ -61,6 +61,9 @@ export const RATE_LIMIT = {
   /** Penceredeki mevcut sayıyı kontrol eder — artırmaz. Her istekte kontrol için. */
   peekLoginFailures: (email: string, ip: string) =>
     peekRateLimit(`login:${email.toLowerCase()}:${ip}`, 15 * 60 * 1000, 10),
+  /** Demo talebi: IP başına saatte 5 */
+  demoIp: (ip: string) =>
+    checkRateLimit(`demo-ip:${ip}`, 60 * 60 * 1000, 5),
 } as const;
 
 /** windowStart'tan daha eski kayıtları sil. cleanup/cron route'undan çağrılır. */
