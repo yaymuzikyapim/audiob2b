@@ -242,7 +242,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showInvite, setShowInvite] = useState(false);
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean; sub?: string } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [confirmLeave, setConfirmLeave] = useState<string | null>(null);
   const reqRef = useRef(0);
@@ -299,9 +299,9 @@ export default function UsersPage() {
     history.replaceState(null, "", url.toString());
   }
 
-  function showToast(msg: string, ok = true) {
-    setToast({ msg, ok });
-    setTimeout(() => setToast(null), 3500);
+  function showToast(msg: string, ok = true, sub?: string) {
+    setToast({ msg, ok, sub });
+    setTimeout(() => setToast(null), sub ? 6000 : 3500);
   }
 
   async function handleAction(action: string, userId: string) {
@@ -372,7 +372,7 @@ export default function UsersPage() {
       body: JSON.stringify({ email, role }),
     });
     const d = await res.json();
-    if (res.ok) showToast("Davet yeniden gönderildi.");
+    if (res.ok) showToast("Davet yeniden gönderildi.", true, "Birkaç dakika içinde ulaşmazsa kişiden spam klasörünü kontrol etmesini isteyin.");
     else showToast(d.error ?? "Gönderilemedi.", false);
   }
 
@@ -649,7 +649,7 @@ export default function UsersPage() {
           onClose={() => setShowInvite(false)}
           onSuccess={() => {
             setShowInvite(false);
-            showToast("Davet gönderildi.");
+            showToast("Davet gönderildi.", true, "Birkaç dakika içinde ulaşmazsa kişiden spam klasörünü kontrol etmesini isteyin.");
             setTab("pending");
             loadCounts();
           }}
@@ -678,11 +678,16 @@ export default function UsersPage() {
           position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
           background: toast.ok ? "#14181F" : "#DC2626", color: "#fff",
           padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 500,
-          display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 16px rgba(0,0,0,.25)", zIndex: 200,
+          display: "flex", alignItems: "flex-start", gap: 8, boxShadow: "0 4px 16px rgba(0,0,0,.25)", zIndex: 200,
           maxWidth: "90vw",
         }}>
-          {toast.ok ? <Check size={15} /> : <X size={15} />}
-          {toast.msg}
+          <span style={{ marginTop: toast.sub ? 1 : 0, flexShrink: 0 }}>
+            {toast.ok ? <Check size={15} /> : <X size={15} />}
+          </span>
+          <div>
+            <div>{toast.msg}</div>
+            {toast.sub && <div style={{ fontSize: 11, color: "#9EA6B3", marginTop: 3, fontWeight: 400 }}>{toast.sub}</div>}
+          </div>
         </div>
       )}
     </div>
