@@ -429,7 +429,9 @@ Manuel kontrol listesi:
 
 ```bash
 source .env.tokyo
-# Vercel panelinden DATABASE_URL/DIRECT_URL → Tokyo değerlerine geri al (TOKYO_DATABASE_URL / TOKYO_DIRECT_URL)
+# Vercel panelinden:
+#   DATABASE_URL  → TOKYO_POOLER_URL   (Transaction pooler — test edildi ✅)
+#   DIRECT_URL    → TOKYO_DIRECT_URL   (Session pooler)
 # vercel.json: "regions": ["hnd1"]
 # ./deploy.sh origin/main  (~5 dk)
 # .env: DATABASE_URL/DIRECT_URL → .env.tokyo değerlerine geri çevir
