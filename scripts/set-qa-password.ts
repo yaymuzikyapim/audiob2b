@@ -8,7 +8,6 @@
 
 import { createInterface } from "readline";
 import { config } from "dotenv";
-import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { newPasswordSchema, hashPassword, isCommonPassword } from "../src/lib/password";
@@ -68,9 +67,8 @@ async function main() {
     process.exit(1);
   }
 
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const adapter = new PrismaPg(pool);
-  const prisma = new PrismaClient({ adapter } as never);
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+  const prisma = new PrismaClient({ adapter });
 
   try {
     // Kullanıcıyı bul ve şirket kontrolü yap
@@ -135,7 +133,6 @@ async function main() {
     console.log(`Şifre güncellendi: ${email}`);
   } finally {
     await prisma.$disconnect();
-    await pool.end();
   }
 }
 
