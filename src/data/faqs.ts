@@ -37,7 +37,7 @@ export const FAQS: FAQItem[] = [
   {
     question: "Kişisel veriler ve KVKK süreçleri nasıl işletiliyor?",
     answer:
-      "Hizmetin sunulması için çalışanın adı, kurumsal e-posta adresi ve kullanım verileri (dinlenen kitaplar, dinleme süreleri) ile IP adresi gibi teknik veriler işlenir; kimlik numarası, sağlık verisi veya finansal veri toplanmaz. Veriler şifreli bağlantı (HTTPS/TLS) üzerinden iletilir, parolalar geri döndürülemez biçimde (bcrypt) saklanır. Veritabanı ve ses dosyaları Avrupa Birliği'nde (Frankfurt) barındırılır; web barındırma ve e-posta iletimi için ABD merkezli hizmet sağlayıcılar kullanılır. Platformda yalnızca oturum için gerekli bir çerez kullanılır; analitik veya reklam aracı yoktur. Ayrıntılar için Gizlilik Politikası ve Aydınlatma Metnimizi inceleyebilirsiniz.",
+      "Hizmetin sunulması için çalışanın adı, kurumsal e-posta adresi ve kullanım verileri (dinlenen kitaplar, dinleme süreleri) ile IP adresi gibi teknik veriler işlenir; kimlik numarası, sağlık verisi veya finansal veri toplanmaz. Veriler şifreli bağlantı (HTTPS/TLS) üzerinden iletilir, parolalar geri döndürülemez biçimde (bcrypt) saklanır. Veritabanı Japonya'da (Tokyo), ses ve görsel dosyalar Almanya'da (Frankfurt) barındırılır; web barındırma ve e-posta iletimi için ABD merkezli hizmet sağlayıcılar kullanılır. Platformda yalnızca oturum için gerekli bir çerez kullanılır; analitik veya reklam aracı yoktur. Ayrıntılar için Gizlilik Politikası ve Aydınlatma Metnimizi inceleyebilirsiniz.",
   },
   {
     question: "Lisanslama ve fiyatlandırma nasıl işliyor?",
