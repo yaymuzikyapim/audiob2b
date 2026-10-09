@@ -28,7 +28,7 @@ const NAV = [
   { href: "/dashboard/admin", label: "Genel Bakış", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/admin/users", label: "Kullanıcılar", icon: Users },
   { href: "/dashboard/admin/reports", label: "Raporlar", icon: BarChart2 },
-  { href: "/dashboard/admin/library", label: "Kütüphane", icon: Library, soon: true },
+  { href: "/dashboard/admin/library", label: "Kütüphane", icon: Library },
 ];
 
 const SIDEBAR_W = 260;
@@ -87,25 +87,18 @@ export default function AdminShell({
           return (
             <Link
               key={item.href}
-              href={item.soon ? "#" : item.href}
-              onClick={item.soon ? (e) => e.preventDefault() : undefined}
-              aria-disabled={item.soon}
+              href={item.href}
               style={{
                 display: "flex", alignItems: "center", gap: 12, minHeight: 44, padding: "0 12px",
                 borderRadius: 8, textDecoration: "none", fontWeight: active ? 600 : 500, fontSize: 14,
-                color: item.soon ? "#9EA6B3" : active ? brand : "#3A414C",
+                color: active ? brand : "#3A414C",
                 background: active ? brand + "14" : "transparent",
                 transition: "background .12s, color .12s",
               }}
             >
               <Icon size={20} strokeWidth={1.8} />
               <span style={{ flex: 1 }}>{item.label}</span>
-              {item.soon && (
-                <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "#F0F2F5", color: "#9EA6B3" }}>
-                  Yakında
-                </span>
-              )}
-              {active && !item.soon && <ChevronRight size={14} />}
+              {active && <ChevronRight size={14} />}
             </Link>
           );
         })}

@@ -74,6 +74,21 @@ Admin paneli kontrolleri QA_ADMIN_* hesabıyla yapılır (.env.local: QA_ADMIN_E
 Şirket: AudioB2B QA (id: cmbqr6l9nxbmjh8kztutjmmds) — COMPANY_ADMIN rolü.
 Bu şifre rastgele üretilmiştir; gerektiğinde DB'de bcryptjs ile yenilenebilir.
 
+## Katalog Verisi — Canlı DB'de Değiştirme Yasağı
+
+**Book, Category ve PackageBook tabloları tüm şirketler arasında ortaktır.**
+Bir kitabın kategorisini değiştirmek, yeni kategori oluşturmak veya Book kaydı eklemek
+Demo paketini paylaşan diğer şirketleri (TPAO, review-company-001 dahil) anında etkiler.
+
+**Kural:**
+- Canlı DB'de katalog verisi (Book, Category, PackageBook) değiştiren test yapılmaz.
+- Yalnızca şunlara izin verilir:
+  - Salt okuma sorguları (SELECT)
+  - QA şirketine özgü kayıtlar — ancak o kayıt başka şirketlerin paketinde YOK ise
+    (örn. PackageBook yalnızca QA paketine bağlıysa, book kaydı global olsa da)
+- Kitap kategorisi değiştirme, kategori oluşturma/silme: canlı DB'de asla test için yapılmaz.
+- Bu ihtiyaç için yerel veritabanı veya staging ortamı kullanılır.
+
 ## Harici Test Servisi Davetleri
 
 mail-tester.com, Mailgun testleri veya benzeri harici servisler için yapılan davetler:
