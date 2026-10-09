@@ -27,11 +27,27 @@ Kullanıcı bu dosyayı kendisi doldurur. **Değerler hiçbir komut çıktısın
 
 ```
 # .env.migration (kullanıcı dolduracak — değerleri buraya yazmayın)
-FRANKFURT_DATABASE_URL=
-FRANKFURT_DIRECT_URL=
+FRANKFURT_DATABASE_URL=   # Transaction pooler — port 6543, pooler.supabase.com
+FRANKFURT_DIRECT_URL=     # Session pooler — port 5432, pooler.supabase.com
 ```
 
 Dosyayı yüklemeden önce: `chmod 600 .env.migration`
+
+### Frankfurt bağlantı mimarisi
+
+Frankfurt Supabase projesinde **IPv4 direkt bağlantı yoktur** (yalnızca IPv6).  
+Bu nedenle her iki bağlantı da `pooler.supabase.com` üzerinden gider:
+
+| Amaç | URL | Port | Mod |
+|---|---|---|---|
+| Uygulama (Vercel) | Transaction pooler | 6543 | `pgbouncer=true` gerekir |
+| Migration / pg_dump | Session pooler | 5432 | Tam oturum; pg_dump için uygun |
+
+**`schema.prisma` notu:** Datasource'da `url`/`directUrl` alanı yoktur; Prisma `DATABASE_URL`
+env'ini doğrudan okur. Migration için `DATABASE_URL` override ile çalışılır:
+```bash
+DATABASE_URL="$FRANKFURT_DIRECT_URL" npx prisma migrate deploy
+```
 
 ---
 
@@ -75,12 +91,14 @@ chmod 600 ~/Backups/audiob2b_tokyo_*.pgdump
 ### Adım 2 — Frankfurt'a restore
 
 ```bash
-source .env.migration   # FRANKFURT_DIRECT_URL'i yükle
+source .env.migration   # FRANKFURT_DIRECT_URL ve FRANKFURT_DATABASE_URL yükle
 
-# Frankfurt projesinde önce extension'ları aç (Supabase panel veya SQL):
-# CREATE EXTENSION IF NOT EXISTS pgcrypto;
-# CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-# CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+# Frankfurt projesinde önce extension'ları aç (Supabase panel: Database > Extensions):
+#   pgcrypto, uuid-ossp, pg_stat_statements
+# supabase_vault otomatik kurulur.
+
+# Frankfurt PostgreSQL sürümünü doğrula (17.x olmalı, pg_dump 18.6 uyumlu):
+psql "$FRANKFURT_DIRECT_URL" -c "SELECT version();"
 
 pg_restore \
   --dbname="$FRANKFURT_DIRECT_URL" \
@@ -90,25 +108,29 @@ pg_restore \
   ~/Backups/audiob2b_tokyo_$(date +%Y%m%d)*.pgdump
 ```
 
+`FRANKFURT_DIRECT_URL` = Session pooler (port 5432) — pg_restore için tam oturum gerekir; transaction pooler (6543) kullanılmaz.
+
 ### Adım 3 — Doğrulama
 
 ```bash
+source .env.migration
+
 # Tokyo satır sayıları
 DIRECT_URL_TOKYO=$(grep "^DIRECT_URL=" .env | cut -d= -f2- | tr -d '"')
 psql "$DIRECT_URL_TOKYO" -c \
   "SELECT relname, n_live_tup FROM pg_stat_user_tables ORDER BY relname;"
 
-# Frankfurt satır sayıları (aynı sorgu)
-source .env.migration
+# Frankfurt satır sayıları (aynı sorgu, session pooler)
 psql "$FRANKFURT_DIRECT_URL" -c \
   "SELECT relname, n_live_tup FROM pg_stat_user_tables ORDER BY relname;"
 
-# Frankfurt RLS kontrolü
+# Frankfurt RLS — 21 tablonun tümü 't' olmalı
 psql "$FRANKFURT_DIRECT_URL" -c \
   "SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname='public' ORDER BY tablename;"
 
-# Prisma migration durumu (migrate deploy ÇALIŞTIRMA)
+# Prisma migration durumu — schema.prisma'da url alanı yok, DATABASE_URL override ile:
 DATABASE_URL="$FRANKFURT_DIRECT_URL" npx prisma migrate status
+# Beklenen: 19 migration, hepsi "Applied"
 ```
 
 Beklenen: 21 tablonun tümünde satır sayıları eşleşmeli, RLS hepsi `t`, `migrate status` temiz.
@@ -173,14 +195,14 @@ pg_dump "$DIRECT_URL_TOKYO" \
 chmod 600 ~/Backups/audiob2b_tokyo_FINAL_*.pgdump
 
 # Frankfurt prova verisini temizle, yeniden restore
-source .env.migration
+source .env.migration   # FRANKFURT_DIRECT_URL yükle (session pooler, port 5432)
 psql "$FRANKFURT_DIRECT_URL" -c \
   "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
-# Extension'ları yeniden aç (schema drop sonrası)
-# CREATE EXTENSION IF NOT EXISTS pgcrypto;
-# CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-# CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+# Extension'ları yeniden aç (schema drop sonrası):
+# psql "$FRANKFURT_DIRECT_URL" -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+# psql "$FRANKFURT_DIRECT_URL" -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+# psql "$FRANKFURT_DIRECT_URL" -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
 
 pg_restore \
   --dbname="$FRANKFURT_DIRECT_URL" \
@@ -188,6 +210,7 @@ pg_restore \
   ~/Backups/audiob2b_tokyo_FINAL_*.pgdump
 
 # Satır sayısı karşılaştırması
+DIRECT_URL_TOKYO=$(grep "^DIRECT_URL=" .env | cut -d= -f2- | tr -d '"')
 psql "$DIRECT_URL_TOKYO" -c \
   "SELECT relname, n_live_tup FROM pg_stat_user_tables ORDER BY relname;"
 psql "$FRANKFURT_DIRECT_URL" -c \
@@ -197,13 +220,21 @@ psql "$FRANKFURT_DIRECT_URL" -c \
 ### Adım 3 — Frankfurt env + bölge değişimi + bakım modunu kapat (Deploy 2)
 
 1. **Kullanıcı** Vercel panelinden production env değişkenlerini günceller:
-   - `DATABASE_URL` → Frankfurt pooler (port 6543, transaction mode)
-   - `DIRECT_URL` → Frankfurt direct (port 5432)
+   - `DATABASE_URL` → Frankfurt **Transaction pooler** (port 6543, `pooler.supabase.com`)  
+     Prisma'nın pgBouncer transaction mode ile çalışması için URL'e `?pgbouncer=true` eklenmeli:  
+     `postgresql://...@aws-1-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true`
+   - `DIRECT_URL` → Frankfurt **Session pooler** (port 5432, `pooler.supabase.com`)  
+     Migration komutlarında `DATABASE_URL="$DIRECT_URL"` override ile kullanılır.
    - `MAINTENANCE_MODE` → kaldır (veya `false`)
 2. `vercel.json`: `"regions": ["fra1"]` (commit + push)
 3. `./deploy.sh origin/main` → **~4 dk**
 
 Bu tek deploy ile üç değişiklik birden yürürlüğe girer: Frankfurt DB, fra1 Lambda, bakım modu kapalı.
+
+> **`?pgbouncer=true` neden gerekli?**  
+> PgBouncer transaction modunda prepared statement'lar çalışmaz. Prisma bu parametreyi görünce
+> prepared statement kullanımını devre dışı bırakır. Olmadan prod'da "prepared statement does not
+> exist" hataları çıkabilir.
 
 ### Adım 4 — Yerel `.env` güncelleme
 
