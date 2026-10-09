@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 const SITE_URL = "https://www.audiob2b.com.tr";
-const SITE_TITLE = "Kurumsal Sesli Kitap Platformu — AudioB2B";
+const SITE_TITLE = "Kurumsal Sesli Kitap ve Çalışan Yan Hakkı | AudioB2B";
 const SITE_DESCRIPTION =
-  "Şirketinizin çalışanlarına kurumsal sesli kitap kütüphanesi sunun. Kolay yönetim paneli, iOS ve Android uygulaması, dinleme raporları ve marka uyumu. Demo talep edin.";
+  "Çalışanlarınıza 1.000'i aşkın sesli kitaptan oluşan kurumsal bir kütüphane sunun. iOS ve Android uygulaması, çevrimdışı dinleme, yönetim paneli ve Excel/PDF raporlar.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

@@ -52,10 +52,10 @@ export default function PrivacyPage() {
                 <b>Kullanıcı Hesap Verileri:</b> Ad, soyad, kurumsal e-posta adresi, şirket bilgisi ve tek yönlü parola karması (bcrypt).
               </li>
               <li>
-                <b>Kullanım Verileri:</b> Oturum açma tarihleri, dinlenen kitaplar, dinleme süreleri ve favoriler.
+                <b>Kullanım Verileri:</b> Oturum açma tarihleri, dinlenen kitaplar, dinleme süreleri ve favoriler. Müşteri şirketin yöneticileri, çalışan bazında yalnızca özet kullanım bilgilerini (toplam dinleme süresi, dinlenen kitap sayısı, son dinleme tarihi, ortalama ilerleme) görebilir; hangi çalışanın hangi kitabı dinlediği yöneticilere gösterilmez.
               </li>
               <li>
-                <b>Teknik Veriler ve Çerezler:</b> IP adresi, sistem erişim logları ve mobil bildirim izinlerine bağlı anlık bildirim belirteci (push token). Şifre sıfırlama ve değiştirme işlemlerinde güvenlik amacıyla IP adresi ve tarayıcı bilgisi kaydedilir. Platformda yalnızca oturumun sürdürülmesi için gerekli teknik çerezler kullanılır; reklam veya hedefleme çerezleri kullanılmaz.
+                <b>Teknik Veriler ve Çerezler:</b> IP adresi, sistem erişim logları ve mobil bildirim izinlerine bağlı anlık bildirim belirteci (push token). Şifre sıfırlama ve değiştirme işlemlerinde güvenlik amacıyla IP adresi ve tarayıcı bilgisi kaydedilir. Platformda yalnızca oturumun sürdürülmesi için zorunlu bir teknik çerez (audiob2b_session, 30 gün) kullanılır. Analitik, reklam veya hedefleme çerezi ya da aracı kullanılmaz.
               </li>
             </ul>
           </div>
@@ -122,7 +122,7 @@ export default function PrivacyPage() {
                 <b>Kullanıcı ve Dinleme Verileri:</b> Kurumsal müşteri ile yürütülen sözleşme süresince ve sözleşmenin sona ermesini takiben yasal zamanaşımı süreleri boyunca saklanır.
               </li>
               <li>
-                <b>Güvenlik kayıtları (şifre işlemleri):</b> 1 yıl. IP adresi ve tarayıcı bilgisi 1 yılın sonunda anonim hale getirilir; kayıt satırı silinmez.
+                <b>Güvenlik kayıtları (şifre işlemleri):</b> IP adresi ve tarayıcı bilgisi 1 yıl sonunda silinir; işlemin türü ve tarihi kaydı tutulmaya devam eder.
               </li>
             </ul>
           </div>
@@ -171,6 +171,9 @@ export default function PrivacyPage() {
                 Posta yoluyla: Kavaklıdere Mah. Konur Sokak No:52/12 Çankaya/Ankara
               </li>
             </ul>
+            <p className="mt-3 text-xs text-gray-500">
+              Başvurunuzu değerlendirebilmemiz için kimliğinizi doğrulamaya yönelik bilgi istenebilir. Başvurular, niteliğine göre en kısa sürede ve en geç 30 gün içinde sonuçlandırılır.
+            </p>
           </div>
         </section>
       </div>
