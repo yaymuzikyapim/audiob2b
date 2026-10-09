@@ -135,16 +135,31 @@ Prova başarılı ise kullanıcıya tarih öner ve onay al.
 
 ## AŞAMA 2 — GEÇİŞ (gece, kullanıcı onayıyla)
 
-### Adım 1 — Bakım modunu aç
+> **Vercel env değişikliği her zaman redeploy gerektirir.**  
+> `MAINTENANCE_MODE` ayarı, `DATABASE_URL`/`DIRECT_URL` ve `regions` değişikliklerinin
+> hepsi ayrı deploy ile yürürlüğe girer.
+>
+> **Gece akışının deploy sırası ve tahmini süreler:**
+> 1. `MAINTENANCE_MODE=true` + `regions=["hnd1"]` (Tokyo) ile deploy → **~4 dk**
+> 2. Son dump + Frankfurt restore + satır sayısı karşılaştırması → **~10-15 dk**
+> 3. Frankfurt env (`DATABASE_URL`/`DIRECT_URL`) + `MAINTENANCE_MODE` kaldır + `regions=["fra1"]` ile deploy → **~4 dk**
+>
+> Toplam bakım penceresi: **~20-25 dk**  
+> Frankfurt PostgreSQL sürümünü proje açılır açılmaz doğrula:  
+> `psql "$FRANKFURT_DIRECT_URL" -c "SELECT version();"` → **17.x** olmalı (pg_dump 18.6 uyumlu).
 
-Vercel panelinden `MAINTENANCE_MODE=true` ekle → Redeploy tetiklenir.  
-(Bakım modu özelliği önceden deploy edilmiş olmalı.)
+### Adım 1 — Bakım modunu aç (Deploy 1)
+
+Vercel panelinden `MAINTENANCE_MODE=true` ekle.  
+`vercel.json` `regions` değeri `hnd1`'de kalır (Tokyo, mevcut DB ile aynı bölge).  
+Commit gerekmez; yalnızca env değişikliği → Vercel otomatik redeploy başlatır (~4 dk).
 
 Doğrulama:
 ```bash
-curl -s -o /dev/null -w "%{http_code}" -X POST \
-  "https://www.audiob2b.com.tr/api/dashboard/progress/sync"
-# Beklenen: 503
+curl -sv -X POST \
+  "https://www.audiob2b.com.tr/api/dashboard/progress/sync" 2>&1 | \
+  grep "< HTTP\|< retry-after"
+# Beklenen: 503, retry-after: 300
 ```
 
 ### Adım 2 — Son yedek + Frankfurt restore
@@ -179,13 +194,16 @@ psql "$FRANKFURT_DIRECT_URL" -c \
   "SELECT relname, n_live_tup FROM pg_stat_user_tables ORDER BY relname;"
 ```
 
-### Adım 3 — Vercel env + deploy
+### Adım 3 — Frankfurt env + bölge değişimi + bakım modunu kapat (Deploy 2)
 
 1. **Kullanıcı** Vercel panelinden production env değişkenlerini günceller:
    - `DATABASE_URL` → Frankfurt pooler (port 6543, transaction mode)
    - `DIRECT_URL` → Frankfurt direct (port 5432)
+   - `MAINTENANCE_MODE` → kaldır (veya `false`)
 2. `vercel.json`: `"regions": ["fra1"]` (commit + push)
-3. `./deploy.sh origin/main`
+3. `./deploy.sh origin/main` → **~4 dk**
+
+Bu tek deploy ile üç değişiklik birden yürürlüğe girer: Frankfurt DB, fra1 Lambda, bakım modu kapalı.
 
 ### Adım 4 — Yerel `.env` güncelleme
 
