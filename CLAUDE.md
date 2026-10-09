@@ -37,6 +37,8 @@ Push yapmadan önce her iki koşul sağlanmalı:
 1. **`npm run build` yerelde temiz olmalı** — Vercel'de build'i kıran dosyalar (import edilip commit edilmemiş bileşenler vb.) yerelde de hata verir.
 2. **`git status` temiz olmalı** — takip edilmeyen (untracked) dosya bırakılmamalı; her dosya ya commit edilmeli, ya silinmeli, ya da `.gitignore`'a eklenmeli.
 
+**`npx vercel --prod` doğrudan çalıştırılmaz.** Deploy yalnızca `./deploy.sh origin/main` ile yapılır; bu script `git archive` kullanarak yalnızca commit edilmiş dosyaları yükler. Doğrudan `npx vercel --prod` çalıştırmak uncommitted dosyaları da Vercel'e yükler.
+
 ## Canlı Ortam Doğrulaması
 
 API testleri için `.env.local`'deki `TEST_USER_EMAIL` ve `TEST_USER_PASSWORD` kullanılır.
@@ -63,6 +65,14 @@ review-company-001'deki şu hesaplara şimdilik dokunma (kullanıcı kararı, 5 
 - audiob2b.com.tr EMPLOYEE: App Store inceleme hesabı — şirket, rol, veri değiştirilmez
 - iyzico.com EMPLOYEE: gerçek potansiyel müşteri — taşıma planı belirsiz
 - ~49 kurumsal alan adlı EMPLOYEE (tümü giriş yapmamış): şimdilik olduğu gibi kalır
+
+## DB Bölgesi
+
+**DB bölgesi: ap-northeast-1 (Tokyo)** — Supabase panelinden doğrulandı (9 Ekim 2026).
+Taşıma planlanıyor (Frankfurt / eu-central-1 hedefi); plan onaylanana kadar durum değişmez.
+Bölge iddiaları (Frankfurt, Tokyo, AB vb.) her zaman Supabase panelinden doğrulanır, env'deki hostname'den çıkarım yapılmaz.
+
+S3 ses/görsel bucket: `audiob2b-audio-files` — bölge `eu-central-1` (Frankfurt).
 
 ## Commit Kapsam Kuralı
 
