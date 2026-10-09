@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/session";
 
+const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
 const PUBLIC_EXACT = ["/", "/privacy"];
 const PUBLIC_PREFIXES = [
   "/login", "/invite",
@@ -13,6 +15,18 @@ const PUBLIC_PREFIXES = [
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (
+    process.env.MAINTENANCE_MODE === "true" &&
+    WRITE_METHODS.has(req.method) &&
+    pathname.startsWith("/api/")
+  ) {
+    return NextResponse.json(
+      { error: "Bakım modunda. Lütfen birkaç dakika sonra tekrar deneyin." },
+      { status: 503, headers: { "Retry-After": "300" } }
+    );
+  }
+
 
   const isPublic =
     PUBLIC_EXACT.includes(pathname) ||
