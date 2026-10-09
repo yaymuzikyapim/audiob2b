@@ -49,6 +49,17 @@ chmod 600 .env.tokyo
 `.env.tokyo` gitignore kapsamındadır (`.env*` kuralı). Bu dosya geçiş boyunca ve 7 gün sonraki Tokyo
 kapatılmasına kadar silinmez. Runbook'taki tüm Tokyo komutları bu dosyadan okur.
 
+| Değişken | Bağlantı tipi | Host |
+|---|---|---|
+| `TOKYO_DATABASE_URL` | Supabase direkt (IPv6) | `db.<ref>.supabase.co:5432` |
+| `TOKYO_DIRECT_URL` | Supabase direkt (IPv6) | `db.<ref>.supabase.co:5432` |
+| `TOKYO_POOLER_URL` | Transaction pooler | `pooler.supabase.com:6543` — test edildi ✅ |
+
+**`DIRECT_URL` çalışma anında kullanılmıyor:** `src/lib/prisma.ts` yalnızca `DATABASE_URL` okur;
+`DIRECT_URL` yalnızca `prisma.config.ts` üzerinden Prisma CLI (migrate, studio) komutlarında devreye
+girer. Vercel production'da `postinstall: prisma generate` build anında çalışır ama bu da DIRECT_URL
+kullanmaz. Geri dönüşte `DIRECT_URL` kritik değil; `DATABASE_URL = TOKYO_POOLER_URL` yeterlidir.
+
 ### Frankfurt bağlantıları — `.env.migration`
 
 ```
@@ -427,15 +438,41 @@ Manuel kontrol listesi:
 > Tokyo'ya geri dönüşte kaybolur. **Geri dönüş kararı Deploy 2'den sonraki ilk 1 saat içinde
 > verilmelidir.** Sonrasında veri kaybı riski kabul edilmiş sayılır.
 
+### Vercel Instant Rollback — sınırlı kullanım
+
+Vercel Instant Rollback, önceki bir deployment'ın build artifact'ını anında geri yükler.
+**Ancak environment variable'ları geri almaz** — env var'lar proje ayarlarındaki mevcut değerlerde
+kalır ([kaynak: vercel.com/docs/instant-rollback](https://vercel.com/docs/instant-rollback)).
+
+Bu nedenle DB migration geri dönüşünde Instant Rollback tek başına yeterli değildir:
+`DATABASE_URL` hâlâ Frankfurt'u gösterir, uygulama Frankfurt DB'ye bağlanmaya devam eder.
+Instant Rollback, `vercel.json` bölgesi (`fra1 → hnd1`) ve kod değişikliklerini anında geri alır —
+ama asıl geri dönüş yine aşağıdaki adımlarla yapılmalıdır.
+
+**Deploy 1 öncesi geri dönüş deployment ID'sini kaydet:**
+
+```bash
+# Deploy 1'den hemen önce çalıştır — mevcut production deployment ID'sini kaydet
+npx vercel ls --prod 2>/dev/null | head -5
+# veya Vercel dashboard > Project > Deployments listesinden mevcut production satırını not et
+```
+
+### Birincil geri dönüş (~5 dk)
+
 ```bash
 source .env.tokyo
-# Vercel panelinden:
-#   DATABASE_URL  → TOKYO_POOLER_URL   (Transaction pooler — test edildi ✅)
-#   DIRECT_URL    → TOKYO_DIRECT_URL   (Session pooler)
-# vercel.json: "regions": ["hnd1"]
-# ./deploy.sh origin/main  (~5 dk)
-# .env: DATABASE_URL/DIRECT_URL → .env.tokyo değerlerine geri çevir
+# 1. Vercel panelinden Production env güncelle:
+#    DATABASE_URL  → TOKYO_POOLER_URL   (Transaction pooler — test edildi ✅)
+#    DIRECT_URL    → herhangi bir değer (çalışma anında kullanılmıyor; kritik değil)
+# 2. vercel.json: "regions": ["hnd1"]  — commit
+# 3. ./deploy.sh origin/main
+# 4. .env: DATABASE_URL/DIRECT_URL → .env.tokyo değerlerine geri çevir
 ```
+
+### İkincil yol — Instant Rollback + env güncellemesi
+
+Deploy ID kaydedildiyse (yukarıda): Vercel dashboard'dan Deploy 1 öncesindeki deployment'a
+Instant Rollback yap (kod anında geri alınır), ardından env var'ları elle Tokyo'ya çevir.
 
 ---
 
@@ -490,6 +527,7 @@ chmod 600 ~/Backups/audiob2b_tokyo_SHUTDOWN_*.pgdump
 - [ ] `[K]` Canlı TTFB taban: `/api/health` × 3 istek
 
 **22:35 — Deploy 1: Bakım modu aç**
+- [ ] `[K]` Mevcut production deployment ID'si kaydedildi (geri dönüş için): `npx vercel ls --prod`
 - [ ] `[U]` Vercel Production env → `MAINTENANCE_MODE=true` ekle
 - [ ] `[K]` `./deploy.sh origin/main` (~4 dk)
 - [ ] `[K]` POST → HTTP 503 + `retry-after: 300` doğrula
@@ -522,8 +560,9 @@ chmod 600 ~/Backups/audiob2b_tokyo_SHUTDOWN_*.pgdump
 **Tokyo 7 gün ayakta kalır. `.env.tokyo` korunur. Pause ve silme ayrıca onaylanacak.**
 
 **Geri dönüş (gerekirse, ilk 1 saat içinde):**
-- [ ] `[U]` Vercel env → `.env.tokyo`'daki değerler (TOKYO_DATABASE_URL / TOKYO_DIRECT_URL)
+- [ ] `[U]` Vercel env → `DATABASE_URL = TOKYO_POOLER_URL` (DIRECT_URL kritik değil)
 - [ ] `[K]` `vercel.json`: `"regions": ["hnd1"]` + `./deploy.sh` (~5 dk)
+- [ ] İkincil yol: Vercel Instant Rollback (kaydedilen deployment ID) + env değişikliği
 - ⚠️ Deploy 2'den sonra yazılan veriler Tokyo'ya dönüşte kaybolur.
 
 ---
