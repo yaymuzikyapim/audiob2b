@@ -1,3 +1,11 @@
+/*
+  HUKUK DANIŞMANI İNCELEME NOTLARI (yayına alınmadan önce netleştirilecek):
+  1. Veri Sorumlusu / Veri İşleyen: Kurumsal çalışan verileri bakımından işverenin (müşteri şirketin) veri sorumlusu, AudioB2B'nin veri işleyen sıfatı teyit edilmelidir.
+  2. Yurt Dışı Aktarım (KVKK m.9): ABD ve AB sağlayıcılarına aktarım için uygulanacak hukuki mekanizma (Standart Sözleşme / Açık Rıza) netleştirilmelidir.
+  3. Saklama Süreleri: Demo talepleri ve sözleşme bitimi sonrası saklama süreleri şirket politikasına göre onaylanmalıdır.
+  4. İlgili Kişi Başvuruları (KVKK m.11): Çalışanların doğrudan işverenlerine mi yoksa AudioB2B'ye mi başvuracağı netleştirilmelidir.
+*/
+
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -13,14 +21,6 @@ export default function PrivacyPage() {
           Gizlilik Politikası ve Aydınlatma Metni
         </h1>
         <p className="text-gray-500 text-sm mb-10">Son güncelleme: Ekim 2026</p>
-
-        {/* 
-          HUKUK DANIŞMANI İNCELEME NOTLARI:
-          1. Veri Sorumlusu / Veri İşleyen: Kurumsal çalışan verileri bakımından işverenin (müşteri şirketin) veri sorumlusu, AudioB2B'nin veri işleyen sıfatı teyit edilmelidir.
-          2. Yurt Dışı Aktarım (KVKK m.9): ABD ve AB sağlayıcılarına aktarım için uygulanacak hukuki mekanizma (Standart Sözleşme / Açık Rıza) netleştirilmelidir.
-          3. Saklama Süreleri: Demo talepleri ve sözleşme bitimi sonrası saklama süreleri şirket politikasına göre onaylanmalıdır.
-          4. İlgili Kişi Başvuruları (KVKK m.11): Çalışanların doğrudan işverenlerine mi yoksa AudioB2B'ye mi başvuracağı netleştirilmelidir.
-        */}
 
         <section className="space-y-8 text-sm leading-relaxed">
           <div>
