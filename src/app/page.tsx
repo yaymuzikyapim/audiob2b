@@ -6,6 +6,14 @@ import FAQSection from "@/components/FAQSection";
 import { FAQS } from "@/data/faqs";
 
 export const metadata: Metadata = {
+  title: "Kurumsal Sesli Kitap ve Çalışan Yan Hakkı | AudioB2B",
+  description:
+    "Çalışanlarınıza 1.000'i aşkın sesli kitaptan oluşan kurumsal bir kütüphane sunun. iOS ve Android uygulaması, çevrimdışı dinleme, yönetim paneli ve Excel/PDF raporlar.",
+  openGraph: {
+    title: "Kurumsal Sesli Kitap ve Çalışan Yan Hakkı | AudioB2B",
+    description:
+      "Çalışanlarınıza 1.000'i aşkın sesli kitaptan oluşan kurumsal bir kütüphane sunun. iOS ve Android uygulaması, çevrimdışı dinleme, yönetim paneli ve Excel/PDF raporlar.",
+  },
   alternates: { canonical: "/" },
 };
 
@@ -107,22 +115,37 @@ export default function Home() {
       {/* HERO */}
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
         <span className="inline-block bg-orange-50 text-orange-600 text-xs font-semibold px-3 py-1 rounded-full mb-6 tracking-wide uppercase">
-          Kurumsal Sesli Kitap
+          Kurumsal Sesli Kitap · Çalışan Yan Hakkı
         </span>
         <h1 className="text-5xl font-extrabold tracking-tight leading-tight mb-6 text-gray-900">
-          Çalışanlarınıza en iyi<br />
-          <span className="text-orange-500">sesli kitap deneyimini</span> sunun
+          Çalışanlarınıza bir kütüphane hediye edin
         </h1>
         <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-          AudioB2B, şirketlerin çalışanlarına kurumsal sesli kitap kütüphanesi
-          sunduğu B2B platformdur. Kolay yönetim, mobil uygulama, detaylı raporlama.
+          AudioB2B, şirketlerin çalışanlarına 1.000&apos;i aşkın sesli kitaptan oluşan kurumsal bir kütüphane sunduğu platformdur. Çalışanlar ilgi alanlarına göre seçer; yolda, molada ya da evde dinler. Siz de davetleri, lisansları ve kullanım raporlarını tek panelden yönetirsiniz.
         </p>
-        <a
-          href="#demo"
-          className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-4 rounded-xl transition-colors text-base"
-        >
-          Demo Talep Et
-        </a>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
+          <a
+            href="#demo"
+            className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-4 rounded-xl transition-colors text-base"
+          >
+            Demo Talep Et
+          </a>
+          <a
+            href="#nasil-calisir"
+            className="inline-block border border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900 font-semibold px-8 py-4 rounded-xl transition-colors text-base"
+          >
+            Nasıl çalışır?
+          </a>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-gray-400 mb-8">
+          <span>iOS ve Android</span>
+          <span className="hidden sm:inline text-gray-300">·</span>
+          <span>Çevrimdışı dinleme</span>
+          <span className="hidden sm:inline text-gray-300">·</span>
+          <span>Excel ve PDF raporlar</span>
+          <span className="hidden sm:inline text-gray-300">·</span>
+          <span>Kişi başı yıllık lisans</span>
+        </div>
 
         {/* Mağaza rozeti */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
@@ -167,7 +190,7 @@ export default function Home() {
       <section className="py-14 bg-gray-50 overflow-hidden">
         <div className="max-w-6xl mx-auto px-6 text-center mb-10">
           <h2 className="text-3xl font-bold mb-3">Kütüphanemizden Seçmeler</h2>
-          <p className="text-gray-500 text-lg">1.000&apos;i aşkın sesli kitap, çalışanlarınızın parmaklarının ucunda</p>
+          <p className="text-gray-500 text-lg">1.000&apos;i aşkın sesli kitap, çalışanlarınızın cebinde</p>
         </div>
 
         {/* Sonsuz marquee şeridi */}
@@ -227,6 +250,29 @@ export default function Home() {
         </div>
       </section>
 
+      {/* TWO NEEDS */}
+      <section className="bg-gray-50 py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-3xl font-bold text-center mb-14">Tek platform, iki ihtiyaç</h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-white rounded-2xl p-8 shadow-sm">
+              <div className="text-3xl mb-4">🎁</div>
+              <h3 className="font-semibold text-xl mb-3">Yan haklarınıza yeni bir seçenek</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                Çalışanlarınıza her gün kullanabilecekleri, kendi seçtikleri bir yan hak sunun. Roman ve klasiklerden iş ve kişisel gelişime, tarihten çocuk kitaplarına kadar herkes kendi ilgisine göre dinler.
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl p-8 shadow-sm">
+              <div className="text-3xl mb-4">📈</div>
+              <h3 className="font-semibold text-xl mb-3">Öğrenme ve okuma kültürü</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                Eğitim ve gelişim programlarınızı, çalışanların kendi temposunda ilerleyebileceği bir kütüphaneyle destekleyin. Kurum genelindeki ilgiyi kullanım raporlarıyla izleyin.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* FEATURES */}
       <section className="bg-white py-20">
         <div className="max-w-6xl mx-auto px-6">
@@ -236,7 +282,7 @@ export default function Home() {
               {
                 icon: "📚",
                 title: "Kurumsal Kütüphane",
-                desc: "Şirketiniz için seçilmiş sesli kitap koleksiyonu. Roman, kurgu dışı, kişisel gelişim ve daha fazlası.",
+                desc: "1.000'i aşkın sesli kitap: roman, klasikler, iş ve kişisel gelişim, tarih, çocuk kitapları ve daha fazlası.",
               },
               {
                 icon: "📱",
@@ -275,7 +321,7 @@ export default function Home() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="py-20 max-w-6xl mx-auto px-6">
+      <section id="nasil-calisir" className="py-20 max-w-6xl mx-auto px-6">
         <h2 className="text-3xl font-bold text-center mb-14">Nasıl Çalışır?</h2>
         <div className="grid md:grid-cols-3 gap-10 text-center">
           {[
