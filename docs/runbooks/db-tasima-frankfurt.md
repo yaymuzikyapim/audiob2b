@@ -25,35 +25,53 @@
 > **Free plan notu:** Frankfurt projesinde PITR (Point-in-Time Recovery) yoktur.
 > Geçiş sonrası haftalık otomatik pg_dump yedeği ayrıca planlanacak (geçiş gecesi yapılmaz).
 
+> **Ağ kısıtlaması:** Tokyo'da SQL üzerinden görülemeyen platform düzeyinde ağ politikası olabilir.
+> Geçiş öncesinde her iki projenin Supabase panelinden Settings → Database → Network Restrictions
+> kontrol edilmeli; Tokyo'daki kısıtlamalar Frankfurt'a aynı şekilde uygulanmalı.
+
 ---
 
 ## Bağlantı Bilgileri
 
-Frankfurt bağlantı bilgileri `.env.migration` dosyasında tutulur (gitignore'da, repoya girmez).  
-Kullanıcı bu dosyayı kendisi doldurur. **Değerler hiçbir komut çıktısında gösterilmez.**
+### Tokyo bağlantıları — `.env.tokyo`
+
+Geçiş öncesinde `.env`'deki Tokyo değerleri `.env.tokyo`'ya kopyalanır:
+
+```bash
+# Geçiş gününden önce bir kez çalıştır
+grep "^DATABASE_URL=\|^DIRECT_URL=" .env > .env.tokyo
+# Satır başlarını TOKYO_ ön ekiyle yeniden adlandır:
+sed -i '' 's/^DATABASE_URL=/TOKYO_DATABASE_URL=/' .env.tokyo
+sed -i '' 's/^DIRECT_URL=/TOKYO_DIRECT_URL=/' .env.tokyo
+chmod 600 .env.tokyo
+```
+
+`.env.tokyo` gitignore kapsamındadır (`.env*` kuralı). Bu dosya geçiş boyunca ve 7 gün sonraki Tokyo
+kapatılmasına kadar silinmez. Runbook'taki tüm Tokyo komutları bu dosyadan okur.
+
+### Frankfurt bağlantıları — `.env.migration`
 
 ```
-# .env.migration (kullanıcı dolduracak — değerleri buraya yazmayın)
 FRANKFURT_DATABASE_URL=   # Transaction pooler — port 6543, pooler.supabase.com
 FRANKFURT_DIRECT_URL=     # Session pooler — port 5432, pooler.supabase.com
 ```
 
-Dosyayı yüklemeden önce: `chmod 600 .env.migration`
+`chmod 600 .env.migration`
 
 ### Frankfurt bağlantı mimarisi
 
 Frankfurt Supabase projesinde **IPv4 direkt bağlantı yoktur** (yalnızca IPv6).  
-Bu nedenle her iki bağlantı da `pooler.supabase.com` üzerinden gider:
+Her iki bağlantı da `pooler.supabase.com` üzerinden gider:
 
 | Amaç | URL | Port |
 |---|---|---|
 | Uygulama (Vercel) | Transaction pooler | 6543 |
 | Migration / pg_dump | Session pooler | 5432 |
 
-Frankfurt `DATABASE_URL` yapısı Tokyo'dakiyle birebir aynıdır: `postgresql://postgres.<ref>@<pooler-host>:6543/postgres` — **`?pgbouncer=true` eklenmez** (uygulama `@prisma/adapter-pg` ile bağlanır, prepared statement üretmez).
+Frankfurt `DATABASE_URL` yapısı Tokyo'dakiyle birebir aynıdır: `postgresql://postgres.<ref>@<pooler-host>:6543/postgres`  
+**`?pgbouncer=true` eklenmez** (uygulama `@prisma/adapter-pg` ile bağlanır, prepared statement üretmez).
 
-**`schema.prisma` notu:** Datasource'da `url`/`directUrl` alanı yoktur; Prisma `prisma.config.ts` üzerinden okur.  
-Migration için `DIRECT_URL` override:
+**`schema.prisma` notu:** Migration için:
 ```bash
 DIRECT_URL="$FRANKFURT_DIRECT_URL" npx prisma migrate status
 ```
@@ -70,6 +88,10 @@ DIRECT_URL="$FRANKFURT_DIRECT_URL" npx prisma migrate status
 - Database webhooks (pg_net): Kurulu değil
 - Supabase Storage: Boş
 
+**Frankfurt'ta `ensure_rls` event trigger var:** Frankfurt projesinde `ensure_rls` (ddl_command_end) event
+trigger'ı bulunuyor; Tokyo'da yok. Bu trigger veritabanı düzeyindedir — `DROP SCHEMA public CASCADE`'den
+etkilenmez, pg_restore boyunca da aktif kalır ve yeni oluşturulan tablolara otomatik RLS uygular.
+
 **Frankfurt projesinde açılacak extension'lar:**  
 `pgcrypto` · `uuid-ossp` · `pg_stat_statements` (Supabase panelinden Database > Extensions)  
 `supabase_vault` Supabase tarafından otomatik kurulur.
@@ -81,9 +103,9 @@ DIRECT_URL="$FRANKFURT_DIRECT_URL" npx prisma migrate status
 ### Adım 1 — Tokyo tam yedeği
 
 ```bash
-DIRECT_URL_TOKYO=$(grep "^DIRECT_URL=" .env | cut -d= -f2- | tr -d '"')
+source .env.tokyo
 
-pg_dump "$DIRECT_URL_TOKYO" \
+pg_dump "$TOKYO_DIRECT_URL" \
   --format=custom \
   --no-owner \
   --no-privileges \
@@ -93,14 +115,12 @@ pg_dump "$DIRECT_URL_TOKYO" \
 chmod 600 ~/Backups/audiob2b_tokyo_*.pgdump
 ```
 
-**Veri gizliliği:** Yedek dosya kişisel veri içerir.
-- Repoya commit edilmez.
-- Geçişten 7 gün sonra silinir: `rm ~/Backups/audiob2b_tokyo_*.pgdump`
+**Veri gizliliği:** Yedek dosya kişisel veri içerir — repoya girmez, geçişten 7 gün sonra silinir.
 
 ### Adım 2 — Frankfurt'a restore
 
 ```bash
-source .env.migration   # FRANKFURT_DIRECT_URL ve FRANKFURT_DATABASE_URL yükle
+source .env.migration
 
 # Frankfurt projesinde önce extension'ları aç (Supabase panel: Database > Extensions):
 #   pgcrypto, uuid-ossp, pg_stat_statements
@@ -117,20 +137,17 @@ pg_restore \
   ~/Backups/audiob2b_tokyo_$(date +%Y%m%d)*.pgdump
 ```
 
-`FRANKFURT_DIRECT_URL` = Session pooler (port 5432) — pg_restore için tam oturum gerekir; transaction pooler (6543) kullanılmaz.
-
 ### Adım 3 — Doğrulama
 
 ```bash
+source .env.tokyo
 source .env.migration
-DIRECT_URL_TOKYO=$(grep "^DIRECT_URL=" .env | cut -d= -f2- | tr -d '"')
 
-# Tokyo ve Frankfurt COUNT(*) karşılaştırması — FARK varsa geçiş durur
+# COUNT(*) karşılaştırması — FARK varsa script çıkış kodu 1
 python3 - <<'PYEOF'
 import subprocess, os, sys
 
-tokyo = os.environ.get("DIRECT_URL_TOKYO") or subprocess.check_output(
-    "grep '^DIRECT_URL=' .env | cut -d= -f2-", shell=True).decode().strip().strip('"')
+tokyo = os.environ["TOKYO_DIRECT_URL"]
 frankfurt = os.environ["FRANKFURT_DIRECT_URL"]
 
 def counts(url):
@@ -174,7 +191,6 @@ psql "$FRANKFURT_DIRECT_URL" -c \
 
 # Prisma migration durumu
 DIRECT_URL="$FRANKFURT_DIRECT_URL" npx prisma migrate status
-# Beklenen: 19 migration, hepsi "Applied"
 ```
 
 ### Adım 4 — Yerel okuma testi
@@ -208,8 +224,8 @@ Test sonrası `.env.local`'i Tokyo değerlerine geri al.
 ### Adım 1 — Bakım modunu aç (Deploy 1)
 
 1. **Kullanıcı** Vercel panelinden Production env'e `MAINTENANCE_MODE=true` ekler.
-2. `vercel.json` `regions` değeri `hnd1`'de kalır (Tokyo, mevcut DB ile aynı bölge) — commit gerekmez.
-3. `./deploy.sh origin/main` (~4 dk) — deploy.sh `git archive` kullanır, yalnızca commit edilmiş dosyaları yükler.
+2. `vercel.json` `regions` değeri `hnd1`'de kalır — commit gerekmez.
+3. `./deploy.sh origin/main` (~4 dk)
 
 Doğrulama:
 ```bash
@@ -222,60 +238,64 @@ curl -sv -X POST \
 ### Adım 2 — Son yedek + Frankfurt restore (korumalı script)
 
 ```bash
-DIRECT_URL_TOKYO=$(grep "^DIRECT_URL=" .env | cut -d= -f2- | tr -d '"')
-source .env.migration   # FRANKFURT_DIRECT_URL yükle
+source .env.tokyo
+source .env.migration
 
 # Son yedek
-pg_dump "$DIRECT_URL_TOKYO" \
+pg_dump "$TOKYO_DIRECT_URL" \
   --format=custom --no-owner --no-privileges --schema=public \
   -f ~/Backups/audiob2b_tokyo_FINAL_$(date +%Y%m%d_%H%M).pgdump
 chmod 600 ~/Backups/audiob2b_tokyo_FINAL_*.pgdump
 ```
 
 ```bash
-# Frankfurt temizleme — KORUMA: önce host ve DB doğrula, sonra DROP çalış
+# Frankfurt temizleme — KORUMA: host ve ref doğrula, sonra DROP çalış
 source .env.migration
 
 python3 - <<'PYEOF'
-import os, subprocess, sys, re
+import os, subprocess, sys
 
 url = os.environ["FRANKFURT_DIRECT_URL"]
 
 # Güvenlik: host "eu-central-1" içermeli
 if "eu-central-1" not in url:
     print(f"HATA: FRANKFURT_DIRECT_URL host'unda 'eu-central-1' bulunamadı.")
-    print("DROP çalıştırılmıyor. URL kontrol edin.")
+    print("DROP çalıştırılmıyor.")
     sys.exit(1)
 
-# Güvenlik: Tokyo ref'i (...tsra) içermemelisin
+# Güvenlik: Tokyo ref'i (...tsra) içermemeli
 if "tsra" in url:
     print("HATA: URL Tokyo ref'i (...tsra) içeriyor.")
     print("DROP çalıştırılmıyor.")
     sys.exit(1)
 
-# Bağlantıyı ve DB'yi doğrula
+# Bağlantıyı doğrula ve ekrana yaz
 result = subprocess.check_output(
     ["psql", url, "-t", "-c", "SELECT current_database(), inet_server_addr();"]
 ).decode().strip()
-print(f"Bağlantı doğrulandı: {result}")
+print(f"Bağlantı: {result}")
 print("Host eu-central-1 ✓, Tokyo ref yok ✓")
 print("DROP SCHEMA public CASCADE çalıştırılıyor...")
 
 subprocess.check_call(["psql", url, "-c", "DROP SCHEMA public CASCADE;"])
 subprocess.check_call(["psql", url, "-c", "CREATE SCHEMA public;"])
 
-# Supabase public şema yetkilerini geri kur
+# public şema yetkileri — yalnızca postgres ve service_role
+# (Data API ve automatic expose kapalı; anon/authenticated'a yetki verilmez)
 grants = [
-    "GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;",
-    "GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, anon, authenticated, service_role;",
-    "GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, anon, authenticated, service_role;",
-    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO postgres, anon, authenticated, service_role;",
-    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres, anon, authenticated, service_role;",
+    "GRANT USAGE ON SCHEMA public TO postgres, service_role;",
+    "GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, service_role;",
+    "GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, service_role;",
+    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO postgres, service_role;",
+    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres, service_role;",
 ]
 for g in grants:
     subprocess.check_call(["psql", url, "-c", g])
 
-print("Şema yetkileri yeniden kuruldu.")
+print("Şema yetkileri yeniden kuruldu (postgres + service_role).")
+# ensure_rls event trigger veritabanı düzeyindedir — DROP SCHEMA'dan etkilenmez.
+# pg_restore sonrası aktif kalır ve oluşturulan tablolara otomatik RLS uygular.
+print("ensure_rls event trigger: DROP SCHEMA'dan etkilenmez, aktif kalır.")
 PYEOF
 ```
 
@@ -288,15 +308,14 @@ pg_restore \
 ```
 
 ```bash
-# Satır sayısı karşılaştırması (COUNT(*), FARK sütunlu — fark varsa script çıkış kodu 1)
+# COUNT(*) karşılaştırması — FARK varsa geçiş durur
+source .env.tokyo
 source .env.migration
-DIRECT_URL_TOKYO=$(grep "^DIRECT_URL=" .env | cut -d= -f2- | tr -d '"')
 
 python3 - <<'PYEOF'
 import subprocess, os, sys
 
-tokyo = os.environ.get("DIRECT_URL_TOKYO") or subprocess.check_output(
-    "grep '^DIRECT_URL=' .env | cut -d= -f2-", shell=True).decode().strip().strip('"')
+tokyo = os.environ["TOKYO_DIRECT_URL"]
 frankfurt = os.environ["FRANKFURT_DIRECT_URL"]
 
 def counts(url):
@@ -338,72 +357,56 @@ PYEOF
 ### Adım 3 — Frankfurt env + bölge değişimi + bakım modunu kapat (Deploy 2)
 
 1. **Kullanıcı** Vercel panelinden production env değişkenlerini günceller:
-   - `DATABASE_URL` → Frankfurt **Transaction pooler** (port 6543, `pooler.supabase.com`)  
+   - `DATABASE_URL` → Frankfurt **Transaction pooler** (port 6543)  
      Yapı: `postgresql://postgres.<ref>@aws-1-eu-central-1.pooler.supabase.com:6543/postgres`
-   - `DIRECT_URL` → Frankfurt **Session pooler** (port 5432, `pooler.supabase.com`)
+   - `DIRECT_URL` → Frankfurt **Session pooler** (port 5432)
    - `MAINTENANCE_MODE` → kaldır (veya `false`)
 2. `vercel.json`: `"regions": ["fra1"]` (commit + push)
 3. `./deploy.sh origin/main` → **~4 dk**
 
-Bu tek deploy ile üç değişiklik birden yürürlüğe girer: Frankfurt DB, fra1 Lambda, bakım modu kapalı.
+### Adım 4 — DB kanıtı (Frankfurt'a yazma doğrulaması)
 
-### Adım 4 — Yerel `.env` güncelleme
+Deploy 2 tamamlandıktan sonra:
 
-`.env` dosyasında `DATABASE_URL` ve `DIRECT_URL`'yi Frankfurt değerlerine çevir.
-
-### Adım 5 — DB kanıtı (Frankfurt'a yazma doğrulaması)
-
-Deploy 2 tamamlandıktan sonra, canlı QA çalışan hesabıyla:
+1. **`[U]`** QA çalışan hesabıyla web'den bir kitabı favoriye ekle, kitap adını söyle.
+2. **`[K]`** Frankfurt ve Tokyo'da o `userId` + `bookId` kombinasyonunu sorgular (ham çıktı):
 
 ```bash
-# 1. QA çalışan girişi yap, cookie kaydet
-curl -s -c /tmp/proof_cookies.txt -X POST \
-  "https://www.audiob2b.com.tr/api/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"<QA_EMPLOYEE_EMAIL>","password":"***"}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('role','?'))"
-
-# 2. Favori ekle (rastgele bir kitap ID — örn. ilk kitap)
-BOOK_ID=$(curl -s -b /tmp/proof_cookies.txt \
-  "https://www.audiob2b.com.tr/api/dashboard/library" | \
-  python3 -c "import sys,json; d=json.load(sys.stdin); print(d['books'][0]['id'])")
-
-curl -s -b /tmp/proof_cookies.txt -X POST \
-  "https://www.audiob2b.com.tr/api/dashboard/favorites" \
-  -H "Content-Type: application/json" \
-  -d "{\"bookId\":\"$BOOK_ID\"}"
-```
-
-```bash
-# 3. Frankfurt'ta bu kaydın var olduğunu doğrula
+source .env.tokyo
 source .env.migration
+
+# [K] Frankfurt'ta kayıt var mı?
 psql "$FRANKFURT_DIRECT_URL" -c \
-  "SELECT id, \"bookId\", \"userId\", \"createdAt\" FROM public.\"UserFavorite\" ORDER BY \"createdAt\" DESC LIMIT 3;"
+  "SELECT id, \"userId\", \"bookId\", \"createdAt\"
+   FROM public.\"UserFavorite\"
+   ORDER BY \"createdAt\" DESC LIMIT 3;"
 
-# 4. Tokyo'da bu kaydın OLMADIĞINI doğrula
-DIRECT_URL_TOKYO=$(grep "^DIRECT_URL=" .env | cut -d= -f2- | tr -d '"')
-psql "$DIRECT_URL_TOKYO" -c \
-  "SELECT COUNT(*) FROM public.\"UserFavorite\" WHERE \"createdAt\" > NOW() - INTERVAL '5 minutes';"
+# [K] Tokyo'da aynı kayıt yok olmalı (son 5 dakika içinde oluşan)
+psql "$TOKYO_DIRECT_URL" -c \
+  "SELECT COUNT(*) FROM public.\"UserFavorite\"
+   WHERE \"createdAt\" > NOW() - INTERVAL '5 minutes';"
 # Beklenen: 0
-
-# 5. Favoriyi kaldır
-curl -s -b /tmp/proof_cookies.txt -X DELETE \
-  "https://www.audiob2b.com.tr/api/dashboard/favorites/$BOOK_ID"
-rm /tmp/proof_cookies.txt
 ```
+
+3. **`[U]`** Favoriyi web'den kaldır.
+
+### Adım 5 — Yerel `.env` güncelleme
+
+`.env` dosyasında `DATABASE_URL` ve `DIRECT_URL`'yi Frankfurt değerlerine çevir.  
+`.env.tokyo` silinmez — 7 gün sonraki Tokyo kapatma adımında kullanılacak.
 
 ### Adım 6 — Doğrulama
 
 ```bash
-# Vercel region
-curl -s -o /dev/null -w "x-vercel-id: %header{x-vercel-id}\n" \
-  "https://www.audiob2b.com.tr/"
+# Vercel region (x-vercel-id'deki Lambda bölgesi)
+curl -s -I "https://www.audiob2b.com.tr/" | grep -i "x-vercel-id"
 
-# QA admin TTFB (5 istek)
-for i in $(seq 1 5); do
-  curl -s -b /tmp/qa_cookies.txt -o /dev/null \
+# Giriş gerektirmeyen sayfa TTFB (10 istek)
+for i in $(seq 1 10); do
+  curl -s -o /dev/null \
     -w "Req $i: %{time_total}s\n" \
-    "https://www.audiob2b.com.tr/api/dashboard/library"
-  sleep 3
+    "https://www.audiob2b.com.tr/api/health"
+  sleep 2
 done
 ```
 
@@ -424,21 +427,34 @@ Manuel kontrol listesi:
 > Tokyo'ya geri dönüşte kaybolur. **Geri dönüş kararı Deploy 2'den sonraki ilk 1 saat içinde
 > verilmelidir.** Sonrasında veri kaybı riski kabul edilmiş sayılır.
 
-1. Vercel panelinden `DATABASE_URL`/`DIRECT_URL` → Tokyo değerlerine geri al
-2. `vercel.json`: `"regions": ["hnd1"]`
-3. `./deploy.sh origin/main`
-4. Yerel `.env`'i Tokyo'ya geri çevir
-5. Beklenen süre: ~5 dakika
+```bash
+source .env.tokyo
+# Vercel panelinden DATABASE_URL/DIRECT_URL → Tokyo değerlerine geri al (TOKYO_DATABASE_URL / TOKYO_DIRECT_URL)
+# vercel.json: "regions": ["hnd1"]
+# ./deploy.sh origin/main  (~5 dk)
+# .env: DATABASE_URL/DIRECT_URL → .env.tokyo değerlerine geri çevir
+```
 
 ---
 
 ## Tokyo Projesinin Kapatılması (7 gün sonra, ayrıca onaylanacak)
 
 Geçiş başarısından **7 gün sonra**, kullanıcı onayıyla:
-1. Son bir yedek: `pg_dump "$DIRECT_URL_TOKYO" ... ~/Backups/audiob2b_tokyo_SHUTDOWN_*.pgdump`
-2. Supabase Tokyo paneli: Settings → General → Pause project
-3. 14 gün daha sorun çıkmazsa Tokyo projesini sil
-4. Yedek dosyaları sil: `rm ~/Backups/audiob2b_tokyo_*.pgdump`
+
+```bash
+source .env.tokyo
+
+# Son yedek
+pg_dump "$TOKYO_DIRECT_URL" \
+  --format=custom --no-owner --no-privileges --schema=public \
+  -f ~/Backups/audiob2b_tokyo_SHUTDOWN_$(date +%Y%m%d_%H%M).pgdump
+chmod 600 ~/Backups/audiob2b_tokyo_SHUTDOWN_*.pgdump
+```
+
+1. Supabase Tokyo paneli: Settings → General → Pause project
+2. 14 gün daha sorun çıkmazsa Tokyo projesini sil
+3. `rm ~/Backups/audiob2b_tokyo_*.pgdump` (kişisel veri — saklama süresi doldu)
+4. `.env.tokyo` sil
 
 ---
 
@@ -447,64 +463,64 @@ Geçiş başarısından **7 gün sonra**, kullanıcı onayıyla:
 - [x] Bölge: eu-central-1 (Frankfurt) seçildi
 - [x] Extension'lar açıldı: pgcrypto, uuid-ossp, pg_stat_statements
 - [x] Pooler: Transaction mode, port 6543
-- [ ] Ağ kısıtlaması: Vercel IP aralıkları eklendi (veya kapalı bırakıldı — Tokyo ile aynı)
+- [ ] **Ağ kısıtlaması:** Supabase panel → Settings → Database → Network Restrictions; Tokyo'daki ayarın aynısı Frankfurt'a uygulandı
 - [ ] **Free plan:** PITR yok — geçiş sonrası haftalık pg_dump zamanlaması ayrıca yapılacak
 - [x] `.env.migration` dosyası dolduruldu, chmod 600
+- [x] `.env.tokyo` oluşturuldu, chmod 600
 
 ---
 
 ## AŞAMA 2 KONTROL LİSTESİ — 11 Ekim Pazar 22:30
 
-Adımlar sırayla yapılır; her onay beklenir. `[K]` = Claude çalıştırır, `[U]` = kullanıcının yapacağı adım.
+`[K]` = Claude çalıştırır · `[U]` = kullanıcının yapacağı adım · Sırayla, her onay beklenerek.
 
 ---
 
-**22:15 — Ön hazırlık (geçişten önce)**
+**22:15 — Ön hazırlık**
 - [ ] `[U]` Vercel paneline giriş yapıldı, Production env sekmesi açık
 - [ ] `[U]` Supabase Frankfurt paneline giriş yapıldı
 - [ ] `[U]` Parola yöneticisi açık (Frankfurt DATABASE_URL/DIRECT_URL hazır)
-- [ ] `[K]` Runbook son kez okundu, bağlantılar doğrulandı
+- [ ] `[K]` `.env.tokyo` mevcut ve chmod 600 olduğu doğrulandı
+- [ ] `[K]` Runbook son kez okundu
 
 **22:30 — Hazırlık**
-- [ ] `[K]` Canlı TTFB taban ölçümü: `/api/dashboard/library` × 3 istek
-- [ ] `[K]` Tokyo bağlantısı son kontrol: COUNT(*) User tablosu
+- [ ] `[K]` Tokyo bağlantısı son kontrol: `source .env.tokyo && psql "$TOKYO_DIRECT_URL" -c "SELECT COUNT(*) FROM public.\"User\";"`
+- [ ] `[K]` Canlı TTFB taban: `/api/health` × 3 istek
 
 **22:35 — Deploy 1: Bakım modu aç**
 - [ ] `[U]` Vercel Production env → `MAINTENANCE_MODE=true` ekle
 - [ ] `[K]` `./deploy.sh origin/main` (~4 dk)
-- [ ] `[K]` Doğrulama: POST → HTTP 503 + `retry-after: 300`
-- [ ] `[K]` GET kontrolü: `/api/health` → engellenmedi
+- [ ] `[K]` POST → HTTP 503 + `retry-after: 300` doğrula
+- [ ] `[K]` GET → `/api/health` engellenmedi doğrula
 
 **22:40 — Son yedek + Frankfurt restore**
-- [ ] `[K]` Son yedek: `pg_dump ... ~/Backups/audiob2b_tokyo_FINAL_*.pgdump`
-- [ ] `[K]` Korumalı script: host doğrula → DROP SCHEMA → CREATE SCHEMA → yetkiler
+- [ ] `[K]` Son yedek (.env.tokyo'dan)
+- [ ] `[K]` Korumalı script: host doğrula → DROP SCHEMA → CREATE SCHEMA → yetkiler (postgres + service_role)
 - [ ] `[K]` `pg_restore ...`
-- [ ] `[K]` COUNT(*) karşılaştırması (FARK sütunlu) — tüm tablolar 0 fark olmalı
+- [ ] `[K]` COUNT(*) karşılaştırması (FARK sütunlu) — tüm tablolar 0 fark
 - [ ] Onay bekle ✋
 
 **22:55 — Deploy 2: Frankfurt env + fra1 + bakım kapat**
-- [ ] `[U]` Vercel Production env güncelle:
-  - `DATABASE_URL` → Frankfurt Transaction pooler (port 6543)
-  - `DIRECT_URL` → Frankfurt Session pooler (port 5432)
-  - `MAINTENANCE_MODE` → kaldır (veya `false`)
-- [ ] `[K]` `vercel.json`: `"regions": ["fra1"]` commit et
+- [ ] `[U]` Vercel Production env: DATABASE_URL + DIRECT_URL → Frankfurt; MAINTENANCE_MODE kaldır
+- [ ] `[K]` `vercel.json`: `"regions": ["fra1"]` commit
 - [ ] `[K]` `./deploy.sh origin/main` (~4 dk)
-- [ ] `[K]` `curl ... x-vercel-id` → Lambda `fra1` doğrula
+- [ ] `[K]` `x-vercel-id` → Lambda `fra1` doğrula
 
 **23:05 — DB kanıtı + QA doğrulama**
-- [ ] `[K]` DB kanıtı: favori ekle → Frankfurt'ta var, Tokyo'da yok → favori kaldır
+- [ ] `[U]` QA çalışan hesabıyla web'den favori ekle, kitap adını söyle
+- [ ] `[K]` Frankfurt'ta kayıt var / Tokyo'da yok (ham çıktı)
+- [ ] `[U]` Favoriyi web'den kaldır
 - [ ] `[K]` QA admin giriş → kütüphane → rapor
-- [ ] `[K]` TTFB: `/api/dashboard/library` × 5 istek
-- [ ] `[U]` Mobil: kütüphane yükleme + bir bölüm oynatma + senkron
+- [ ] `[U]` Mobil: kütüphane + bir bölüm oynatma + senkron
 
 **23:15 — Kapanış**
-- [ ] `[K]` `.env` güncelle: DATABASE_URL/DIRECT_URL → Frankfurt değerlerine çevir
+- [ ] `[K]` `.env` güncelle: DATABASE_URL/DIRECT_URL → Frankfurt (`.env.tokyo` silinmez)
 - [ ] `[K]` CLAUDE.md güncelle: DB bölgesi Tokyo → Frankfurt
 
-**Tokyo 7 gün ayakta kalır (geri dönüş penceresi).** Pause ve silme ayrıca onaylanacak.
+**Tokyo 7 gün ayakta kalır. `.env.tokyo` korunur. Pause ve silme ayrıca onaylanacak.**
 
 **Geri dönüş (gerekirse, ilk 1 saat içinde):**
-- [ ] `[U]` Vercel env → Tokyo DATABASE_URL/DIRECT_URL
+- [ ] `[U]` Vercel env → `.env.tokyo`'daki değerler (TOKYO_DATABASE_URL / TOKYO_DIRECT_URL)
 - [ ] `[K]` `vercel.json`: `"regions": ["hnd1"]` + `./deploy.sh` (~5 dk)
 - ⚠️ Deploy 2'den sonra yazılan veriler Tokyo'ya dönüşte kaybolur.
 
