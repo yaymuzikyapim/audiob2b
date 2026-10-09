@@ -1,75 +1,191 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { fmtDate } from "@/lib/format-date";
+import { getCompanySeatMap } from "@/lib/admin-overview";
+import { TZ_OFFSET_MS, istanbulMidnightUTC } from "@/lib/tz-utils";
+import { X } from "lucide-react";
 
-export default async function CompaniesPage() {
-  const companies = await prisma.company.findMany({
+// ── Yardımcılar ──────────────────────────────────────────────────────────────
+
+function todayMidnight(now: Date) {
+  const ist = new Date(now.getTime() + TZ_OFFSET_MS);
+  return istanbulMidnightUTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate());
+}
+
+type ActiveFilter = "suresiDolmus" | "yakindaBitiyor" | "koltukDolu" | "bekleyenDavet" | null;
+
+const FILTER_LABELS: Record<NonNullable<ActiveFilter>, string> = {
+  suresiDolmus: "Süresi dolmuş ama aktif",
+  yakindaBitiyor: "30 gün içinde bitiyor",
+  koltukDolu: "Koltukların %90'ı dolu",
+  bekleyenDavet: "7 gün+ kabul edilmeyen davet",
+};
+
+function StatusBadge({ isActive, endDate, today }: { isActive: boolean; endDate: Date; today: Date }) {
+  if (!isActive) {
+    return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-700/60 text-gray-400">Pasif</span>;
+  }
+  if (endDate < today) {
+    return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-400/10 text-red-400">Süresi dolmuş</span>;
+  }
+  return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-400/10 text-emerald-400">Aktif</span>;
+}
+
+// ── Sayfa ────────────────────────────────────────────────────────────────────
+
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
+
+export default async function CompaniesPage({ searchParams }: { searchParams: SearchParams }) {
+  const user = await getCurrentUser();
+  if (!user || !user.isActive || user.role !== "SUPER_ADMIN") redirect("/login");
+
+  const params = await searchParams;
+  const now = new Date();
+  const today = todayMidnight(now);
+  const in30Days = new Date(today.getTime() + 30 * 86400 * 1000);
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 86400 * 1000);
+
+  // Aktif filtre (en fazla biri)
+  const activeFilter: ActiveFilter =
+    params.suresiDolmus === "1" ? "suresiDolmus" :
+    params.yakindaBitiyor === "1" ? "yakindaBitiyor" :
+    params.koltukDolu === "1" ? "koltukDolu" :
+    params.bekleyenDavet === "1" ? "bekleyenDavet" :
+    null;
+
+  // Prisma where (koltukDolu JS tarafında filtreleneceği için özel durum)
+  const where =
+    activeFilter === "suresiDolmus" ? { isActive: true, endDate: { lt: today } } :
+    activeFilter === "yakindaBitiyor" ? { endDate: { gte: today, lt: in30Days } } :
+    activeFilter === "bekleyenDavet" ? { inviteTokens: { some: { usedAt: null, createdAt: { lt: sevenDaysAgo } } } } :
+    {};
+
+  const allCompanies = await prisma.company.findMany({
+    where,
     orderBy: { createdAt: "desc" },
-    include: {
+    select: {
+      id: true, name: true, slug: true, isActive: true,
+      endDate: true, maxSeats: true, licenseType: true,
       package: { select: { name: true } },
       _count: { select: { users: true } },
     },
   });
 
+  // koltukDolu: seat map hesapla, JS'de filtrele
+  let companies = allCompanies;
+  let seatMap: { activeMap: Map<string, number>; pendingMap: Map<string, number> } | null = null;
+
+  if (activeFilter === "koltukDolu" || activeFilter === null) {
+    // Her zaman tüm şirketler için seat map — tablo koltuk kolonunda da kullanılır
+    seatMap = await getCompanySeatMap(allCompanies.map((c) => c.id), now);
+    if (activeFilter === "koltukDolu") {
+      companies = allCompanies.filter((c) => {
+        const active = seatMap!.activeMap.get(c.id) ?? 0;
+        const pending = seatMap!.pendingMap.get(c.id) ?? 0;
+        return c.maxSeats > 0 && (active + pending) / c.maxSeats >= 0.9;
+      });
+    }
+  }
+
+  const getSeatData = (id: string) => ({
+    active: seatMap?.activeMap.get(id) ?? 0,
+    pending: seatMap?.pendingMap.get(id) ?? 0,
+  });
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      {/* Başlık */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Şirketler</h1>
-          <p className="text-gray-400 mt-1 text-sm">{companies.length} şirket kayıtlı</p>
+          <h1 className="text-2xl font-bold text-[#edf3fb]">Şirketler</h1>
+          <p className="text-[#75849a] mt-1 text-sm">
+            {companies.length} şirket{activeFilter ? " (filtrelenmiş)" : " kayıtlı"}
+          </p>
         </div>
         <Link
           href="/admin/companies/new"
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-colors"
+          className="whitespace-nowrap px-4 py-2.5 bg-[#35d2a1] hover:bg-[#2bb88b] text-[#080d17] text-sm font-semibold rounded-lg transition-colors"
         >
           + Şirket Ekle
         </Link>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-        {companies.length === 0 && (
-          <div className="px-6 py-16 text-center text-gray-500">
-            <div className="text-4xl mb-3">🏢</div>
-            <div className="font-medium text-white mb-1">Henüz şirket yok</div>
-            <div className="text-sm">İlk kurumsal müşteriyi eklemek için butona tıklayın.</div>
+      {/* Aktif filtre etiketi */}
+      {activeFilter && (
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-xs text-[#75849a]">Filtre:</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#1a2a3a] text-[#a0aec0] border border-[#263449]">
+            {FILTER_LABELS[activeFilter]}
+            <Link href="/admin/companies" aria-label="Filtreyi kaldır">
+              <X size={12} className="hover:text-[#edf3fb] transition-colors" />
+            </Link>
+          </span>
+        </div>
+      )}
+
+      {/* Tablo */}
+      <div className="rounded-[10px] border border-[#263449] bg-[#111c2d] overflow-hidden">
+        {companies.length === 0 ? (
+          <div className="px-6 py-16 text-center text-[#75849a] text-sm">
+            {activeFilter ? (
+              <>
+                Bu filtreyle eşleşen şirket yok.{" "}
+                <Link href="/admin/companies" className="text-[#35d2a1] hover:underline">Filtreyi kaldır</Link>
+              </>
+            ) : (
+              <>
+                <div className="text-4xl mb-3">🏢</div>
+                <div className="font-semibold text-[#edf3fb] mb-1">Henüz şirket yok</div>
+                <div>İlk kurumsal müşteriyi eklemek için butona tıklayın.</div>
+              </>
+            )}
           </div>
-        )}
-        {companies.length > 0 && (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-800 text-left">
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Şirket</th>
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Paket</th>
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Lisans</th>
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Kullanıcı</th>
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Bitiş</th>
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Durum</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
-              {companies.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-800/40 transition-colors">
-                  <td className="px-6 py-4">
-                    <Link href={`/admin/companies/${c.id}`} className="text-white font-medium hover:text-emerald-400 transition-colors">
-                      {c.name}
-                    </Link>
-                    <div className="text-gray-500 text-xs mt-0.5">/{c.slug}</div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">{c.package?.name || "—"}</td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">
-                    {c.licenseType === "PER_SEAT" ? `${c.maxSeats} koltuk` : `${c.maxSeats} havuz`}
-                  </td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">{c._count.users}</td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">{fmtDate(c.endDate)}</td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${c.isActive ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
-                      {c.isActive ? "Aktif" : "Pasif"}
-                    </span>
-                  </td>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-[#0d1726] text-left">
+                  <th className="px-5 py-3 text-xs font-semibold text-[#75849a] uppercase tracking-wide">Şirket</th>
+                  <th className="px-5 py-3 text-xs font-semibold text-[#75849a] uppercase tracking-wide">Durum</th>
+                  <th className="px-5 py-3 text-xs font-semibold text-[#75849a] uppercase tracking-wide">Koltuk</th>
+                  <th className="px-5 py-3 text-xs font-semibold text-[#75849a] uppercase tracking-wide">Bitiş Tarihi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-[#263449]">
+                {companies.map((c) => {
+                  const { active, pending } = getSeatData(c.id);
+                  const endDatePast = c.endDate < today;
+                  const endDateSoon = !endDatePast && c.endDate < in30Days;
+                  return (
+                    <tr key={c.id} className="hover:bg-[#0d1726]/60 transition-colors">
+                      <td className="px-5 py-4">
+                        <Link href={`/admin/companies/${c.id}`} className="font-medium text-[#edf3fb] hover:text-[#35d2a1] transition-colors">
+                          {c.name}
+                        </Link>
+                        <div className="text-[#75849a] text-xs mt-0.5">/{c.slug}</div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <StatusBadge isActive={c.isActive} endDate={c.endDate} today={today} />
+                      </td>
+                      <td className="px-5 py-4 tabular-nums text-[#a0aec0]">
+                        {active} / {c.maxSeats}
+                        {pending > 0 && (
+                          <span className="ml-1.5 text-xs text-[#75849a]">+{pending} davet</span>
+                        )}
+                      </td>
+                      <td className={`px-5 py-4 tabular-nums ${endDatePast ? "text-red-400" : endDateSoon ? "text-amber-400" : "text-[#a0aec0]"}`}>
+                        {fmtDate(c.endDate)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
