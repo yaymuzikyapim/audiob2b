@@ -81,9 +81,9 @@ async function LibraryContent({ searchParams }: { searchParams: Promise<{ q?: st
 
   // ── Search mode ──────────────────────────────────────────────────────────────
   if (q) {
-    const ql = q.toLowerCase();
+    const ql = q.toLocaleLowerCase("tr-TR");
     const matches = rawBooks
-      .filter((b) => b.title.toLowerCase().includes(ql) || b.author.toLowerCase().includes(ql))
+      .filter((b) => b.title.toLocaleLowerCase("tr-TR").includes(ql) || b.author.toLocaleLowerCase("tr-TR").includes(ql))
       .map(toCard);
 
     return (
