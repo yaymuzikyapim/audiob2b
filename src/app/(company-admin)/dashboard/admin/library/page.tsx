@@ -23,6 +23,7 @@ type RawBook = {
 async function AdminLibraryContent({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (user.role !== "COMPANY_ADMIN") redirect("/dashboard");
   if (!user.company?.id) redirect("/dashboard/admin");
 
   const company = await prisma.company.findUnique({

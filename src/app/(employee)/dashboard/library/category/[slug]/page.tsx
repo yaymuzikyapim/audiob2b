@@ -50,22 +50,15 @@ async function CategoryContent({
 
   const color = company?.brandColor ?? "#2563eb";
 
+  // q filtresi DB'ye bırakılmaz — PostgreSQL ILIKE Türkçe I/İ eşleşmesini yanlış yapar.
+  // Tüm kategori kitaplarını çekip JS'de tr-TR locale ile filtrele + paginate et.
   const whereBook = {
     isActive: true,
     chapters: { some: {} },
     category: { name: catName },
-    ...(q
-      ? {
-          OR: [
-            { title: { contains: q, mode: "insensitive" as const } },
-            { author: { contains: q, mode: "insensitive" as const } },
-          ],
-        }
-      : {}),
   };
 
-  const [totalCount, pkgBooks, playerStates] = await Promise.all([
-    prisma.packageBook.count({ where: { packageId: pkgId, book: whereBook } }),
+  const [allPkgBooks, playerStates] = await Promise.all([
     prisma.packageBook.findMany({
       where: { packageId: pkgId, book: whereBook },
       select: {
@@ -79,8 +72,6 @@ async function CategoryContent({
         },
       },
       orderBy: [{ book: { seriesOrder: "asc" } }, { book: { title: "asc" } }],
-      skip: (page - 1) * PER_PAGE,
-      take: PER_PAGE,
     }),
     prisma.playerState.findMany({
       where: { userId: session.id },
@@ -89,7 +80,18 @@ async function CategoryContent({
   ]);
 
   const stateMap = new Map(playerStates.map((ps) => [ps.bookId, ps.positionSec]));
+
+  const ql = q.toLocaleLowerCase("tr-TR");
+  const filtered = q
+    ? allPkgBooks.filter((pb) =>
+        pb.book.title.toLocaleLowerCase("tr-TR").includes(ql) ||
+        pb.book.author.toLocaleLowerCase("tr-TR").includes(ql)
+      )
+    : allPkgBooks;
+
+  const totalCount = filtered.length;
   const totalPages = Math.ceil(totalCount / PER_PAGE);
+  const pkgBooks = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const books: BookCardItem[] = pkgBooks.map((pb) => {
     const b = pb.book;

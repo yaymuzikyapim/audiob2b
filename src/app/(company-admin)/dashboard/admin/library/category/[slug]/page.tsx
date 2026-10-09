@@ -21,6 +21,7 @@ async function AdminCategoryContent({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (user.role !== "COMPANY_ADMIN") redirect("/dashboard");
   if (!user.company?.id) redirect("/dashboard/admin");
 
   const { slug } = await params;
@@ -50,39 +51,39 @@ async function AdminCategoryContent({
 
   const color = company?.brandColor ?? "#2563eb";
 
+  // q filtresi DB'ye bırakılmaz — PostgreSQL ILIKE Türkçe I/İ eşleşmesini yanlış yapar.
   const whereBook = {
     isActive: true,
     chapters: { some: {} },
     category: { name: catName },
-    ...(q
-      ? {
-          OR: [
-            { title: { contains: q, mode: "insensitive" as const } },
-            { author: { contains: q, mode: "insensitive" as const } },
-          ],
-        }
-      : {}),
   };
 
-  const [totalCount, pkgBooks] = await Promise.all([
-    prisma.packageBook.count({ where: { packageId: pkgId, book: whereBook } }),
-    prisma.packageBook.findMany({
-      where: { packageId: pkgId, book: whereBook },
-      select: {
-        book: {
-          select: {
-            id: true, title: true, author: true, narrator: true,
-            duration: true, coverUrl: true,
-            chapters: { select: { id: true }, take: 1 },
-            seriesOrder: true,
-          },
+  const allPkgBooks = await prisma.packageBook.findMany({
+    where: { packageId: pkgId, book: whereBook },
+    select: {
+      book: {
+        select: {
+          id: true, title: true, author: true, narrator: true,
+          duration: true, coverUrl: true,
+          chapters: { select: { id: true }, take: 1 },
+          seriesOrder: true,
         },
       },
-      orderBy: [{ book: { seriesOrder: "asc" } }, { book: { title: "asc" } }],
-      skip: (page - 1) * PER_PAGE,
-      take: PER_PAGE,
-    }),
-  ]);
+    },
+    orderBy: [{ book: { seriesOrder: "asc" } }, { book: { title: "asc" } }],
+  });
+
+  const ql = q.toLocaleLowerCase("tr-TR");
+  const filtered = q
+    ? allPkgBooks.filter((pb) =>
+        pb.book.title.toLocaleLowerCase("tr-TR").includes(ql) ||
+        pb.book.author.toLocaleLowerCase("tr-TR").includes(ql)
+      )
+    : allPkgBooks;
+
+  const totalCount = filtered.length;
+  const totalPages = Math.ceil(totalCount / PER_PAGE);
+  const pkgBooks = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const bookIds = pkgBooks.map((pb) => pb.book.id);
   const listenerRows = bookIds.length > 0
@@ -96,8 +97,6 @@ async function AdminCategoryContent({
   for (const r of listenerRows) {
     listenerMap.set(r.bookId, (listenerMap.get(r.bookId) ?? 0) + 1);
   }
-
-  const totalPages = Math.ceil(totalCount / PER_PAGE);
 
   const books: BookCardItem[] = pkgBooks.map((pb) => {
     const b = pb.book;
