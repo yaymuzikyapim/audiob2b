@@ -39,6 +39,8 @@ Push yapmadan önce her iki koşul sağlanmalı:
 
 **`npx vercel --prod` doğrudan çalıştırılmaz.** Deploy yalnızca `./deploy.sh origin/main` ile yapılır; bu script `git archive` kullanarak yalnızca commit edilmiş dosyaları yükler. Doğrudan `npx vercel --prod` çalıştırmak uncommitted dosyaları da Vercel'e yükler.
 
+**Deploy onaya bağlıdır.** "Commit + push" talimatı yalnızca `git commit` + `git push` anlamına gelir; `./deploy.sh` çalıştırılmaz. Deploy, değişiklik hangi dosyada olursa olsun, yalnızca kullanıcı açıkça "deploy et" dediğinde yapılır.
+
 ## Canlı Ortam Doğrulaması
 
 API testleri için `.env.local`'deki `TEST_USER_EMAIL` ve `TEST_USER_PASSWORD` kullanılır.
