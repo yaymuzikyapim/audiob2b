@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fmtDate } from "@/lib/format-date";
+import { readableTextOn } from "@/lib/contrast";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer,
 } from "recharts";
@@ -173,6 +174,7 @@ export default function ReportsPage() {
 
   const brand = data?.company?.brandColor ?? BRAND_FALLBACK;
   const brandSoft = brand + "1A"; // ~10% opacity for selected toggle bg
+  const brandText = readableTextOn(brand); // WCAG ≥4.5:1 over brand background
 
   const chartData = data ? aggregateChart(data.dailyChart) : [];
 
@@ -199,7 +201,7 @@ export default function ReportsPage() {
           <button
             onClick={() => downloadFile("pdf")}
             disabled={dlState.pdf || loading || !data}
-            style={{ padding: "8px 16px", fontSize: 13, fontWeight: 500, border: "none", borderRadius: 8, background: brand, color: "#fff", cursor: "pointer", opacity: (dlState.pdf || loading) ? 0.6 : 1 }}
+            style={{ padding: "8px 16px", fontSize: 13, fontWeight: 500, border: "none", borderRadius: 8, background: brand, color: brandText, cursor: "pointer", opacity: (dlState.pdf || loading) ? 0.6 : 1 }}
           >
             {dlState.pdf ? "Oluşturuluyor…" : "PDF rapor"}
           </button>
@@ -219,7 +221,7 @@ export default function ReportsPage() {
                   padding: "5px 12px", fontSize: 13, borderRadius: 20, border: "1.5px solid",
                   borderColor: period === k ? brand : "var(--border, #E3E6EA)",
                   background: period === k ? brand : "transparent",
-                  color: period === k ? "#fff" : "var(--text-primary, #14181F)",
+                  color: period === k ? brandText : "var(--text-primary, #14181F)",
                   cursor: "pointer", fontWeight: period === k ? 600 : 400,
                 }}
               >{label}</button>
@@ -258,7 +260,7 @@ export default function ReportsPage() {
             <button
               onClick={applyCustom}
               disabled={!pendingFrom || !pendingTo || pendingFrom > pendingTo}
-              style={{ padding: "4px 14px", fontSize: 13, borderRadius: 6, background: brand, color: "#fff", border: "none", cursor: "pointer", opacity: (!pendingFrom || !pendingTo || pendingFrom > pendingTo) ? 0.5 : 1 }}
+              style={{ padding: "4px 14px", fontSize: 13, borderRadius: 6, background: brand, color: brandText, border: "none", cursor: "pointer", opacity: (!pendingFrom || !pendingTo || pendingFrom > pendingTo) ? 0.5 : 1 }}
             >Uygula</button>
           </div>
         )}
@@ -288,7 +290,13 @@ export default function ReportsPage() {
           {/* Daily chart */}
           {chartData.length > 0 && (
             <div style={{ background: "var(--card-bg, #fff)", border: "1px solid var(--border, #E3E6EA)", borderRadius: 10, padding: "20px 20px 12px", marginBottom: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary, #14181F)", marginBottom: 12 }}>Günlük Aktif Dinleyici</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary, #14181F)" }}>Günlük Aktif Dinleyici</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--text-muted, #5A6270)" }}>
+                  <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: brand + "66", flexShrink: 0 }} />
+                  Hafta sonu
+                </div>
+              </div>
               <div style={{ height: 180 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
