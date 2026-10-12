@@ -1,7 +1,7 @@
 # DB Taşıma Koşu Kitabı — Tokyo → Frankfurt (eu-central-1)
 
 **Hazırlayan:** AudioB2B  
-**Durum:** Aşama 1 tamamlandı ✅ — Aşama 2 bekleniyor  
+**Durum:** ✅ TAMAMLANDI — 12 Ekim 2026, ~08:00  
 **Geçiş zamanı:** 12 Ekim 2026 Pazartesi, sabah  
 **Hedef:** Supabase ap-northeast-1 (Tokyo) → eu-central-1 (Frankfurt)
 
@@ -564,6 +564,30 @@ chmod 600 ~/Backups/audiob2b_tokyo_SHUTDOWN_*.pgdump
 - [ ] `[K]` `vercel.json`: `"regions": ["hnd1"]` + `./deploy.sh` (~5 dk)
 - [ ] İkincil yol: Vercel Instant Rollback (kaydedilen deployment ID) + env değişikliği
 - ⚠️ Deploy 2'den sonra yazılan veriler Tokyo'ya dönüşte kaybolur.
+
+---
+
+## Kapanış Notu
+
+**Tamamlandı: 12 Ekim 2026, ~08:00**
+
+Tüm adımlar başarıyla tamamlandı:
+- Deploy 1 (bakım modu) + FINAL Tokyo yedeği + Frankfurt DROP→restore
+- 21/21 tablo COUNT eşleşmesi, RLS rowsecurity=t, migrate status temiz
+- Deploy 2: Vercel Lambda fra1, GET /→200, POST sync→401
+- DB kanıtı: Frankfurt UserFavorite yazma/silme doğrulandı, Tokyo'ya +0 yazma
+- Yerel .env Frankfurt'a güncellendi, CLAUDE.md güncellendi
+
+### Kalan İşler (ayrı oturumlar, kullanıcı onayıyla)
+
+| Tarih | Görev |
+|---|---|
+| 19 Ekim 2026 | Tokyo son yedek + pause (Supabase panelinden) |
+| 19 Ekim 2026 | `~/Backups/` Tokyo yedeklerini sil |
+| 2 Kasım 2026 | Tokyo projesi silme |
+| — | ensure_rls event trigger: Frankfurt Supabase panelinden yeniden etkinleştir (isteğe bağlı; mevcut tablolarda RLS zaten aktif) |
+| — | Haftalık pg_dump yedeği zamanlaması kur |
+| — | Ayrı geliştirme veritabanı (Frankfurt, ayrı Supabase projesi) — yerel .env canlıya değil dev DB'sine bağlanacak |
 
 ---
 
