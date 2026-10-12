@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fmtDate } from "@/lib/format-date";
+import { readableTextOn } from "@/lib/contrast";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer,
 } from "recharts";
@@ -63,17 +64,19 @@ function aggregateChart(points: DailyPoint[], maxBars = 90) {
   return result;
 }
 
-interface ProgressBarProps { pct: number; count: number; }
-function ProgressBar({ pct, count }: ProgressBarProps) {
+interface ProgressBarProps { pct: number; count: number; brand: string; }
+function ProgressBar({ pct, count, brand }: ProgressBarProps) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <div style={{ flex: 1, height: 6, borderRadius: 3, background: "var(--border, #E3E6EA)" }}>
-        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 3, background: "var(--accent, #1A5DD9)", transition: "width .3s" }} />
+        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 3, background: brand, transition: "width .3s" }} />
       </div>
       <span style={{ fontSize: 12, color: "var(--text-muted)", minWidth: 36, textAlign: "right" }}>{pct}% ({count})</span>
     </div>
   );
 }
+
+const BRAND_FALLBACK = "#1A5DD9";
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState<PeriodKey>("30d");
@@ -169,6 +172,10 @@ export default function ReportsPage() {
     }
   }
 
+  const brand = data?.company?.brandColor ?? BRAND_FALLBACK;
+  const brandSoft = brand + "1A"; // ~10% opacity for selected toggle bg
+  const brandText = readableTextOn(brand); // WCAG ≥4.5:1 over brand background
+
   const chartData = data ? aggregateChart(data.dailyChart) : [];
 
   const dateRangeLabel = data
@@ -187,14 +194,14 @@ export default function ReportsPage() {
           <button
             onClick={() => downloadFile("excel")}
             disabled={dlState.excel || loading || !data}
-            style={{ padding: "8px 16px", fontSize: 13, fontWeight: 500, border: "1.5px solid var(--accent, #1A5DD9)", borderRadius: 8, background: "transparent", color: "var(--accent, #1A5DD9)", cursor: "pointer", opacity: (dlState.excel || loading) ? 0.6 : 1 }}
+            style={{ padding: "8px 16px", fontSize: 13, fontWeight: 500, border: `1.5px solid ${brand}`, borderRadius: 8, background: "transparent", color: brand, cursor: "pointer", opacity: (dlState.excel || loading) ? 0.6 : 1 }}
           >
             {dlState.excel ? "İndiriliyor…" : "Excel"}
           </button>
           <button
             onClick={() => downloadFile("pdf")}
             disabled={dlState.pdf || loading || !data}
-            style={{ padding: "8px 16px", fontSize: 13, fontWeight: 500, border: "none", borderRadius: 8, background: "var(--accent, #1A5DD9)", color: "#fff", cursor: "pointer", opacity: (dlState.pdf || loading) ? 0.6 : 1 }}
+            style={{ padding: "8px 16px", fontSize: 13, fontWeight: 500, border: "none", borderRadius: 8, background: brand, color: brandText, cursor: "pointer", opacity: (dlState.pdf || loading) ? 0.6 : 1 }}
           >
             {dlState.pdf ? "Oluşturuluyor…" : "PDF rapor"}
           </button>
@@ -212,9 +219,9 @@ export default function ReportsPage() {
                 onClick={() => setPeriod(k)}
                 style={{
                   padding: "5px 12px", fontSize: 13, borderRadius: 20, border: "1.5px solid",
-                  borderColor: period === k ? "var(--accent, #1A5DD9)" : "var(--border, #E3E6EA)",
-                  background: period === k ? "var(--accent, #1A5DD9)" : "transparent",
-                  color: period === k ? "#fff" : "var(--text-primary, #14181F)",
+                  borderColor: period === k ? brand : "var(--border, #E3E6EA)",
+                  background: period === k ? brand : "transparent",
+                  color: period === k ? brandText : "var(--text-primary, #14181F)",
                   cursor: "pointer", fontWeight: period === k ? 600 : 400,
                 }}
               >{label}</button>
@@ -228,9 +235,9 @@ export default function ReportsPage() {
                 onClick={() => setView(v)}
                 style={{
                   padding: "5px 12px", fontSize: 13, borderRadius: 6, border: "1.5px solid",
-                  borderColor: view === v ? "var(--accent, #1A5DD9)" : "var(--border, #E3E6EA)",
-                  background: view === v ? "color-mix(in srgb, var(--accent, #1A5DD9) 10%, transparent)" : "transparent",
-                  color: view === v ? "var(--accent, #1A5DD9)" : "var(--text-muted, #5A6270)",
+                  borderColor: view === v ? brand : "var(--border, #E3E6EA)",
+                  background: view === v ? brandSoft : "transparent",
+                  color: view === v ? brand : "var(--text-muted, #5A6270)",
                   cursor: "pointer", fontWeight: view === v ? 600 : 400,
                 }}
               >{v === "books" ? "Kitap bazında" : "Kullanıcı bazında"}</button>
@@ -253,7 +260,7 @@ export default function ReportsPage() {
             <button
               onClick={applyCustom}
               disabled={!pendingFrom || !pendingTo || pendingFrom > pendingTo}
-              style={{ padding: "4px 14px", fontSize: 13, borderRadius: 6, background: "var(--accent, #1A5DD9)", color: "#fff", border: "none", cursor: "pointer", opacity: (!pendingFrom || !pendingTo || pendingFrom > pendingTo) ? 0.5 : 1 }}
+              style={{ padding: "4px 14px", fontSize: 13, borderRadius: 6, background: brand, color: brandText, border: "none", cursor: "pointer", opacity: (!pendingFrom || !pendingTo || pendingFrom > pendingTo) ? 0.5 : 1 }}
             >Uygula</button>
           </div>
         )}
@@ -283,7 +290,13 @@ export default function ReportsPage() {
           {/* Daily chart */}
           {chartData.length > 0 && (
             <div style={{ background: "var(--card-bg, #fff)", border: "1px solid var(--border, #E3E6EA)", borderRadius: 10, padding: "20px 20px 12px", marginBottom: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary, #14181F)", marginBottom: 12 }}>Günlük Aktif Dinleyici</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary, #14181F)" }}>Günlük Aktif Dinleyici</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--text-muted, #5A6270)" }}>
+                  <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: brand + "66", flexShrink: 0 }} />
+                  Hafta sonu
+                </div>
+              </div>
               <div style={{ height: 180 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
@@ -308,7 +321,7 @@ export default function ReportsPage() {
                     />
                     <Bar dataKey="listeners" maxBarSize={40} radius={[3, 3, 0, 0]}>
                       {chartData.map((entry, i) => (
-                        <Cell key={i} fill={entry.weekend ? "#A8C4F0" : "var(--accent, #1A5DD9)"} />
+                        <Cell key={i} fill={entry.weekend ? brand + "66" : brand} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -345,7 +358,7 @@ export default function ReportsPage() {
                         <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap" }}>{b.listeners}</td>
                         <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, whiteSpace: "nowrap" }}>{secToHms(b.listenedSec)}</td>
                         <td style={{ padding: "10px 32px 10px 16px", minWidth: 160 }}>
-                          <ProgressBar pct={b.completedPct} count={b.completedCount} />
+                          <ProgressBar pct={b.completedPct} count={b.completedCount} brand={brand} />
                         </td>
                         <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, whiteSpace: "nowrap" }}>%{b.avgProgress}</td>
                       </tr>
