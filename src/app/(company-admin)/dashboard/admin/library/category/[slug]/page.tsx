@@ -118,16 +118,16 @@ async function AdminCategoryContent({
       <div className="mb-6">
         <Link
           href="/dashboard/admin/library"
-          className="inline-flex items-center gap-1 text-gray-400 text-sm hover:text-white transition-colors mb-3"
+          className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-gray-900 transition-colors mb-3"
         >
           <ChevronLeft className="w-4 h-4" />
           Kütüphane
         </Link>
-        <h1 className="text-2xl font-bold text-white">{catName}</h1>
-        <p className="text-gray-400 mt-1 text-sm">{totalCount} kitap</p>
+        <h1 className="text-2xl font-bold text-gray-900">{catName}</h1>
+        <p className="text-gray-500 mt-1 text-sm">{totalCount} kitap</p>
       </div>
 
-      <LibrarySearch defaultValue={q} />
+      <LibrarySearch defaultValue={q} theme="light" />
 
       {books.length === 0 ? (
         <p className="text-gray-500 text-sm">
@@ -137,7 +137,7 @@ async function AdminCategoryContent({
         <>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
             {books.map((book) => (
-              <BookCard key={book.id} book={book} color={color} showListeners />
+              <BookCard key={book.id} book={book} color={color} showListeners theme="light" />
             ))}
           </div>
 
@@ -146,18 +146,18 @@ async function AdminCategoryContent({
               {page > 1 && (
                 <Link
                   href={`?${new URLSearchParams({ ...(q ? { q } : {}), page: String(page - 1) })}`}
-                  className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 rounded-lg transition-colors"
                 >
                   ← Önceki
                 </Link>
               )}
-              <span className="px-4 py-2 text-sm text-gray-400">
+              <span className="px-4 py-2 text-sm text-gray-500">
                 {page} / {totalPages}
               </span>
               {page < totalPages && (
                 <Link
                   href={`?${new URLSearchParams({ ...(q ? { q } : {}), page: String(page + 1) })}`}
-                  className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 rounded-lg transition-colors"
                 >
                   Sonraki →
                 </Link>
@@ -178,7 +178,7 @@ export default function AdminCategoryPage({
   searchParams: Promise<{ q?: string; page?: string }>;
 }) {
   return (
-    <Suspense fallback={<div className="text-gray-400 text-sm p-6">Yükleniyor…</div>}>
+    <Suspense fallback={<div className="text-gray-500 text-sm p-6">Yükleniyor…</div>}>
       <AdminCategoryContent params={params} searchParams={searchParams} />
     </Suspense>
   );

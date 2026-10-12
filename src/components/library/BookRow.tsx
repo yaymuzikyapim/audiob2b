@@ -12,6 +12,7 @@ export default function BookRow({
   totalCount,
   href,
   showListeners = false,
+  theme = "dark",
 }: {
   title: string;
   books: BookCardItem[];
@@ -19,6 +20,7 @@ export default function BookRow({
   totalCount?: number;
   href?: string;
   showListeners?: boolean;
+  theme?: "dark" | "light";
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
@@ -53,18 +55,29 @@ export default function BookRow({
 
   if (books.length === 0) return null;
 
+  const isLight = theme === "light";
   const showSeeAll = href && totalCount !== undefined && totalCount > books.length;
   const showArrows = canLeft || canRight;
 
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-3 gap-2">
-        <h2 className="text-white font-semibold text-sm truncate">{title}</h2>
+        <h2
+          className={`font-semibold text-sm truncate ${
+            isLight ? "text-gray-900" : "text-white"
+          }`}
+        >
+          {title}
+        </h2>
         <div className="flex items-center gap-2 flex-shrink-0">
           {showSeeAll && (
             <Link
               href={href!}
-              className="text-gray-400 text-xs hover:text-white transition-colors whitespace-nowrap"
+              className={`text-xs transition-colors whitespace-nowrap ${
+                isLight
+                  ? "text-gray-500 hover:text-gray-900"
+                  : "text-gray-400 hover:text-white"
+              }`}
             >
               Tümünü gör · {totalCount}
             </Link>
@@ -74,18 +87,26 @@ export default function BookRow({
               <button
                 onClick={() => scroll("left")}
                 disabled={!canLeft}
-                className="p-1 rounded-full bg-gray-800 hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className={`p-1 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                  isLight
+                    ? "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    : "bg-gray-800 hover:bg-gray-700 text-white"
+                }`}
                 aria-label="Sola kaydır"
               >
-                <ChevronLeft className="w-3.5 h-3.5 text-white" />
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => scroll("right")}
                 disabled={!canRight}
-                className="p-1 rounded-full bg-gray-800 hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className={`p-1 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                  isLight
+                    ? "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    : "bg-gray-800 hover:bg-gray-700 text-white"
+                }`}
                 aria-label="Sağa kaydır"
               >
-                <ChevronRight className="w-3.5 h-3.5 text-white" />
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
@@ -106,7 +127,7 @@ export default function BookRow({
             style={{ width: 120, scrollSnapAlign: "start" }}
             role="listitem"
           >
-            <BookCard book={book} color={color} showListeners={showListeners} />
+            <BookCard book={book} color={color} showListeners={showListeners} theme={theme} />
           </div>
         ))}
       </div>
