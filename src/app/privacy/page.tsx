@@ -102,10 +102,7 @@ export default function PrivacyPage() {
                 <b>Apple (APNs) ve Google (Firebase Cloud Messaging):</b> Expo üzerinden iletilen anlık bildirimlerin cihazlara ulaştırılması.
               </li>
               <li>
-                <b>Supabase Inc. & AWS (Tokyo, Japonya):</b> Veritabanı altyapısı.
-              </li>
-              <li>
-                <b>AWS S3 (Frankfurt, Almanya / AB):</b> Ses dosyası ve kapak görseli depolama.
+                <b>Supabase Inc. ve AWS (Frankfurt, Almanya / AB):</b> Veritabanı ve dosya depolama.
               </li>
             </ul>
           </div>
