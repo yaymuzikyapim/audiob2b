@@ -70,9 +70,8 @@ review-company-001'deki şu hesaplara şimdilik dokunma (kullanıcı kararı, 5 
 
 ## DB Bölgesi
 
-**DB bölgesi: ap-northeast-1 (Tokyo)** — Supabase panelinden doğrulandı (9 Ekim 2026).
-Taşıma planlanıyor (Frankfurt / eu-central-1 hedefi); plan onaylanana kadar durum değişmez.
-Bölge iddiaları (Frankfurt, Tokyo, AB vb.) her zaman Supabase panelinden doğrulanır, env'deki hostname'den çıkarım yapılmaz.
+**DB bölgesi: eu-central-1 (Frankfurt)** — 12 Ekim 2026'da Tokyo'dan (ap-northeast-1) taşındı.
+Bölge iddiaları her zaman Supabase panelinden doğrulanır, env'deki hostname'den çıkarım yapılmaz.
 
 S3 ses/görsel bucket: `audiob2b-audio-files` — bölge `eu-central-1` (Frankfurt).
 
