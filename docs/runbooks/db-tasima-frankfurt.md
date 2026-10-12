@@ -116,7 +116,7 @@ etkilenmez, pg_restore boyunca da aktif kalır ve yeni oluşturulan tablolara ot
 ```bash
 source .env.tokyo
 
-pg_dump "$TOKYO_DIRECT_URL" \
+pg_dump "$TOKYO_SESSION_URL" \
   --format=custom \
   --no-owner \
   --no-privileges \
@@ -253,7 +253,7 @@ source .env.tokyo
 source .env.migration
 
 # Son yedek
-pg_dump "$TOKYO_DIRECT_URL" \
+pg_dump "$TOKYO_SESSION_URL" \
   --format=custom --no-owner --no-privileges --schema=public \
   -f ~/Backups/audiob2b_tokyo_FINAL_$(date +%Y%m%d_%H%M).pgdump
 chmod 600 ~/Backups/audiob2b_tokyo_FINAL_*.pgdump
@@ -484,7 +484,7 @@ Geçiş başarısından **7 gün sonra**, kullanıcı onayıyla:
 source .env.tokyo
 
 # Son yedek
-pg_dump "$TOKYO_DIRECT_URL" \
+pg_dump "$TOKYO_SESSION_URL" \
   --format=custom --no-owner --no-privileges --schema=public \
   -f ~/Backups/audiob2b_tokyo_SHUTDOWN_$(date +%Y%m%d_%H%M).pgdump
 chmod 600 ~/Backups/audiob2b_tokyo_SHUTDOWN_*.pgdump
