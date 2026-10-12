@@ -27,14 +27,24 @@ export default function BookCard({
   book,
   color,
   showListeners = false,
+  theme = "dark",
 }: {
   book: BookCardItem;
   color: string;
   showListeners?: boolean;
+  theme?: "dark" | "light";
 }) {
+  const isLight = theme === "light";
   return (
     <Link href={`/dashboard/listen/${book.id}`} className="group block w-full">
-      <div className="relative w-full overflow-hidden rounded-xl border border-gray-800 group-hover:border-gray-600 transition-colors" style={{ aspectRatio: "1 / 1" }}>
+      <div
+        className={`relative w-full overflow-hidden rounded-xl border transition-colors ${
+          isLight
+            ? "border-gray-200 group-hover:border-gray-400"
+            : "border-gray-800 group-hover:border-gray-600"
+        }`}
+        style={{ aspectRatio: "1 / 1" }}
+      >
         {book.coverUrl ? (
           <Image
             src={book.coverUrl}
@@ -45,23 +55,62 @@ export default function BookCard({
             unoptimized
           />
         ) : (
-          <div className="absolute inset-0 bg-gray-800 flex items-center justify-center text-3xl">🎧</div>
+          <div
+            className={`absolute inset-0 flex items-center justify-center text-3xl ${
+              isLight ? "bg-gray-200" : "bg-gray-800"
+            }`}
+          >
+            🎧
+          </div>
         )}
         {!book.hasAudio && (
-          <span className="absolute top-1.5 right-1.5 bg-black/70 text-gray-400 text-[9px] px-1.5 py-0.5 rounded-full">Yakında</span>
+          <span className="absolute top-1.5 right-1.5 bg-black/70 text-gray-400 text-[9px] px-1.5 py-0.5 rounded-full">
+            Yakında
+          </span>
         )}
         {book.progressPct > 0 && book.progressPct < 100 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700/80">
-            <div className="h-1" style={{ width: `${book.progressPct}%`, backgroundColor: color }} />
+          <div
+            className={`absolute bottom-0 left-0 right-0 h-1 ${
+              isLight ? "bg-gray-200/80" : "bg-gray-700/80"
+            }`}
+          >
+            <div
+              className="h-1"
+              style={{ width: `${book.progressPct}%`, backgroundColor: color }}
+            />
           </div>
         )}
       </div>
       <div className="mt-1.5 px-0.5">
-        <p className="text-white text-[11px] font-medium line-clamp-2 leading-tight">{book.title}</p>
-        <p className="text-gray-500 text-[10px] mt-0.5 truncate">{book.author}</p>
-        <p className="text-gray-600 text-[10px] mt-px">{formatDuration(book.duration)}</p>
+        <p
+          className={`text-[11px] font-medium line-clamp-2 leading-tight ${
+            isLight ? "text-gray-900" : "text-white"
+          }`}
+        >
+          {book.title}
+        </p>
+        <p
+          className={`text-[10px] mt-0.5 truncate ${
+            isLight ? "text-gray-600" : "text-gray-500"
+          }`}
+        >
+          {book.author}
+        </p>
+        <p
+          className={`text-[10px] mt-px ${
+            isLight ? "text-gray-500" : "text-gray-600"
+          }`}
+        >
+          {formatDuration(book.duration)}
+        </p>
         {showListeners && (book.listenerCount ?? 0) > 0 && (
-          <p className="text-gray-600 text-[10px] mt-px">{book.listenerCount} kişi dinledi</p>
+          <p
+            className={`text-[10px] mt-px ${
+              isLight ? "text-gray-500" : "text-gray-600"
+            }`}
+          >
+            {book.listenerCount} kişi dinledi
+          </p>
         )}
       </div>
     </Link>

@@ -91,14 +91,14 @@ async function AdminLibraryContent({ searchParams }: { searchParams: Promise<{ q
     return (
       <div>
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white">Kütüphane</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Kütüphane</h1>
         </div>
-        <LibrarySearch defaultValue={q} />
-        <p className="text-gray-400 text-sm mb-4">&ldquo;{q}&rdquo; için {matches.length} sonuç</p>
+        <LibrarySearch defaultValue={q} theme="light" />
+        <p className="text-gray-500 text-sm mb-4">&ldquo;{q}&rdquo; için {matches.length} sonuç</p>
         {matches.length > 0 ? (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
             {matches.map((book) => (
-              <BookCard key={book.id} book={book} color={color} showListeners />
+              <BookCard key={book.id} book={book} color={color} showListeners theme="light" />
             ))}
           </div>
         ) : (
@@ -125,13 +125,13 @@ async function AdminLibraryContent({ searchParams }: { searchParams: Promise<{ q
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Kütüphane</h1>
-        <p className="text-gray-400 mt-1 text-sm">
+        <h1 className="text-2xl font-bold text-gray-900">Kütüphane</h1>
+        <p className="text-gray-500 mt-1 text-sm">
           {company?.package?.name ?? "Demo"} · {rawBooks.length} kitap
         </p>
       </div>
 
-      <LibrarySearch />
+      <LibrarySearch theme="light" />
 
       {orderedCats.map((cat) => {
         const catBooks = byCategory.get(cat)!;
@@ -146,6 +146,7 @@ async function AdminLibraryContent({ searchParams }: { searchParams: Promise<{ q
             totalCount={catBooks.length}
             href={`/dashboard/admin/library/category/${slug}`}
             showListeners
+            theme="light"
           />
         );
       })}
@@ -155,7 +156,7 @@ async function AdminLibraryContent({ searchParams }: { searchParams: Promise<{ q
 
 export default function AdminLibraryPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   return (
-    <Suspense fallback={<div className="text-gray-400 text-sm p-6">Yükleniyor…</div>}>
+    <Suspense fallback={<div className="text-gray-500 text-sm p-6">Yükleniyor…</div>}>
       <AdminLibraryContent searchParams={searchParams} />
     </Suspense>
   );
