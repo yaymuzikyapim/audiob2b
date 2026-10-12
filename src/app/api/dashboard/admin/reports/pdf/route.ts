@@ -3,7 +3,7 @@ import path from "path";
 import React from "react";
 import { fmtDate } from "@/lib/format-date";
 import {
-  Document, Page, View, Text, Svg, Rect, Line,
+  Document, Page, View, Text, Svg, Rect, Line, Image,
   Font, StyleSheet, renderToBuffer,
 } from "@react-pdf/renderer";
 import { requireUser } from "@/lib/auth-guard";
@@ -14,6 +14,7 @@ export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 
 const FONT_DIR = path.join(process.cwd(), "src/assets/fonts");
+const LOGO_PATH = path.join(process.cwd(), "src/assets/logo.png");
 
 Font.register({
   family: "IBM Plex Sans",
@@ -51,6 +52,7 @@ const s = StyleSheet.create({
 });
 
 function secToHms(sec: number): string {
+  if (sec > 0 && sec < 60) return "<1dk";
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   if (h > 0) return `${h}sa ${m}dk`;
@@ -60,40 +62,42 @@ function secToHms(sec: number): string {
 
 const CHART_W = 515;
 const CHART_H = 90;
-const NUM_BARS = 30;
-
-function aggregateChart(chart: DailyChartPoint[], n = NUM_BARS) {
-  if (chart.length === 0) return [];
-  const step = Math.ceil(chart.length / n);
-  const result: { label: string; listeners: number; weekend: boolean }[] = [];
-  for (let i = 0; i < chart.length; i += step) {
-    const slice = chart.slice(i, i + step);
-    const maxListeners = Math.max(...slice.map(d => d.listeners));
-    result.push({ label: slice[0].date.slice(5), listeners: maxListeners, weekend: slice.every(d => d.weekend) });
-  }
-  return result;
-}
+const LABEL_H = 14;
 
 function ChartSvg({ chart }: { chart: DailyChartPoint[] }) {
-  const bars = aggregateChart(chart);
-  if (bars.length === 0) return null;
-  const maxVal = Math.max(...bars.map(b => b.listeners), 1);
-  const gap = 2;
-  const barW = Math.max(1, (CHART_W - (bars.length - 1) * gap) / bars.length);
+  if (chart.length === 0) return null;
+  const maxVal = Math.max(...chart.map(b => b.listeners), 1);
+  const gap = chart.length > 60 ? 1 : 2;
+  const barW = Math.max(1, (CHART_W - (chart.length - 1) * gap) / chart.length);
+  const labelInterval = Math.max(1, Math.ceil(chart.length / 9));
+  const totalH = CHART_H + 2 + LABEL_H;
 
-  return React.createElement(Svg, { width: CHART_W, height: CHART_H + 16, viewBox: `0 0 ${CHART_W} ${CHART_H + 16}` },
-    ...bars.map((b, i) => {
-      const bh = Math.max(1, Math.round((b.listeners / maxVal) * CHART_H));
-      const x = i * (barW + gap);
-      const y = CHART_H - bh;
-      return React.createElement(Rect, {
-        key: i, x, y, width: barW, height: bh,
-        fill: b.weekend ? "#A8C4F0" : ACCENT,
-        rx: 1,
-      });
-    }),
-    // baseline
+  const rects = chart.flatMap((b, i) => {
+    if (b.listeners === 0) return [];
+    const bh = Math.max(2, Math.round((b.listeners / maxVal) * CHART_H));
+    const x = i * (barW + gap);
+    return [React.createElement(Rect, {
+      key: i, x, y: CHART_H - bh, width: barW, height: bh,
+      fill: b.weekend ? "#A8C4F0" : ACCENT, rx: 1,
+    })];
+  });
+
+  const labels = chart.flatMap((b, i) => {
+    if (i % labelInterval !== 0) return [];
+    const cx = i * (barW + gap) + barW / 2;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return [React.createElement(Text as any, {
+      key: `lbl${i}`, x: cx, y: totalH,
+      fontSize: 6.5, fill: GRAY, textAnchor: "middle",
+    }, b.date.slice(5))];
+  });
+
+  return React.createElement(Svg, { width: CHART_W, height: totalH, viewBox: `0 0 ${CHART_W} ${totalH}` },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    React.createElement(Text as any, { x: 2, y: 8, fontSize: 7, fill: GRAY }, String(maxVal)),
+    ...rects,
     React.createElement(Line, { x1: 0, y1: CHART_H, x2: CHART_W, y2: CHART_H, stroke: BORDER, strokeWidth: 1 }),
+    ...labels,
   );
 }
 
@@ -111,6 +115,11 @@ function ReportDoc({ data }: { data: ReportData }) {
   return React.createElement(Document, { title: `${companyName} — Kullanım Raporu` },
     // Page 1: header + cards + chart + book table
     React.createElement(Page, { size: "A4", style: s.page },
+      // branding
+      React.createElement(View, { style: { flexDirection: "row", alignItems: "center", marginBottom: 8 } },
+        React.createElement(Image, { src: LOGO_PATH, style: { width: 16, height: 16, objectFit: "contain", marginRight: 4 } }),
+        React.createElement(Text, { style: { fontSize: 8, fontWeight: 600, color: ACCENT } }, "AudioB2B"),
+      ),
       // header
       React.createElement(View, { style: { flexDirection: "row", justifyContent: "space-between", marginBottom: 20 } },
         React.createElement(View, null,

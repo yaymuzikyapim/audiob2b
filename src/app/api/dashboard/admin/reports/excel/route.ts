@@ -7,6 +7,7 @@ import { fmtDate } from "@/lib/format-date";
 export const dynamic = "force-dynamic";
 
 function secToHms(sec: number): string {
+  if (sec > 0 && sec < 60) return "<1dk";
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   if (h > 0) return `${h}sa ${m}dk`;
@@ -66,7 +67,8 @@ export async function GET(req: Request) {
     { header: "Kitap Adı", key: "title", width: 36 },
     { header: "Yazar", key: "author", width: 24 },
     { header: "Dinleyen Kişi", key: "listeners", width: 16 },
-    { header: "Toplam Dinleme", key: "listenedSec", width: 18 },
+    { header: "Toplam Dinleme", key: "listenedHms", width: 18 },
+    { header: "Dinleme (dk)", key: "listenedMin", width: 14 },
     { header: "Tamamlayan Kişi", key: "completedCount", width: 18 },
     { header: "Tamamlanma %", key: "completedPct", width: 16 },
     { header: "Ort. İlerleme %", key: "avgProgress", width: 16 },
@@ -77,7 +79,8 @@ export async function GET(req: Request) {
       title: b.title,
       author: b.author,
       listeners: b.listeners,
-      listenedSec: secToHms(b.listenedSec),
+      listenedHms: secToHms(b.listenedSec),
+      listenedMin: Math.round(b.listenedSec / 60 * 10) / 10,
       completedCount: b.completedCount,
       completedPct: b.completedPct,
       avgProgress: b.avgProgress,
@@ -86,6 +89,7 @@ export async function GET(req: Request) {
   ws2.getRows(2, ws2.rowCount)?.forEach((row, i) => {
     row.getCell("completedPct").numFmt = '0"%"';
     row.getCell("avgProgress").numFmt = '0"%"';
+    row.getCell("listenedMin").numFmt = "0.0";
     row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: i % 2 === 0 ? "FFF5F7FA" : "FFFFFFFF" } };
   });
 
@@ -94,7 +98,8 @@ export async function GET(req: Request) {
   ws3.columns = [
     { header: "Ad Soyad", key: "name", width: 24 },
     { header: "E-posta", key: "email", width: 32 },
-    { header: "Toplam Dinleme", key: "listenedSec", width: 18 },
+    { header: "Toplam Dinleme", key: "listenedHms", width: 18 },
+    { header: "Dinleme (dk)", key: "listenedMin", width: 14 },
     { header: "Dinlenen Kitap", key: "distinctBooks", width: 16 },
     { header: "Son Dinleme", key: "lastPlayedAt", width: 20 },
     { header: "Ort. İlerleme %", key: "avgProgress", width: 16 },
@@ -104,7 +109,8 @@ export async function GET(req: Request) {
     ws3.addRow({
       name: u.name ?? "",
       email: u.email,
-      listenedSec: secToHms(u.listenedSec),
+      listenedHms: secToHms(u.listenedSec),
+      listenedMin: Math.round(u.listenedSec / 60 * 10) / 10,
       distinctBooks: u.distinctBooks,
       lastPlayedAt: fmtDate(u.lastPlayedAt),
       avgProgress: u.avgProgress,
@@ -112,6 +118,7 @@ export async function GET(req: Request) {
   }
   ws3.getRows(2, ws3.rowCount)?.forEach((row, i) => {
     row.getCell("avgProgress").numFmt = '0"%"';
+    row.getCell("listenedMin").numFmt = "0.0";
     row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: i % 2 === 0 ? "FFF5F7FA" : "FFFFFFFF" } };
   });
 
