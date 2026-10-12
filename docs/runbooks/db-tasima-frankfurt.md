@@ -2,7 +2,7 @@
 
 **Hazırlayan:** AudioB2B  
 **Durum:** Aşama 1 tamamlandı ✅ — Aşama 2 bekleniyor  
-**Geçiş zamanı:** 11 Ekim 2026 Pazar, 22:30 TR (19:30 UTC)  
+**Geçiş zamanı:** 12 Ekim 2026 Pazartesi, sabah  
 **Hedef:** Supabase ap-northeast-1 (Tokyo) → eu-central-1 (Frankfurt)
 
 > **Dondurma:** Pazar geçişine kadar Prisma şema değişikliği veya migration içeren dal merge/deploy edilmez.
@@ -219,7 +219,7 @@ Test sonrası `.env.local`'i Tokyo değerlerine geri al.
 
 ### Adım 5 — Geçiş zamanı
 
-**11 Ekim 2026 Pazar, 22:30 TR (19:30 UTC)** — onaylandı.
+**12 Ekim 2026 Pazartesi, sabah** — onaylandı.
 
 ---
 
@@ -509,7 +509,7 @@ chmod 600 ~/Backups/audiob2b_tokyo_SHUTDOWN_*.pgdump
 
 ---
 
-## AŞAMA 2 KONTROL LİSTESİ — 11 Ekim Pazar 22:30
+## AŞAMA 2 KONTROL LİSTESİ — 12 Ekim Pazartesi, sabah
 
 `[K]` = Claude çalıştırır · `[U]` = kullanıcının yapacağı adım · Sırayla, her onay beklenerek.
 
@@ -567,4 +567,4 @@ chmod 600 ~/Backups/audiob2b_tokyo_SHUTDOWN_*.pgdump
 
 ---
 
-*Son güncelleme: 9 Ekim 2026*
+*Son güncelleme: 12 Ekim 2026*
