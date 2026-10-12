@@ -51,13 +51,15 @@ Bu hesap App Store incelemesinde de kullanıldığından **şifresi asla değiş
 
 **Şifre, token, API anahtarı veya herhangi bir giriş bilgisi asla sohbet çıktısına, echo/print komutlarına veya log dosyalarına yazılmaz.**
 
-Ekran görüntüsü gerektiren görevler için kural:
-1. Geçici hesabı `tmp-admin-screenshot-<timestamp>` adıyla oluştur — şifreyi script içinde üret, sohbete yazma
-2. Giriş yap, görüntüleri al
-3. Görüntü alındıktan hemen sonra hesabı DB'den sil, silindiğini `SELECT COUNT(*)` ile doğrula
-4. Dev ve production aynı DB'yi kullandığından geçici hesaplar canlıda da geçerlidir — geciktirme yok
-
 Bu kural `TEST_USER_PASSWORD` için de geçerlidir: değerini okuyabilirsin ama asla çıktıya yansıtma.
+
+## Canlı DB'de Kullanıcı Oluşturma Yasağı
+
+**Canlı veritabanında hiçbir koşulda kullanıcı oluşturulmaz; özellikle SUPER_ADMIN veya COMPANY_ADMIN rolüyle.**
+
+- JWT/oturum anahtarı (AUTH_SECRET, JWT_SECRET vb.) elle üretilmez, curl veya script ile imzalanmaz.
+- Giriş gerektiren UI testi (ekran görüntüsü dahil) gerekiyorsa **dur ve kullanıcıdan iste**; kullanıcı kendisi giriş yapıp ekran görüntüsü verir.
+- "Hemen sileceğim" gerekçesi bu yasağı kaldırmaz — canlı DB'ye yazma eylemi gerçekleşmiş olur.
 
 ## Deneme Şirketleri Kısıtlaması
 
