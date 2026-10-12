@@ -30,3 +30,8 @@ export function fmtDayMonth(d: Date | string | null | undefined): string {
 export function fmtShortDateTime(d: Date | string | null | undefined): string {
   return fmt(d, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
+
+/** "9 Eki"  (gün + kısa ay, yılsız — grafik ekseni etiketleri için) */
+export function fmtChartDate(d: Date | string | null | undefined): string {
+  return fmt(d, { day: "numeric", month: "short" });
+}

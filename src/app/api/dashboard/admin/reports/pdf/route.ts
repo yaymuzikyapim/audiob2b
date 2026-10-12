@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import path from "path";
 import React from "react";
-import { fmtDate } from "@/lib/format-date";
+import { fmtDate, fmtChartDate } from "@/lib/format-date";
 import {
   Document, Page, View, Text, Svg, Rect, Line, Image,
   Font, StyleSheet, renderToBuffer,
@@ -89,7 +89,7 @@ function ChartSvg({ chart }: { chart: DailyChartPoint[] }) {
     return [React.createElement(Text as any, {
       key: `lbl${i}`, x: cx, y: totalH,
       fontSize: 6.5, fill: GRAY, textAnchor: "middle",
-    }, b.date.slice(5))];
+    }, fmtChartDate(b.date))];
   });
 
   return React.createElement(Svg, { width: CHART_W, height: totalH, viewBox: `0 0 ${CHART_W} ${totalH}` },
