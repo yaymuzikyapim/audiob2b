@@ -1,5 +1,8 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { assertNotProd } from "../scripts/lib/prod-guard.mjs";
+
+assertNotProd(process.env.DATABASE_URL, "seed-categories");
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });

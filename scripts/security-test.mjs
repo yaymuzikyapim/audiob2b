@@ -25,6 +25,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as http from "http";
 import { fileURLToPath } from "url";
+import { assertNotProd } from "./lib/prod-guard.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
@@ -47,6 +48,8 @@ const env = {
 if (!env.DATABASE_URL) throw new Error("DATABASE_URL bulunamadı (.env)");
 if (!env.TEST_USER_EMAIL) throw new Error("TEST_USER_EMAIL bulunamadı (.env.local)");
 if (!env.TEST_USER_PASSWORD) throw new Error("TEST_USER_PASSWORD bulunamadı (.env.local)");
+
+assertNotProd(env.DATABASE_URL, "security-test");
 
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3000";
 const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });

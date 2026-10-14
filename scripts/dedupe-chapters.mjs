@@ -16,7 +16,9 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import pg from "pg";
-import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { assertNotProd } from "./lib/prod-guard.mjs";
+import { S3Client } from "@aws-sdk/client-s3";
+import { deleteObject } from "./lib/s3-delete.mjs";
 
 const UYGULA = process.argv.includes("--yes");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -25,6 +27,8 @@ const env = Object.fromEntries(
     .filter((l) => l.includes("=") && !l.trim().startsWith("#"))
     .map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, "")]; })
 );
+assertNotProd(env.DATABASE_URL, "dedupe-chapters");
+
 const pool = new pg.Pool({ connectionString: env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 const s3 = new S3Client({
   region: env.AWS_REGION,
@@ -96,7 +100,7 @@ try {
 let ok = 0, hata = 0;
 for (const r of silinecek) {
   if (!r.s3Key) continue;
-  try { await s3.send(new DeleteObjectCommand({ Bucket: env.AWS_S3_BUCKET, Key: r.s3Key })); ok++; }
+  try { const d = await deleteObject(s3, { bucket: env.AWS_S3_BUCKET, key: r.s3Key, env }); if (!d.skipped) ok++; }
   catch (e) { hata++; console.log(`   ⚠ S3 silinemedi: ${r.s3Key} — ${e.message}`); }
 }
 console.log(`✓ S3: ${ok} fazla nesne silindi${hata ? `, ${hata} hata` : ""}`);

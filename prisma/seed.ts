@@ -1,6 +1,9 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { assertNotProd } from "../scripts/lib/prod-guard.mjs";
 import bcrypt from "bcryptjs";
+
+assertNotProd(process.env.DATABASE_URL, "seed");
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,

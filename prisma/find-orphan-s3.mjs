@@ -16,7 +16,9 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import pg from "pg";
-import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
+import { assertNotProd } from "../scripts/lib/prod-guard.mjs";
+import { S3Client, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { deleteObjects } from "../scripts/lib/s3-delete.mjs";
 
 const SIL = process.argv.includes("--delete");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -25,6 +27,8 @@ const env = Object.fromEntries(
     .filter((l) => l.includes("=") && !l.trim().startsWith("#"))
     .map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, "")]; })
 );
+
+assertNotProd(env.DATABASE_URL, "find-orphan-s3");
 
 const pool = new pg.Pool({ connectionString: env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 const s3 = new S3Client({
@@ -77,12 +81,9 @@ if (!SIL) {
 let silinen = 0;
 for (let i = 0; i < artiklar.length; i += 1000) {
   const grup = artiklar.slice(i, i + 1000);
-  const r = await s3.send(new DeleteObjectsCommand({
-    Bucket: env.AWS_S3_BUCKET,
-    Delete: { Objects: grup.map((Key) => ({ Key })), Quiet: true },
-  }));
-  silinen += grup.length - (r.Errors?.length ?? 0);
-  (r.Errors ?? []).forEach((e) => console.log(`   ⚠ silinemedi: ${e.Key} — ${e.Message}`));
+  const r = await deleteObjects(s3, { bucket: env.AWS_S3_BUCKET, keys: grup, env });
+  silinen += r.deleted;
+  r.errors.forEach((e) => console.log(`   ⚠ silinemedi: ${e.Key} — ${e.Message}`));
 }
 console.log(`\n✅ ${silinen} artık nesne silindi (${(boyut / 1024 / 1024).toFixed(1)} MB)`);
 await pool.end();

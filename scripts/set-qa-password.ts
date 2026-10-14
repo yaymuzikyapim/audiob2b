@@ -10,6 +10,7 @@ import { createInterface } from "readline";
 import { config } from "dotenv";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { assertNotProd } from "./lib/prod-guard.mjs";
 import { newPasswordSchema, hashPassword, isCommonPassword } from "../src/lib/password";
 
 config({ path: ".env" });
@@ -66,6 +67,8 @@ async function main() {
     console.error("Kullanım: npx tsx scripts/set-qa-password.ts <email>");
     process.exit(1);
   }
+
+  assertNotProd(process.env.DATABASE_URL, "set-qa-password");
 
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
   const prisma = new PrismaClient({ adapter });
