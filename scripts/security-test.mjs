@@ -41,7 +41,7 @@ function readEnv(filePath) {
 }
 
 const env = {
-  ...readEnv(path.join(PROJECT_ROOT, ".env")),
+  ...readEnv(path.join(PROJECT_ROOT, process.env.ENV_FILE ?? ".env")),
   ...readEnv(path.join(PROJECT_ROOT, ".env.local")),
 };
 

@@ -118,9 +118,45 @@ Katalog ve sentetik kullanıcı/şirket yüklemesi ayrı bir adımda yapılacak.
   yetkili, canlıdan **ayrı** bir IAM anahtarı olmalıdır.
 - `.env.dev` içindeki `AUTH_SECRET` ve `CRON_SECRET` canlıdan kopyalanmadı; yeni üretildi.
 
-## Bilinen kısıt
+## RLS
 
-`prisma/*.mjs` ve `scripts/dedupe-chapters.mjs` env dosyasının yolunu sabit yazıyor
-(`fs.readFileSync(root + "/.env")`), bu yüzden `dotenvx`/`tsx:devdb` onlara etki etmez —
-hâlâ `.env`'i (canlıyı) okurlar ve prod koruması onları durdurur. Dev DB'de
-çalışabilmeleri için `process.env.ENV_FILE ?? ".env"` desteği eklenmelidir (ayrı adım).
+Canlıdaki gibi 21 tablonun hepsinde RLS **etkin, politika yok**. Bu durum
+migration'lardan geliyor (`20261001000001_enable_rls_notification_log`,
+`20261007000001_password_management`, `20261008000001_add_demo_request`), bu yüzden
+**ayrı bir dev kurulum adımı gerekmiyor**. Tablo tablo karşılaştırıldı, fark yok.
+
+Politika olmadığı ve `FORCE ROW LEVEL SECURITY` kapalı olduğu için tablo sahibi RLS'i
+atlar; uygulama sahibi rolle bağlandığı sürece etkisizdir. Sahip olmayan bir rolle
+bağlanılırsa her sorgu boş döner.
+
+## `.mjs` scriptleri — ENV_FILE
+
+13 `.mjs` script artık `process.env.ENV_FILE ?? ".env"` okuyor:
+
+```bash
+npm run mjs:devdb -- prisma/fix-duplicate-books.mjs   # ENV_FILE=.env.dev
+ENV_FILE=.env.dev node prisma/find-orphan-s3.mjs      # eşdeğeri
+node prisma/fix-duplicate-books.mjs                   # .env → prod koruması durdurur
+```
+
+Prod koruması `ENV_FILE` ile okunan URL'yi de denetler: `ENV_FILE=.env` verildiğinde de
+durdurur.
+
+### SSL
+
+Yerel küme sertifikasız çalıştığı için SSL bağlantısını reddeder
+("The server does not support SSL connections"). `scripts/lib/pg-ssl.mjs` host'a bakıp
+karar verir: `localhost` / `127.0.0.1` / `[::1]` → SSL kapalı, diğer her şey →
+`{ rejectUnauthorized: false }`. 11 `pg.Pool` scripti ve iki TS scripti bunu kullanır.
+
+## Bilinen kısıt — e-posta
+
+`src/lib/mailer.ts:3` `new Resend(process.env.RESEND_API_KEY!)` çağrısını **modül
+kapsamında** yapıyor. `.env.dev` içinde `RESEND_API_KEY` boş olduğu için mailer'ı import
+eden route'lar dev ortamında **HTTP 500** veriyor (`Missing API key`). Doğrulandı:
+`POST /api/demo-request` → 500, DB'ye yazma hiç olmuyor.
+
+Etkilenen 6 dosya: `api/admin/companies/[id]/invite`, `api/dashboard/invite`,
+`api/dashboard/invite/bulk`, `api/demo-request`, `lib/emails/reset-password`,
+`lib/emails/password-changed`. Çözüm, mailer'ı tembel başlatmaktır (ayrı görev;
+`project_pending_web` notunda zaten duruyor).

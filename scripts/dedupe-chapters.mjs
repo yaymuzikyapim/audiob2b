@@ -17,19 +17,20 @@ import path from "path";
 import { fileURLToPath } from "url";
 import pg from "pg";
 import { assertNotProd } from "./lib/prod-guard.mjs";
+import { pgSsl } from "./lib/pg-ssl.mjs";
 import { S3Client } from "@aws-sdk/client-s3";
 import { deleteObject } from "./lib/s3-delete.mjs";
 
 const UYGULA = process.argv.includes("--yes");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const env = Object.fromEntries(
-  fs.readFileSync(path.join(root, ".env"), "utf8").split("\n")
+  fs.readFileSync(path.join(root, process.env.ENV_FILE ?? ".env"), "utf8").split("\n")
     .filter((l) => l.includes("=") && !l.trim().startsWith("#"))
     .map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, "")]; })
 );
 assertNotProd(env.DATABASE_URL, "dedupe-chapters");
 
-const pool = new pg.Pool({ connectionString: env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const pool = new pg.Pool({ connectionString: env.DATABASE_URL, ssl: pgSsl(env.DATABASE_URL) });
 const s3 = new S3Client({
   region: env.AWS_REGION,
   credentials: { accessKeyId: env.AWS_ACCESS_KEY_ID, secretAccessKey: env.AWS_SECRET_ACCESS_KEY },

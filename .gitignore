@@ -58,6 +58,8 @@ next-env.d.ts
 prisma/create-*.ts
 prisma/create-*.mjs
 prisma/fix-*.mjs
+# Bu script kesin plana (K13) girdi ve prod koruması taşıyor; izlemeye alındı.
+!prisma/fix-duplicate-books.mjs
 prisma/rename-*.mjs
 prisma/seed-demo-*.ts
 prisma/upload-from-drive.ts

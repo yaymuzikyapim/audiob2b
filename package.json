@@ -10,8 +10,8 @@
     "test": "TZ=UTC npx tsx src/lib/metrics.test.ts",
     "test:guards": "node scripts/lib/prod-guard.test.mjs && node scripts/lib/s3-delete.test.mjs && AWS_REGION=eu-central-1 AWS_S3_BUCKET=audiob2b-audio-files AWS_ACCESS_KEY_ID=x AWS_SECRET_ACCESS_KEY=x npx tsx src/lib/s3.test.ts",
     "lint": "eslint",
-    "seed": "dotenv -e .env -- npx tsx prisma/seed.ts",
-    "seed:categories": "dotenv -e .env -- npx tsx prisma/seed-categories.ts",
+    "seed": "dotenvx run -f .env --quiet -- npx tsx prisma/seed.ts",
+    "seed:categories": "dotenvx run -f .env --quiet -- npx tsx prisma/seed-categories.ts",
     "upload:drive": "npx tsx prisma/upload-from-drive.ts",
     "upload:drive:dry": "npx tsx prisma/upload-from-drive.ts --dry-run",
     "dev:devdb": "dotenvx run -f .env.dev --quiet -- next dev",
@@ -21,7 +21,8 @@
     "devdb:start": "LC_ALL=\"en_US.UTF-8\" /usr/local/opt/postgresql@17/bin/pg_ctl -D $HOME/pgdata/audiob2b-dev -l $HOME/pgdata/audiob2b-dev/server.log -w start",
     "devdb:stop": "/usr/local/opt/postgresql@17/bin/pg_ctl -D $HOME/pgdata/audiob2b-dev -m fast -w stop",
     "devdb:status": "/usr/local/opt/postgresql@17/bin/pg_isready -h localhost -p 5433",
-    "devdb:psql": "/usr/local/opt/postgresql@17/bin/psql -h localhost -p 5433 -U postgres -d audiob2b_dev"
+    "devdb:psql": "/usr/local/opt/postgresql@17/bin/psql -h localhost -p 5433 -U postgres -d audiob2b_dev",
+    "mjs:devdb": "ENV_FILE=.env.dev node"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
