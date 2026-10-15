@@ -17,6 +17,7 @@ import { fileURLToPath } from "url";
 import pg from "pg";
 import { assertNotProd } from "../scripts/lib/prod-guard.mjs";
 import { pgSsl } from "../scripts/lib/pg-ssl.mjs";
+import "../scripts/lib/pg-utc.mjs";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");

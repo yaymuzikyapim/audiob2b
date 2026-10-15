@@ -18,6 +18,7 @@ import { fileURLToPath } from "url";
 import pg from "pg";
 import { assertNotProd } from "./lib/prod-guard.mjs";
 import { pgSsl } from "./lib/pg-ssl.mjs";
+import "./lib/pg-utc.mjs";
 import { S3Client } from "@aws-sdk/client-s3";
 import { deleteObject } from "./lib/s3-delete.mjs";
 

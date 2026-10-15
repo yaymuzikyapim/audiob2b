@@ -104,8 +104,50 @@ tarafta **her zaman** `BEGIN READ ONLY; SET LOCAL statement_timeout='30s'; … R
 
 ## Veri
 
-Küme şu an **boş** (yalnızca şema). Canlı kişisel veri bu kümeye **girmez** (K0).
-Katalog ve sentetik kullanıcı/şirket yüklemesi ayrı bir adımda yapılacak.
+| Kaynak | İçerik |
+|---|---|
+| **Katalog** (canlıdan salt okuma kopyası) | Category 20 · Series 37 · Package 2 · Book 1055 · Chapter 8867 · PackageBook 1046 — canlıyla birebir |
+| **Sentetik** (`scripts/seed-dev.mjs`) | 4 şirket · 15 kullanıcı · ~370–400 dinleme kaydı · favori / oynatıcı durumu / yer imi |
+
+**Canlı kişisel veri bu kümeye girmez** (K0). Kopyalanan altı katalog tablosunun
+hiçbirinde `User` / `Company` gibi kişisel veri tablolarına FK yoktur — doğrulandı.
+Kopyalanmayan tablolar: User, Company, PlayHistory, InviteToken, PasswordResetToken,
+PasswordAuditLog, NotificationLog, DemoRequest, ProposalLink, ProposalLinkVisitor,
+RateLimit, UserFavorite, PlayerState, Bookmark.
+
+```bash
+npm run katalog:devdb   # canlı katalog → dev (yalnızca 6 tablo, --data-only)
+npm run seed:devdb      # sentetik şirket/kullanıcı/dinleme (tekrar çalıştırılabilir)
+npm run devdb:reset     # şema sıfırla → migrate deploy → katalog → seed
+```
+
+Üçü de yalnızca `localhost:5433`'e yazar; `.env.dev` başka bir hedefi gösterirse durur.
+
+### Sentetik şirketler ve senaryolar
+
+| Şirket | Durum | Kütüphane çağrısı |
+|---|---|---|
+| QA Test A.Ş. | aktif, tam paket (Demo), 20 koltuk | HTTP 200 — 1003 kitap |
+| Süresi Dolmuş Ltd. | `endDate` 30 gün önce | HTTP 403 `LICENSE_EXPIRED` |
+| Pasif Kurum | `isActive=false` | HTTP 403 `COMPANY_INACTIVE` |
+| Demo Kurum | `isDemo=true`, küçük paket | HTTP 200 |
+| (şirketsiz kullanıcı) | `companyId=null` | HTTP 403 `COMPANY_INACTIVE` |
+
+Kullanıcılar: 1 SUPER_ADMIN · 4 COMPANY_ADMIN · 8 aktif çalışan · 1 pasif çalışan ·
+1 şirketsiz. **Tüm e-postalar `@example.test`.** Şifre `.env.dev` içindeki
+`DEV_SEED_PASSWORD` (yoksa rastgele üretilip oraya yazılır, ekrana basılmaz).
+
+Dinleme kayıtlarının tamamı `clientVersion=2`, `contentSec>0`, `clientId` dolu; son
+60 güne yayılmış, hızlar 1.0 / 1.25 / 1.5 / 2.0. Kenar durumlar: İstanbul gece
+yarısını aşan oturum, 30 sn altı kayıtlar (6/11/19/27 sn), aynı kullanıcının iki
+cihazda zamanda çakışan dilimleri, 2.0x hızda dilim.
+
+### Neden kütüphanede 1018 değil 1003 kitap görünüyor
+
+`1018` katalog genelinde aktif + en az bir bölümü olan kitap sayısıdır. Kütüphane
+ise **pakete göre** süzer: Demo paketinde 1040 kitap var, bunların 1003'ü aktif ve
+bölümlü. Aktif + bölümlü olup Demo paketinde **olmayan** 15 kitap, hiçbir şirketin
+kütüphanesinde görünmez.
 
 ## Koruma kapıları
 

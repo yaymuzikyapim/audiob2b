@@ -100,6 +100,32 @@ proje ref'inin **yalnızca son 5 karakteri** (`…hoxkr`). Bağlantı dizesi, ku
 ve şifre yazdırılmaz. `scripts/lib/prod-guard.mjs` canlı ref'i görürse `ALLOW_PROD=1`
 olmadan süreci durdurur.
 
+**5. Zaman damgaları UTC'dir.**
+
+`timestamp without time zone` kolonlarındaki (`playedAt`, `updatedAt`, `createdAt`, …)
+değerler **UTC**'dir. Scriptler ve geliştirme ortamı `TZ=UTC` ile çalışır
+(`dev:devdb`, `build:devdb`, `prisma:devdb`, `tsx:devdb`, `mjs:devdb`, `test:guards`).
+Zaman damgası karşılaştırmaları ya **metin** üzerinden (`to_char(...)`) ya da UTC'ye
+sabitlenmiş ayrıştırıcıyla yapılır.
+
+Gerekçe (15 Ekim 2026'da ölçüldü): ham `pg` (node-postgres) OID 1114'ü **yerel saat**
+sanar, `@prisma/adapter-pg` sanmaz.
+
+```
+DB ham değer                : 2026-01-01 00:00:00
+ham pg, TZ=Europe/Istanbul  : 2025-12-31T21:00:00.000Z   ✗ 3 saat geri
+ham pg, TZ=UTC              : 2026-01-01T00:00:00.000Z   ✓
+Prisma, her iki TZ'de       : 2026-01-01T00:00:00.000Z   ✓
+```
+
+Ham `pg` kullanan her script `scripts/lib/pg-utc.mjs` modülünü import eder; bu modül
+OID 1114/1115 ayrıştırıcısını UTC'ye sabitler ve TZ ne olursa olsun doğru sonuç verir.
+Uygulama kodu `process.env.TZ`'den bağımsızdır: `src/lib/tz-utils.ts` İstanbul gün
+sınırlarını UTC üzerinden sabit +3 ofsetle hesaplar, `src/lib/format-date.ts` Intl'e
+`timeZone` değerini açıkça verir. Vercel'in çalışma zamanındaki `TZ` değeri
+**doğrulanmadı** (Vercel'in Node.js runtime ve sistem değişkenleri dokümanlarında
+geçmiyor), ama uygulama buna bağlı olmadığı için sonucu etkilemiyor.
+
 ## Canlı DB'de Kullanıcı Oluşturma Yasağı
 
 **Canlı veritabanında hiçbir koşulda kullanıcı oluşturulmaz; özellikle SUPER_ADMIN veya COMPANY_ADMIN rolüyle.**

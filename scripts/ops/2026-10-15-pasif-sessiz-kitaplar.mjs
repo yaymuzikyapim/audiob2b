@@ -21,6 +21,7 @@ import { fileURLToPath } from "url";
 import pg from "pg";
 import { assertNotProd, canliMi, refEtiketi } from "../lib/prod-guard.mjs";
 import { pgSsl } from "../lib/pg-ssl.mjs";
+import "../lib/pg-utc.mjs";
 
 const UYGULA = process.argv.includes("--apply");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
