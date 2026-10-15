@@ -53,6 +53,53 @@ Bu hesap App Store incelemesinde de kullanıldığından **şifresi asla değiş
 
 Bu kural `TEST_USER_PASSWORD` için de geçerlidir: değerini okuyabilirsin ama asla çıktıya yansıtma.
 
+## Güvenlik Kuralları — Ortam Değişkenleri ve Kimlik Doğrulama
+
+Bu dört kural 14 Ekim 2026'daki bir olaydan sonra eklendi: `.env.dev` ile çalıştığı
+sanılan bir S3 yetki testi, komutun başındaki `set -a; . ./.env` yüzünden **canlı**
+anahtarla `PutObject` yaptı ve canlı bucket'a bir nesne yazdı. `dotenvx` ve `dotenv`
+zaten tanımlı `process.env` değişkenlerini **ezmez**; kabuğa sızan canlı değer, sonraki
+tüm `-f .env.dev` komutlarını sessizce canlıya yönlendirir.
+
+**1. Canlı `.env` asla kabuğa yüklenmez.**
+
+`set -a; . ./.env`, `source .env`, `. ./.env`, `export $(cat .env | xargs)` ve
+benzerleri **yasak**. Aynısı `.env.tokyo`, `.env.migration`, `.env.local.tokyo_backup`
+için de geçerlidir. Canlı bir değere salt okuma işi için ihtiyaç varsa dosya **tek bir
+komutun içinde ayrıştırılarak** okunur ve kabuk ortamına sızmaz:
+
+```bash
+# YASAK
+set -a && . ./.env && set +a && psql "$DIRECT_URL" -c '...'
+
+# DOĞRU — değer yalnızca o komutun argümanında yaşar
+psql "$(grep -m1 '^DIRECT_URL=' .env | cut -d= -f2-)" -c 'BEGIN READ ONLY; ...; ROLLBACK;'
+```
+
+**2. Geliştirme işleri temiz kabuk ister.**
+
+Geliştirme komutları yalnızca `.env.dev` ile ve kabukta `AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY`, `DATABASE_URL`, `DIRECT_URL` tanımlı **değilken** çalıştırılır.
+`dev:devdb`, `build:devdb`, `prisma:devdb`, `tsx:devdb`, `mjs:devdb` komutları
+`scripts/lib/dev-env-guard.mjs` ön kontrolünü çalıştırır ve bu değişkenlerden biri
+kabuktan geliyorsa hata koduyla durur. Kendi yazdığın scriptlerde de aynı kontrolü
+çağır.
+
+**3. AWS çağrısı yapan her test/script önce kim olduğunu doğrular.**
+
+Aynı süreç içinde, ilk AWS çağrısından önce `STS GetCallerIdentity` çalıştırılır,
+dönen ARN **yazdırılır** ve beklenen IAM kullanıcısı değilse script durur. Geliştirme
+için beklenen: `arn:aws:iam::989208155263:user/audiob2b-dev-readonly`. Canlı:
+`arn:aws:iam::989208155263:user/audiob2b-s3-user`. Anahtar değerleri yazdırılmaz,
+yalnızca ARN.
+
+**4. DB işi yapan her script hedefini yazdırır.**
+
+Aynı süreç içinde bağlandığı hedef yazdırılır: yerel için `localhost:5433`, canlı için
+proje ref'inin **yalnızca son 5 karakteri** (`…hoxkr`). Bağlantı dizesi, kullanıcı adı
+ve şifre yazdırılmaz. `scripts/lib/prod-guard.mjs` canlı ref'i görürse `ALLOW_PROD=1`
+olmadan süreci durdurur.
+
 ## Canlı DB'de Kullanıcı Oluşturma Yasağı
 
 **Canlı veritabanında hiçbir koşulda kullanıcı oluşturulmaz; özellikle SUPER_ADMIN veya COMPANY_ADMIN rolüyle.**

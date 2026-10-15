@@ -109,6 +109,13 @@ Katalog ve sentetik kullanıcı/şirket yüklemesi ayrı bir adımda yapılacak.
 
 ## Koruma kapıları
 
+- **`scripts/lib/dev-env-guard.mjs`** — `dev:devdb`, `build:devdb`, `prisma:devdb`,
+  `tsx:devdb`, `mjs:devdb` komutlarının en başında çalışır. Kabukta
+  `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `DATABASE_URL` veya `DIRECT_URL`
+  tanımlıysa süreci durdurur. Gerekçe: `dotenvx` zaten tanımlı değişkenleri **ezmez**,
+  bu yüzden kabuğa sızan canlı bir değer `-f .env.dev` komutunu sessizce canlıya
+  yönlendirir. Temizlemek için: `unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY DATABASE_URL DIRECT_URL`
+
 - `scripts/lib/prod-guard.mjs` — bağlantı dizesinde canlı proje ref'ini görürse
   `ALLOW_PROD=1` olmadan yazan scriptleri `exit(1)` ile durdurur. Yerel `localhost:5433`
   URL'sinde ref yoktur, dolayısıyla dev DB'de scriptler serbest çalışır.
