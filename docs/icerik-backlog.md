@@ -29,10 +29,15 @@ yüklendiğinde geri alınacak.
 
 ---
 
-## (b) Aktif + sesli, ama hiçbir pakette değil — 15 kitap
+## (b) Aktif + sesli, ama hiçbir pakette değil — 15 kitap (9 kaldı)
 
 Bu kitaplar yayında ve bölümleri var, fakat `PackageBook` kaydı olmadığı için **hiçbir
-şirket kütüphanesinde görünmüyor**. "Katalogda 1018 / kütüphanede 1003" farkının tamamı budur.
+şirket kütüphanesinde görünmüyor**.
+
+### Çözüldü (2026-10-15) — Demo paketine eklendi
+
+6 kutsal kitap `Demo` paketine eklendi (işlem kaydı:
+[`docs/runbooks/canli-islem-kaydi.md`](runbooks/canli-islem-kaydi.md)):
 
 | ISBN | Başlık | Bölüm |
 |---|---|---|
@@ -42,6 +47,11 @@ Bu kitaplar yayında ve bölümleri var, fakat `PackageBook` kaydı olmadığı 
 | 9786258477955 | Tevrat (Eski Antlaşma / Tanah) | 51 |
 | 9786258477924 | Süleyman Peygamber'in Özdeyişler Kitabı | 31 |
 | 9786258477856 | İncil | 30 |
+
+### Karar bekleyen 9 kitap
+
+| ISBN | Başlık | Bölüm |
+|---|---|---|
 | 9786255578228 | Felatun Bey ile Rakım Efendi | 11 |
 | 9786055212698 | The Gift of the Magi | 2 |
 | 9786055212704 | The Happy Prince | 2 |
@@ -52,9 +62,8 @@ Bu kitaplar yayında ve bölümleri var, fakat `PackageBook` kaydı olmadığı 
 | 9786258320145 | The Horse-Devil And The Witch | 1 |
 | 9786258477993 | The Rose Beauty | 1 |
 
-**Karar gerekiyor:** 6 kutsal kitap (toplam 456 bölüm) B2B paketine bilinçli olarak mı
-alınmadı? Alınacaksa `Demo` paketine mi, ayrı bir pakete mi? Diğer 9 kitap (İngilizce
-kısa öyküler + Felatun Bey) muhtemelen gözden kaçmış.
+Bu 9 kitap (İngilizce kısa öyküler + Felatun Bey) muhtemelen gözden kaçmış —
+hangi pakete ekleneceğine karar verilmeli.
 
 ---
 

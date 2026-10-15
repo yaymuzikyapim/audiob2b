@@ -10,6 +10,73 @@ tutmazsa `ROLLBACK`.
 
 ---
 
+## 2026-10-15 — 6 kutsal kitabın Demo paketine eklenmesi
+
+**İşlem:** `INSERT INTO "PackageBook" ("packageId", "bookId") SELECT … UNNEST(…)` — 6 satır.
+**Script:** `scripts/ops/2026-10-15-kutsal-kitaplar-pakete.mjs`
+**Komut:** `ALLOW_PROD=1 ENV_FILE=.env.prod node scripts/ops/2026-10-15-kutsal-kitaplar-pakete.mjs --apply`
+**Onay:** kullanıcı, Aşama A raporundan sonra (iki aşamalı akış).
+
+### Gerekçe
+
+6 kutsal kitap (Kur'an-ı Kerim, Zebur, İncil, Tevrat, Kutsal Kitap, Süleyman'ın Özdeyişleri)
+aktif ve bölümlü olmasına karşın hiçbir pakette yer almıyordu; Demo paketinin 4 şirket
+kütüphanesinde görünmüyorlardı. `icerik-backlog.md` (b) maddesindeki 15 paketsiz kitabın 6'sı.
+
+### Eklenen (packageId, bookId) çiftleri
+
+| bookId | isbn | başlık |
+|---|---|---|
+| bk_9786258477764 | 9786258477764 | Kur'an-ı Kerim |
+| bk_9786258477856 | 9786258477856 | İncil |
+| bk_9786258477887 | 9786258477887 | Kutsal Kitap (Tevrat, Zebur ve İncil'i içeren Kitab-ı Mukaddes) |
+| bk_9786258477924 | 9786258477924 | Süleyman Peygamber'in Özdeyişler Kitabı |
+| bk_9786258477931 | 9786258477931 | Zebur (Mezmurlar) |
+| bk_9786258477955 | 9786258477955 | Tevrat (Eski Antlaşma / Tanah) |
+
+Paket: `Demo` — id `cmtidmqn3000004jpk8q6lzze`. TPAO-Demo'ya eklenmedi.
+
+### Yedek
+
+| | |
+|---|---|
+| Dosya | `~/Backups/audiob2b/audiob2b-prod-public-20261015-2257.dump` |
+| Boyut | 756.239 bayt |
+| sha256 | `256b4a8adc3efd3bf9a699e27aba5737a31ff280aea439aca639aabb638bb95a` |
+
+### Önce / sonra sayımlar
+
+| Ölçüt | Önce | Sonra | Beklenen |
+|---|---|---|---|
+| Demo paket kitap sayısı | 1040 | **1046** | +6 ✓ |
+| TPAO-Demo paket kitap sayısı | 6 | **6** | değişmez ✓ |
+| AudioB2B Demo kütüphane | 1003 | **1009** | +6 ✓ |
+| AudioB2B QA kütüphane | 1003 | **1009** | +6 ✓ |
+| TPAO A.Ş. kütüphane | 1003 | **1009** | +6 ✓ |
+| YAY Deneme kütüphane | 1003 | **1009** | +6 ✓ |
+
+`INSERT` etkilenen satır: **6** (6 olmasaydı `ROLLBACK`).
+
+### Geri alma
+
+```sql
+BEGIN;
+DELETE FROM "PackageBook"
+WHERE "packageId" = 'cmtidmqn3000004jpk8q6lzze'
+  AND "bookId" = ANY(ARRAY[
+    'bk_9786258477764','bk_9786258477856','bk_9786258477887',
+    'bk_9786258477924','bk_9786258477931','bk_9786258477955']);
+-- Etkilenen satır 6 değilse ROLLBACK.
+COMMIT;
+```
+
+### Tekrar çalıştırma güvenliği
+
+Script ikinci kez kuru çalıştırıldığında "Zaten Demo'da olan kitap (6)" sapmasıyla
+`exit 1` veriyor — yanlışlıkla tekrar uygulanamaz.
+
+---
+
 ## 2026-10-15 — Sesi olmayan 21 aktif kitabın pasife alınması
 
 **İşlem:** `UPDATE "Book" SET "isActive" = false, "updatedAt" = now()` — 21 satır.
