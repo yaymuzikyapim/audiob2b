@@ -170,9 +170,20 @@ try {
     update "Book" set "isActive" = false, "updatedAt" = now()
     where isbn = any($1::text[]) and "isActive" = true
       and not exists (select 1 from "Chapter" c where c."bookId" = "Book".id)
-    returning isbn`, [ISBNLER]);
+    returning isbn, to_char("updatedAt",'YYYY-MM-DD HH24:MI:SS.MS') as damga`, [ISBNLER]);
 
   console.log(`\nUPDATE etkilenen satır: ${r.rowCount}`);
+  // Damga METİN olarak okunur: node-postgres "timestamp without time zone"
+  // değerini yerel saat sanıp UTC'ye kaydırıyor (15 Ekim 2026'da 3 saat sapma
+  // yarattı ve yazdırılan geri alma koşulu 0 satır hedefledi).
+  const damgalar = [...new Set(r.rows.map((x) => x.damga))];
+  console.log(`updatedAt damgası (${damgalar.length} farklı): ${damgalar.join(", ")}`);
+  if (damgalar.length !== 1) {
+    await c.query("ROLLBACK");
+    console.error("⛔ ROLLBACK — updatedAt damgası tek değil; geri alma koşulu kurulamaz.");
+    c.release(); await pool.end();
+    process.exit(1);
+  }
   if (r.rowCount !== BEKLENEN) {
     await c.query("ROLLBACK");
     console.error(`⛔ ROLLBACK — ${BEKLENEN} satır beklenirken ${r.rowCount} etkilendi.`);
@@ -181,6 +192,11 @@ try {
   }
   await c.query("COMMIT");
   console.log("✓ COMMIT");
+  console.log(`\nGERİ ALMA (yalnızca bu işlemin değiştirdiği satırlar):`);
+  console.log(`  UPDATE "Book" SET "isActive" = true`);
+  console.log(`  WHERE isbn = ANY(ARRAY[...21 ISBN...])`);
+  console.log(`    AND "isActive" = false`);
+  console.log(`    AND "updatedAt" = '${damgalar[0]}'::timestamp;   -- UTC, DB'nin yazdığı ham değer`);
 } catch (e) {
   await c.query("ROLLBACK").catch(() => {});
   console.error("⛔ ROLLBACK —", e.message);
