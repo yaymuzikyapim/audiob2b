@@ -5,7 +5,8 @@
  *
  * Gereksinimler:
  *   - Next.js sunucusu http://localhost:3000 üzerinde çalışıyor olmalı
- *   - .env ve .env.local dosyaları proje kökünde bulunmalı
+ *   - .env (→ .env.dev, geliştirme DB'si) ve .env.local proje kökünde bulunmalı
+ *   - Canlıya karşı ÇALIŞMAZ: assertNotProd canlı ref'i görürse durur
  *   - TEST_USER_EMAIL ve TEST_USER_PASSWORD .env.local içinde tanımlı olmalı
  *
  * Güvenlik kuralı: şifreler, token'lar ve kimlik bilgileri hiçbir çıktıya yazılmaz.
@@ -45,7 +46,7 @@ const env = {
   ...readEnv(path.join(PROJECT_ROOT, ".env.local")),
 };
 
-if (!env.DATABASE_URL) throw new Error("DATABASE_URL bulunamadı (.env)");
+if (!env.DATABASE_URL) throw new Error("DATABASE_URL bulunamadı (.env → .env.dev)");
 if (!env.TEST_USER_EMAIL) throw new Error("TEST_USER_EMAIL bulunamadı (.env.local)");
 if (!env.TEST_USER_PASSWORD) throw new Error("TEST_USER_PASSWORD bulunamadı (.env.local)");
 

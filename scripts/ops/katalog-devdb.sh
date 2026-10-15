@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Canlı katalogdan geliştirme DB'sine kopya (yalnızca okuma → localhost:5433).
 # Kişisel veri içeren hiçbir tablo kopyalanmaz.
+# Kaynak: .env.prod (canlı, yalnızca okuma) · Hedef: .env.dev (localhost:5433)
 set -euo pipefail
 PG=/usr/local/opt/postgresql@17/bin
 KOK="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -12,6 +13,8 @@ case "$DEV_URL" in
   *) echo "⛔ DURDURULDU — .env.dev yerel 5433'ü göstermiyor."; exit 1 ;;
 esac
 
+[ -f .env.prod ] || { echo "⛔ DURDURULDU — canlı kaynak .env.prod bulunamadı."; exit 1; }
+
 TABLOLAR=(Category Series Package Book Chapter PackageBook)
 ARGS=(); for t in "${TABLOLAR[@]}"; do ARGS+=(-t "public.\"$t\""); done
 
@@ -20,7 +23,7 @@ trap 'rm -f "$DUMP"' EXIT
 
 echo "→ canlıdan katalog dökümü (yalnızca ${#TABLOLAR[@]} tablo, --data-only)"
 "$PG/pg_dump" -Fc --data-only --no-owner --no-acl "${ARGS[@]}" \
-  -f "$DUMP" "$(grep -m1 '^DIRECT_URL=' .env | cut -d= -f2- | tr -d '"')"
+  -f "$DUMP" "$(grep -m1 '^DIRECT_URL=' .env.prod | cut -d= -f2- | tr -d '"')"
 
 echo "→ dökümdeki tablolar:"
 "$PG/pg_restore" --list "$DUMP" | sed -nE 's/.*TABLE DATA public ([^ ]+).*/   \1/p' | sort

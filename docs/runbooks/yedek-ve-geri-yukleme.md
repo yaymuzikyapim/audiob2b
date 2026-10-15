@@ -4,8 +4,13 @@
 **Araçlar:** PostgreSQL **17.11**, yalnızca tam yol: `/usr/local/opt/postgresql@17/bin/`
 (`postgresql@17` link edilmemiştir; `psql` adıyla çağrılırsa 18.6 gelir.)
 
-> CLAUDE.md → **Güvenlik Kuralları** geçerlidir: canlı `.env` kabuğa yüklenmez,
+> CLAUDE.md → **Güvenlik Kuralları** geçerlidir: canlı env dosyası kabuğa yüklenmez,
 > `DIRECT_URL` yalnızca komutun argümanı içinde okunur. Canlıya yalnızca okuma.
+
+> **Adım 0-F sonrası:** canlı değerler `.env.prod` içindedir (`.env` → `.env.dev`).
+> Aşağıdaki adımların script hâli: `ALLOW_PROD=1 npm run backup:prod`
+> (`scripts/ops/backup-prod.sh` — kabuk sızıntısı kontrolü, hedef yazdırma, `chmod 600`,
+> sha256, 30 gün saklama kuralı dahil).
 
 ## Neden 5432 session pooler
 
@@ -44,7 +49,7 @@ TS=$(date +%Y%m%d-%H%M)
 
 ```bash
 PG=/usr/local/opt/postgresql@17/bin
-$PG/psql "$(grep -m1 '^DIRECT_URL=' .env | cut -d= -f2- | tr -d '"')" -At -f counts.sql \
+$PG/psql "$(grep -m1 '^DIRECT_URL=' .env.prod | cut -d= -f2- | tr -d '"')" -At -f counts.sql \
   | grep '|' | sort > ~/Backups/audiob2b/prod-counts-$TS.txt
 chmod 600 ~/Backups/audiob2b/prod-counts-$TS.txt
 ```
@@ -78,7 +83,7 @@ Yapı: tablo 21 · PK 21 · FK 22 (22'si geçerli) · index 41 (35 unique) · en
 ```bash
 $PG/pg_dump -Fc --schema=public --no-owner --no-acl \
   -f ~/Backups/audiob2b/audiob2b-prod-public-$TS.dump \
-  "$(grep -m1 '^DIRECT_URL=' .env | cut -d= -f2- | tr -d '"')"
+  "$(grep -m1 '^DIRECT_URL=' .env.prod | cut -d= -f2- | tr -d '"')"
 chmod 600 ~/Backups/audiob2b/audiob2b-prod-public-$TS.dump
 shasum -a 256 ~/Backups/audiob2b/audiob2b-prod-public-$TS.dump
 $PG/pg_restore --list ~/Backups/audiob2b/audiob2b-prod-public-$TS.dump

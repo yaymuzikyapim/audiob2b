@@ -67,3 +67,7 @@ prisma/verify-uploads.ts
 prisma/check-logins.mjs
 prisma/reset-passwords.mjs
 pdf-export.mjs
+
+# AWS konsolundan indirilen anahtar CSV'leri asla commit edilmez
+*accessKeys*.csv
+*_accessKeys.csv

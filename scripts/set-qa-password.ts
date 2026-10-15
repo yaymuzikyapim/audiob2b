@@ -4,6 +4,7 @@
  *
  * - Yalnızca AudioB2B QA şirketi (id: cmbqr6l9nxbmjh8kztutjmmds) kullanıcıları için çalışır.
  * - Şifre terminale yansımaz; çıktıya, loga veya dosyaya yazılmaz.
+ * - Varsayılan hedef `.env` (→ `.env.dev`, geliştirme DB'si); canlıda assertNotProd durdurur.
  */
 
 import { createInterface } from "readline";
@@ -13,7 +14,7 @@ import { PrismaClient } from "@prisma/client";
 import { assertNotProd } from "./lib/prod-guard.mjs";
 import { newPasswordSchema, hashPassword, isCommonPassword } from "../src/lib/password";
 
-config({ path: ".env" });
+config({ path: process.env.ENV_FILE ?? ".env" });
 config({ path: ".env.local", override: true });
 
 const QA_COMPANY_ID = "cmbqr6l9nxbmjh8kztutjmmds";

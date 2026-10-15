@@ -1,7 +1,10 @@
 import { defineConfig } from "prisma/config";
 import { config } from "dotenv";
 
-config();
+// Varsayılan `.env` → `.env.dev` sembolik bağı (geliştirme, localhost:5433).
+// Canlı için `*:prod` komutları ENV_FILE=.env.prod verir; böylece geliştirme
+// dosyasındaki değişkenler canlı çalıştırmaya karışmaz.
+config({ path: process.env.ENV_FILE ?? ".env" });
 
 export default defineConfig({
   schema: "./prisma/schema.prisma",

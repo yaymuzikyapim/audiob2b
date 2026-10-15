@@ -22,6 +22,38 @@ bir dev projesi açılmadı (Free plan 2 proje sınırı). Geri yükleme testi k
 Encoding / collation / locale provider canlı Supabase ile **birebir aynı** seçildi:
 canlı `UTF8 | en_US.UTF-8 | en_US.UTF-8 | i`.
 
+## Ortam dosyaları (Adım 0-F)
+
+| Dosya | İçerik | Kim okur |
+|---|---|---|
+| `.env` | **`.env.dev`'e sembolik bağ** | `next dev`, Prisma CLI, `ENV_FILE` verilmeyen scriptler |
+| `.env.dev` | geliştirme — `localhost:5433`, S3 salt okuma anahtarı, `S3_DELETE_DISABLED=true` | `*:devdb` komutları |
+| `.env.prod` | **canlı** — eski `.env` buraya taşındı (`chmod 600`) | yalnızca `*:prod` komutları |
+| `.env.local` | yalnızca test hesabı bilgileri + `VERCEL_OIDC_TOKEN`, DB/AWS içermez | Next.js (`.env`'i ezer), test scriptleri |
+
+Varsayılan **geliştirmedir**: `npm run dev` yerel 5433'e gider. Canlıya erişim her zaman
+açık ve bilinçlidir:
+
+```bash
+ALLOW_PROD=1 npm run prisma:prod -- migrate status   # salt okuma
+ALLOW_PROD=1 npm run backup:prod                     # pg_dump
+ALLOW_PROD=1 npm run mjs:prod -- scripts/x.mjs
+ALLOW_PROD=1 npm run tsx:prod -- scripts/x.ts
+```
+
+`scripts/lib/prod-komut.mjs` sırayla: kabuk sızıntısı kontrolü → `ALLOW_PROD=1` kontrolü →
+hedefi yazdırma (`→ HEDEF: CANLI (…hoxkr) · env: .env.prod · TZ=UTC`) → `dotenvx -f .env.prod`.
+`ALLOW_PROD` yoksa komut hiç başlamaz.
+
+**Neden kopya değil sembolik bağ:** kopyada iki dosya zamanla birbirinden ayrışır ve
+`.env.dev`'e eklenen bir değişken `.env`'de eksik kalır; ayrıca S3 anahtarı diskte iki
+yere yazılmış olur. Bağda tek kaynak vardır, izinler hedeften (`chmod 600`) gelir ve
+`.env.dev` silinirse bağ kırılır — araçlar **sessizce eski değerlerle değil, hatayla**
+durur. Repoda ikisi de `.env*` kuralıyla yok sayılır.
+
+`.env.prod` adı bilinçli: Next.js `.env.production` / `.env.production.local` dosyalarını
+production build'de **otomatik yükler**; `.env.prod` o listede yoktur.
+
 ## Günlük kullanım
 
 ```bash
@@ -180,16 +212,17 @@ bağlanılırsa her sorgu boş döner.
 
 ## `.mjs` scriptleri — ENV_FILE
 
-13 `.mjs` script artık `process.env.ENV_FILE ?? ".env"` okuyor:
+13 `.mjs` script `process.env.ENV_FILE ?? ".env"` okuyor. `.env` artık `.env.dev`'e bağlı
+olduğu için **varsayılan hedef geliştirme DB'sidir**:
 
 ```bash
-npm run mjs:devdb -- prisma/fix-duplicate-books.mjs   # ENV_FILE=.env.dev
-ENV_FILE=.env.dev node prisma/find-orphan-s3.mjs      # eşdeğeri
-node prisma/fix-duplicate-books.mjs                   # .env → prod koruması durdurur
+node prisma/fix-duplicate-books.mjs                   # .env → .env.dev → localhost:5433
+npm run mjs:devdb -- prisma/fix-duplicate-books.mjs   # aynısı, kabuk kontrolüyle
+ALLOW_PROD=1 npm run mjs:prod -- prisma/fix-duplicate-books.mjs   # canlı (bilinçli)
 ```
 
-Prod koruması `ENV_FILE` ile okunan URL'yi de denetler: `ENV_FILE=.env` verildiğinde de
-durdurur.
+Prod koruması `ENV_FILE` ile okunan URL'yi de denetler: `ENV_FILE=.env.prod` verildiğinde
+`ALLOW_PROD=1` olmadan durdurur.
 
 ### SSL
 

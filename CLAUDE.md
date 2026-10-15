@@ -61,26 +61,39 @@ anahtarla `PutObject` yaptı ve canlı bucket'a bir nesne yazdı. `dotenvx` ve `
 zaten tanımlı `process.env` değişkenlerini **ezmez**; kabuğa sızan canlı değer, sonraki
 tüm `-f .env.dev` komutlarını sessizce canlıya yönlendirir.
 
-**1. Canlı `.env` asla kabuğa yüklenmez.**
+**0. Hangi dosya neyi gösterir (Adım 0-F).**
 
-`set -a; . ./.env`, `source .env`, `. ./.env`, `export $(cat .env | xargs)` ve
+| Dosya | Hedef |
+|---|---|
+| `.env` | **`.env.dev`'e sembolik bağ** — varsayılan geliştirme, `localhost:5433` |
+| `.env.dev` | geliştirme DB'si + S3 salt okuma anahtarı + `S3_DELETE_DISABLED=true` |
+| `.env.prod` | **canlı** — yalnızca `*:prod` komutları okur, `chmod 600` |
+| `.env.tokyo`, `.env.migration`, `.env.local.tokyo_backup` | eski canlı değerler (arşiv) |
+
+Canlıya erişim yalnızca `prisma:prod` / `tsx:prod` / `mjs:prod` / `backup:prod` ile ve
+`ALLOW_PROD=1` verildiğinde olur; bu komutlar önce hedefi yazdırır.
+
+**1. Canlı env dosyası asla kabuğa yüklenmez.**
+
+`set -a; . ./.env.prod`, `source .env.prod`, `export $(cat .env.prod | xargs)` ve
 benzerleri **yasak**. Aynısı `.env.tokyo`, `.env.migration`, `.env.local.tokyo_backup`
 için de geçerlidir. Canlı bir değere salt okuma işi için ihtiyaç varsa dosya **tek bir
 komutun içinde ayrıştırılarak** okunur ve kabuk ortamına sızmaz:
 
 ```bash
 # YASAK
-set -a && . ./.env && set +a && psql "$DIRECT_URL" -c '...'
+set -a && . ./.env.prod && set +a && psql "$DIRECT_URL" -c '...'
 
 # DOĞRU — değer yalnızca o komutun argümanında yaşar
-psql "$(grep -m1 '^DIRECT_URL=' .env | cut -d= -f2-)" -c 'BEGIN READ ONLY; ...; ROLLBACK;'
+psql "$(grep -m1 '^DIRECT_URL=' .env.prod | cut -d= -f2-)" -c 'BEGIN READ ONLY; ...; ROLLBACK;'
 ```
 
 **2. Geliştirme işleri temiz kabuk ister.**
 
 Geliştirme komutları yalnızca `.env.dev` ile ve kabukta `AWS_ACCESS_KEY_ID`,
 `AWS_SECRET_ACCESS_KEY`, `DATABASE_URL`, `DIRECT_URL` tanımlı **değilken** çalıştırılır.
-`dev:devdb`, `build:devdb`, `prisma:devdb`, `tsx:devdb`, `mjs:devdb` komutları
+`dev:devdb`, `build:devdb`, `prisma:devdb`, `tsx:devdb`, `mjs:devdb`, `seed`,
+`seed:categories` komutları ve `*:prod` sarmalayıcısı
 `scripts/lib/dev-env-guard.mjs` ön kontrolünü çalıştırır ve bu değişkenlerden biri
 kabuktan geliyorsa hata koduyla durur. Kendi yazdığın scriptlerde de aynı kontrolü
 çağır.
@@ -92,6 +105,11 @@ dönen ARN **yazdırılır** ve beklenen IAM kullanıcısı değilse script duru
 için beklenen: `arn:aws:iam::989208155263:user/audiob2b-dev-readonly`. Canlı:
 `arn:aws:iam::989208155263:user/audiob2b-s3-user`. Anahtar değerleri yazdırılmaz,
 yalnızca ARN.
+
+`audiob2b-dev-readonly` **gerçekten salt okumadır**: IAM Policy Simulator (15 Ekim 2026)
+`PutObject` ve `DeleteObject` için **DENIED** döndü. 14 Ekim'de bucket'a yazılan nesne
+canlı anahtarla yazılmıştı; 15 Ekim 13:35'te silindi. Dev anahtarının yetkisi konusunda
+tekrar yanlış teşhise varmamak için: önce ARN, sonra sonuç.
 
 **4. DB işi yapan her script hedefini yazdırır.**
 

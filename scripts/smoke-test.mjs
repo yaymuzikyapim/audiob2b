@@ -2,6 +2,9 @@
  * AudioB2B Smoke Test — canlı Vercel ortamı
  * Şifreler hiçbir çıktıya yazılmaz.
  * Kullanım: node scripts/smoke-test.mjs <vercel-url>
+ *
+ * Canlı ortamı doğruladığı için DB bilgisini varsayılan olarak `.env.prod`'dan okur
+ * (yerel `.env` artık geliştirme DB'sini gösterir). Başka bir dosya için ENV_FILE verin.
  */
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
@@ -25,7 +28,7 @@ function readEnv(filePath) {
 }
 
 const env = {
-  ...readEnv(path.join(PROJECT_ROOT, process.env.ENV_FILE ?? ".env")),
+  ...readEnv(path.join(PROJECT_ROOT, process.env.ENV_FILE ?? ".env.prod")),
   ...readEnv(path.join(PROJECT_ROOT, ".env.local")),
 };
 
