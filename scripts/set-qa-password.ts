@@ -4,15 +4,17 @@
  *
  * - Yalnızca AudioB2B QA şirketi (id: cmbqr6l9nxbmjh8kztutjmmds) kullanıcıları için çalışır.
  * - Şifre terminale yansımaz; çıktıya, loga veya dosyaya yazılmaz.
+ * - Varsayılan hedef `.env` (→ `.env.dev`, geliştirme DB'si); canlıda assertNotProd durdurur.
  */
 
 import { createInterface } from "readline";
 import { config } from "dotenv";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { assertNotProd } from "./lib/prod-guard.mjs";
 import { newPasswordSchema, hashPassword, isCommonPassword } from "../src/lib/password";
 
-config({ path: ".env" });
+config({ path: process.env.ENV_FILE ?? ".env" });
 config({ path: ".env.local", override: true });
 
 const QA_COMPANY_ID = "cmbqr6l9nxbmjh8kztutjmmds";
@@ -66,6 +68,8 @@ async function main() {
     console.error("Kullanım: npx tsx scripts/set-qa-password.ts <email>");
     process.exit(1);
   }
+
+  assertNotProd(process.env.DATABASE_URL, "set-qa-password");
 
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
   const prisma = new PrismaClient({ adapter });

@@ -16,16 +16,22 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import pg from "pg";
-import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { assertNotProd } from "./lib/prod-guard.mjs";
+import { pgSsl } from "./lib/pg-ssl.mjs";
+import "./lib/pg-utc.mjs";
+import { S3Client } from "@aws-sdk/client-s3";
+import { deleteObject } from "./lib/s3-delete.mjs";
 
 const UYGULA = process.argv.includes("--yes");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const env = Object.fromEntries(
-  fs.readFileSync(path.join(root, ".env"), "utf8").split("\n")
+  fs.readFileSync(path.join(root, process.env.ENV_FILE ?? ".env"), "utf8").split("\n")
     .filter((l) => l.includes("=") && !l.trim().startsWith("#"))
     .map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, "")]; })
 );
-const pool = new pg.Pool({ connectionString: env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+assertNotProd(env.DATABASE_URL, "dedupe-chapters");
+
+const pool = new pg.Pool({ connectionString: env.DATABASE_URL, ssl: pgSsl(env.DATABASE_URL) });
 const s3 = new S3Client({
   region: env.AWS_REGION,
   credentials: { accessKeyId: env.AWS_ACCESS_KEY_ID, secretAccessKey: env.AWS_SECRET_ACCESS_KEY },
@@ -96,7 +102,7 @@ try {
 let ok = 0, hata = 0;
 for (const r of silinecek) {
   if (!r.s3Key) continue;
-  try { await s3.send(new DeleteObjectCommand({ Bucket: env.AWS_S3_BUCKET, Key: r.s3Key })); ok++; }
+  try { const d = await deleteObject(s3, { bucket: env.AWS_S3_BUCKET, key: r.s3Key, env }); if (!d.skipped) ok++; }
   catch (e) { hata++; console.log(`   ⚠ S3 silinemedi: ${r.s3Key} — ${e.message}`); }
 }
 console.log(`✓ S3: ${ok} fazla nesne silindi${hata ? `, ${hata} hata` : ""}`);

@@ -53,6 +53,97 @@ Bu hesap App Store incelemesinde de kullanıldığından **şifresi asla değiş
 
 Bu kural `TEST_USER_PASSWORD` için de geçerlidir: değerini okuyabilirsin ama asla çıktıya yansıtma.
 
+## Güvenlik Kuralları — Ortam Değişkenleri ve Kimlik Doğrulama
+
+Bu dört kural 14 Ekim 2026'daki bir olaydan sonra eklendi: `.env.dev` ile çalıştığı
+sanılan bir S3 yetki testi, komutun başındaki `set -a; . ./.env` yüzünden **canlı**
+anahtarla `PutObject` yaptı ve canlı bucket'a bir nesne yazdı. `dotenvx` ve `dotenv`
+zaten tanımlı `process.env` değişkenlerini **ezmez**; kabuğa sızan canlı değer, sonraki
+tüm `-f .env.dev` komutlarını sessizce canlıya yönlendirir.
+
+**0. Hangi dosya neyi gösterir (Adım 0-F).**
+
+| Dosya | Hedef |
+|---|---|
+| `.env` | **`.env.dev`'e sembolik bağ** — varsayılan geliştirme, `localhost:5433` |
+| `.env.dev` | geliştirme DB'si + S3 salt okuma anahtarı + `S3_DELETE_DISABLED=true` |
+| `.env.prod` | **canlı** — yalnızca `*:prod` komutları okur, `chmod 600` |
+| `.env.tokyo`, `.env.migration`, `.env.local.tokyo_backup` | eski canlı değerler (arşiv) |
+
+Canlıya erişim yalnızca `prisma:prod` / `tsx:prod` / `mjs:prod` / `backup:prod` ile ve
+`ALLOW_PROD=1` verildiğinde olur; bu komutlar önce hedefi yazdırır.
+
+**1. Canlı env dosyası asla kabuğa yüklenmez.**
+
+`set -a; . ./.env.prod`, `source .env.prod`, `export $(cat .env.prod | xargs)` ve
+benzerleri **yasak**. Aynısı `.env.tokyo`, `.env.migration`, `.env.local.tokyo_backup`
+için de geçerlidir. Canlı bir değere salt okuma işi için ihtiyaç varsa dosya **tek bir
+komutun içinde ayrıştırılarak** okunur ve kabuk ortamına sızmaz:
+
+```bash
+# YASAK
+set -a && . ./.env.prod && set +a && psql "$DIRECT_URL" -c '...'
+
+# DOĞRU — değer yalnızca o komutun argümanında yaşar
+psql "$(grep -m1 '^DIRECT_URL=' .env.prod | cut -d= -f2-)" -c 'BEGIN READ ONLY; ...; ROLLBACK;'
+```
+
+**2. Geliştirme işleri temiz kabuk ister.**
+
+Geliştirme komutları yalnızca `.env.dev` ile ve kabukta `AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY`, `DATABASE_URL`, `DIRECT_URL` tanımlı **değilken** çalıştırılır.
+`dev:devdb`, `build:devdb`, `prisma:devdb`, `tsx:devdb`, `mjs:devdb`, `seed`,
+`seed:categories` komutları ve `*:prod` sarmalayıcısı
+`scripts/lib/dev-env-guard.mjs` ön kontrolünü çalıştırır ve bu değişkenlerden biri
+kabuktan geliyorsa hata koduyla durur. Kendi yazdığın scriptlerde de aynı kontrolü
+çağır.
+
+**3. AWS çağrısı yapan her test/script önce kim olduğunu doğrular.**
+
+Aynı süreç içinde, ilk AWS çağrısından önce `STS GetCallerIdentity` çalıştırılır,
+dönen ARN **yazdırılır** ve beklenen IAM kullanıcısı değilse script durur. Geliştirme
+için beklenen: `arn:aws:iam::989208155263:user/audiob2b-dev-readonly`. Canlı:
+`arn:aws:iam::989208155263:user/audiob2b-s3-user`. Anahtar değerleri yazdırılmaz,
+yalnızca ARN.
+
+`audiob2b-dev-readonly` **gerçekten salt okumadır**: IAM Policy Simulator (15 Ekim 2026)
+`PutObject` ve `DeleteObject` için **DENIED** döndü. 14 Ekim'de bucket'a yazılan nesne
+canlı anahtarla yazılmıştı; 15 Ekim 13:35'te silindi. Dev anahtarının yetkisi konusunda
+tekrar yanlış teşhise varmamak için: önce ARN, sonra sonuç.
+
+**4. DB işi yapan her script hedefini yazdırır.**
+
+Aynı süreç içinde bağlandığı hedef yazdırılır: yerel için `localhost:5433`, canlı için
+proje ref'inin **yalnızca son 5 karakteri** (`…hoxkr`). Bağlantı dizesi, kullanıcı adı
+ve şifre yazdırılmaz. `scripts/lib/prod-guard.mjs` canlı ref'i görürse `ALLOW_PROD=1`
+olmadan süreci durdurur.
+
+**5. Zaman damgaları UTC'dir.**
+
+`timestamp without time zone` kolonlarındaki (`playedAt`, `updatedAt`, `createdAt`, …)
+değerler **UTC**'dir. Scriptler ve geliştirme ortamı `TZ=UTC` ile çalışır
+(`dev:devdb`, `build:devdb`, `prisma:devdb`, `tsx:devdb`, `mjs:devdb`, `test:guards`).
+Zaman damgası karşılaştırmaları ya **metin** üzerinden (`to_char(...)`) ya da UTC'ye
+sabitlenmiş ayrıştırıcıyla yapılır.
+
+Gerekçe (15 Ekim 2026'da ölçüldü): ham `pg` (node-postgres) OID 1114'ü **yerel saat**
+sanar, `@prisma/adapter-pg` sanmaz.
+
+```
+DB ham değer                : 2026-01-01 00:00:00
+ham pg, TZ=Europe/Istanbul  : 2025-12-31T21:00:00.000Z   ✗ 3 saat geri
+ham pg, TZ=UTC              : 2026-01-01T00:00:00.000Z   ✓
+Prisma, her iki TZ'de       : 2026-01-01T00:00:00.000Z   ✓
+```
+
+Ham `pg` kullanan her script `scripts/lib/pg-utc.mjs` modülünü import eder; bu modül
+OID 1114/1115 ayrıştırıcısını UTC'ye sabitler ve TZ ne olursa olsun doğru sonuç verir.
+Uygulama kodu `process.env.TZ`'den bağımsızdır: `src/lib/tz-utils.ts` İstanbul gün
+sınırlarını UTC üzerinden sabit +3 ofsetle hesaplar, `src/lib/format-date.ts` Intl'e
+`timeZone` değerini açıkça verir. Vercel'in çalışma zamanındaki `TZ` değeri
+**doğrulanmadı** (Vercel'in Node.js runtime ve sistem değişkenleri dokümanlarında
+geçmiyor), ama uygulama buna bağlı olmadığı için sonucu etkilemiyor.
+
 ## Canlı DB'de Kullanıcı Oluşturma Yasağı
 
 **Canlı veritabanında hiçbir koşulda kullanıcı oluşturulmaz; özellikle SUPER_ADMIN veya COMPANY_ADMIN rolüyle.**

@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# .env.dev gerçek değerleri taşır, asla commit edilmez; yalnızca örnek dosya repoda durur.
+!.env.dev.example
 
 # vercel
 .vercel
@@ -56,6 +58,8 @@ next-env.d.ts
 prisma/create-*.ts
 prisma/create-*.mjs
 prisma/fix-*.mjs
+# Bu script kesin plana (K13) girdi ve prod koruması taşıyor; izlemeye alındı.
+!prisma/fix-duplicate-books.mjs
 prisma/rename-*.mjs
 prisma/seed-demo-*.ts
 prisma/upload-from-drive.ts
@@ -63,3 +67,7 @@ prisma/verify-uploads.ts
 prisma/check-logins.mjs
 prisma/reset-passwords.mjs
 pdf-export.mjs
+
+# AWS konsolundan indirilen anahtar CSV'leri asla commit edilmez
+*accessKeys*.csv
+*_accessKeys.csv

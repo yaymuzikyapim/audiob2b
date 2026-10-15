@@ -5,7 +5,8 @@
  *
  * Gereksinimler:
  *   - Next.js sunucusu http://localhost:3000 üzerinde çalışıyor olmalı
- *   - .env ve .env.local dosyaları proje kökünde bulunmalı
+ *   - .env (→ .env.dev, geliştirme DB'si) ve .env.local proje kökünde bulunmalı
+ *   - Canlıya karşı ÇALIŞMAZ: assertNotProd canlı ref'i görürse durur
  *   - TEST_USER_EMAIL ve TEST_USER_PASSWORD .env.local içinde tanımlı olmalı
  *
  * Güvenlik kuralı: şifreler, token'lar ve kimlik bilgileri hiçbir çıktıya yazılmaz.
@@ -25,6 +26,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as http from "http";
 import { fileURLToPath } from "url";
+import { assertNotProd } from "./lib/prod-guard.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
@@ -40,13 +42,15 @@ function readEnv(filePath) {
 }
 
 const env = {
-  ...readEnv(path.join(PROJECT_ROOT, ".env")),
+  ...readEnv(path.join(PROJECT_ROOT, process.env.ENV_FILE ?? ".env")),
   ...readEnv(path.join(PROJECT_ROOT, ".env.local")),
 };
 
-if (!env.DATABASE_URL) throw new Error("DATABASE_URL bulunamadı (.env)");
+if (!env.DATABASE_URL) throw new Error("DATABASE_URL bulunamadı (.env → .env.dev)");
 if (!env.TEST_USER_EMAIL) throw new Error("TEST_USER_EMAIL bulunamadı (.env.local)");
 if (!env.TEST_USER_PASSWORD) throw new Error("TEST_USER_PASSWORD bulunamadı (.env.local)");
+
+assertNotProd(env.DATABASE_URL, "security-test");
 
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3000";
 const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });

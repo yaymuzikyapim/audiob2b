@@ -42,9 +42,20 @@ export async function getPlayUrl(key: string) {
   return getSignedUrl(s3, command, { expiresIn: 3600 });
 }
 
-// Dosya sil
-export async function deleteFile(key: string) {
+// S3 silme kapısı: S3_DELETE_DISABLED=true ise hiçbir nesne silinmez.
+// Değişken yoksa ya da "true" değilse davranış bugünküyle aynıdır.
+export function s3SilmeKapali(): boolean {
+  return String(process.env.S3_DELETE_DISABLED ?? "") === "true";
+}
+
+// Dosya sil — uygulama tarafındaki tek silme kapısı.
+export async function deleteFile(key: string): Promise<{ skipped: boolean }> {
+  if (s3SilmeKapali()) {
+    console.warn(`[s3] silme atlandı (S3_DELETE_DISABLED=true): ${key}`);
+    return { skipped: true };
+  }
   await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+  return { skipped: false };
 }
 
 // CloudFront public URL — covers/ ve logos/ için (books/ değil, o signed URL'de kalır)

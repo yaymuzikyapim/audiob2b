@@ -1,7 +1,10 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { assertNotProd } from "../scripts/lib/prod-guard.mjs";
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
+
+assertNotProd(process.env.DATABASE_URL, "create-test-admin");
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
