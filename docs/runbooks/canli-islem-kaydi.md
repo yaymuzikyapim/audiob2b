@@ -54,6 +54,10 @@ Paket: `Demo` — id `cmtidmqn3000004jpk8q6lzze`. TPAO-Demo'ya eklenmedi.
 | AudioB2B QA kütüphane | 1003 | **1009** | +6 ✓ |
 | TPAO A.Ş. kütüphane | 1003 | **1009** | +6 ✓ |
 | YAY Deneme kütüphane | 1003 | **1009** | +6 ✓ |
+| TPAO Sunum (Demo) kütüphane | 6 | **6** | değişmez ✓ |
+
+> **Not:** "TPAO A.Ş." ve "TPAO Sunum (Demo)" ayrı şirketlerdir. TPAO A.Ş. Demo
+> paketindedir (etkilendi); TPAO Sunum (Demo) TPAO-Demo paketindedir (etkilenmedi).
 
 `INSERT` etkilenen satır: **6** (6 olmasaydı `ROLLBACK`).
 
