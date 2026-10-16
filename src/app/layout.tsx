@@ -29,13 +29,20 @@ export const metadata: Metadata = {
     siteName: "AudioB2B",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: [{ url: "/logo.png", alt: "AudioB2B" }],
+    images: [
+      {
+        url: `${SITE_URL}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "AudioB2B — Çalışanların cebinde bir kütüphane",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: ["/logo.png"],
+    images: [`${SITE_URL}/og-image.png`],
   },
 };
 
