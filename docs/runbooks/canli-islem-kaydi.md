@@ -10,6 +10,94 @@ tutmazsa `ROLLBACK`.
 
 ---
 
+## 2026-10-16 — "YAY Deneme" test şirketinin kalıcı silinmesi
+
+**İşlem:** `DELETE FROM "Company" WHERE id = 'cmufs3ng5000004l542dgl3ks'` — 1 satır. Davet kayıtları (`InviteToken`) FK `ON DELETE CASCADE` ile 2 satır silindi.
+**Script:** `scripts/ops/2026-10-16-yay-deneme-kaldir.mjs`
+**Komut:** `ALLOW_PROD=1 ENV_FILE=.env.prod node scripts/ops/2026-10-16-yay-deneme-kaldir.mjs --apply`
+**Onay:** kullanıcı, Aşama A raporundan sonra ("KALICI SİLME" onayı).
+**Gerekçe:** Demo paketine bağlı, hiçbir kullanıcısı olmayan, maxSeats=1 deneme kaydı. Kod içinde sabit id/slug yok. Bağlı kullanıcı 0 (silme öncesi ve sonrası kontrol edildi).
+
+### Yedek
+
+- Dosya: `/Users/aliye/Backups/audiob2b/audiob2b-prod-public-20261016-0958.dump` (`public` şema, 21 tablo verisi, `pg_dump -Fc`)
+- Boyut: 754 941 bayt
+- sha256: `57a5386b3ddef9e4f8a8ec35cf3570ba7379d874eecd488d14d871bc1e8fbf83`
+- Uygulama öncesi script bu sha256'yı doğruladı.
+
+### Kapsam ve önce/sonra sayımlar
+
+| Ölçüt | Önce | Sonra | Beklenen |
+|---|---|---|---|
+| Şirket | 5 | 4 | −1 ✓ |
+| YAY Deneme (id) | 1 | 0 | −1 ✓ |
+| InviteToken (bu companyId) | 2 | 0 | −2 (cascade) ✓ |
+| Bağlı User | 0 | — | 0 ✓ |
+| Demo paket kitap | 1046 | 1046 | değişmez ✓ |
+
+`DELETE` etkilenen satır: 1 (1 değilse ROLLBACK). Davet kayıtları: id, durum (süresi dolmuş) ve `expiresAt` olarak kayda alındı; e-posta ve token kayda yazılmadı.
+
+### Silinen şirket satırı (JSON, geri alma için)
+
+```json
+{
+  "id": "cmufs3ng5000004l542dgl3ks",
+  "name": "YAY Deneme",
+  "slug": "yay-deneme",
+  "logoUrl": null,
+  "licenseType": "PER_SEAT",
+  "maxSeats": 1,
+  "packageId": "cmtidmqn3000004jpk8q6lzze",
+  "startDate": "2026-09-24T00:00:00.000Z",
+  "endDate": "2027-09-24T00:00:00.000Z",
+  "isActive": true,
+  "notes": null,
+  "createdAt": "2026-09-24T17:01:12.438Z",
+  "updatedAt": "2026-09-24T17:01:12.438Z",
+  "brandColor": "#2563eb",
+  "isDemo": false
+}
+```
+
+Silinen davet kayıtları (yalnızca id / durum / expiresAt):
+- `cmufs4lj7000104l5lkd2ac95` · süresi dolmuş · 2026-10-01T17:01:56.609Z
+- `cmufs6brl000204l5jtfkbbqb` · süresi dolmuş · 2026-10-01T17:03:17.265Z
+
+### Geri alma (yedekten, yalnızca bu satırlar)
+
+Geri alma, yedek dosyasını geçici bir yerel veritabanına açıp yalnızca bu iki tablonun ilgili satırlarını prod'a `INSERT` ederek yapılır. Tüm veri yeniden yüklenmez.
+
+1. Yedeğin bütünlüğünü doğrulayın:
+   ```bash
+   shasum -a 256 /Users/aliye/Backups/audiob2b/audiob2b-prod-public-20261016-0958.dump
+   ```
+   Çıktı `57a5386b…1bc1e8fbf83` olmalı.
+2. Geçici yerel veritabanı oluşturun (canlı değil):
+   ```bash
+   /usr/local/opt/postgresql@17/bin/createdb -h localhost -p 5433 -U postgres restore_tmp
+   ```
+3. Yedekten yalnızca iki tabloyu geçici veritabanına yükleyin. `InviteToken` ve `Company` için şema, `pg_restore --schema-only` ile bir kez kurulur; sonra veri:
+   ```bash
+   /usr/local/opt/postgresql@17/bin/pg_restore --schema-only -h localhost -p 5433 -U postgres -d restore_tmp /Users/aliye/Backups/audiob2b/audiob2b-prod-public-20261016-0958.dump
+   /usr/local/opt/postgresql@17/bin/pg_restore --data-only -t Company -t InviteToken -h localhost -p 5433 -U postgres -d restore_tmp /Users/aliye/Backups/audiob2b/audiob2b-prod-public-20261016-0958.dump
+   ```
+4. Geri alınacak satırlardan prod'a uygulanacak `INSERT` komutlarını üretin (şirket önce, davetler sonra; `ON CONFLICT DO NOTHING` ile):
+   ```bash
+   /usr/local/opt/postgresql@17/bin/psql -h localhost -p 5433 -U postgres -d restore_tmp -At -c "SELECT format('INSERT INTO \"Company\" SELECT * FROM json_populate_record(NULL::\"Company\", %L) ON CONFLICT (id) DO NOTHING;', row_to_json(c)) FROM \"Company\" c WHERE id='cmufs3ng5000004l542dgl3ks'" > /private/tmp/geri-company.sql
+   /usr/local/opt/postgresql@17/bin/psql -h localhost -p 5433 -U postgres -d restore_tmp -At -c "SELECT format('INSERT INTO \"InviteToken\" SELECT * FROM json_populate_record(NULL::\"InviteToken\", %L) ON CONFLICT (id) DO NOTHING;', row_to_json(t)) FROM \"InviteToken\" t WHERE \"companyId\"='cmufs3ng5000004l542dgl3ks'" > /private/tmp/geri-invite.sql
+   ```
+   Bu dosyalar davet e-postası ve token içerir; işi bitince silin.
+5. Tek bir dosyada, tek transaction olarak prod'a uygulayın (önce şirket, sonra davetler). `.env.prod` kabuğa yüklenmez; değer yalnızca komutun argümanında yaşar:
+   ```bash
+   (echo "BEGIN;"; cat /private/tmp/geri-company.sql /private/tmp/geri-invite.sql; echo "COMMIT;") > /private/tmp/geri.sql
+   ALLOW_PROD=1 /usr/local/opt/postgresql@17/bin/psql "$(grep -m1 '^DIRECT_URL=' .env.prod | cut -d= -f2-)" -v ON_ERROR_STOP=1 -f /private/tmp/geri.sql
+   ```
+   Hata olursa `ON_ERROR_STOP` transaction'ı geri sarar; `COMMIT` çalışmaz.
+6. Doğrulama: şirket sayısı 4→5, `Company` id'si mevcut, `InviteToken` (bu companyId) 2.
+7. Geçici `restore_tmp` veritabanını ve `/private/tmp/geri-*.sql` dosyalarını silin.
+
+---
+
 ## 2026-10-15 — 6 kutsal kitabın Demo paketine eklenmesi
 
 **İşlem:** `INSERT INTO "PackageBook" ("packageId", "bookId") SELECT … UNNEST(…)` — 6 satır.
