@@ -6,14 +6,6 @@ import FAQSection from "@/components/FAQSection";
 import { FAQS } from "@/data/faqs";
 
 export const metadata: Metadata = {
-  title: "Kurumsal Sesli Kitap ve Çalışan Yan Hakkı | AudioB2B",
-  description:
-    "Çalışanlarınıza 1.000'i aşkın sesli kitaptan oluşan kurumsal bir kütüphane sunun. iOS ve Android uygulaması, çevrimdışı dinleme, yönetim paneli ve Excel/PDF raporlar.",
-  openGraph: {
-    title: "Kurumsal Sesli Kitap ve Çalışan Yan Hakkı | AudioB2B",
-    description:
-      "Çalışanlarınıza 1.000'i aşkın sesli kitaptan oluşan kurumsal bir kütüphane sunun. iOS ve Android uygulaması, çevrimdışı dinleme, yönetim paneli ve Excel/PDF raporlar.",
-  },
   alternates: { canonical: "/" },
 };
 
