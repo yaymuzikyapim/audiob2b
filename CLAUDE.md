@@ -53,6 +53,10 @@ Push yapmadan önce her iki koşul sağlanmalı:
 
 **Dry-run:** `./deploy.sh origin/main --dry-run --from <sha>` → özet yazdırır, deploy yapmaz.
 
+**deploy.sh testi:** Yalnızca `--dry-run` veya `VERCEL_BIN=scripts/test/fake-vercel.sh` ile test edilir. Gerçek `npx vercel` ile test yapılmaz.
+
+**Ana çalışma klasöründe `git reset --hard`, `git checkout -- .`, `git clean` YASAK.** deploy.sh testi için worktree kullan: `git worktree add /tmp/test-deploy <ref>`.
+
 ## Canlı Ortam Doğrulaması
 
 API testleri için `.env.local`'deki `TEST_USER_EMAIL` ve `TEST_USER_PASSWORD` kullanılır.

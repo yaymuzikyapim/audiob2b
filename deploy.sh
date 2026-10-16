@@ -34,6 +34,9 @@ done
 
 REF="${REF:-origin/main}"
 
+# VERCEL_BIN: gerçek deploy için "npx vercel", test için "scripts/test/fake-vercel.sh"
+VERCEL_BIN="${VERCEL_BIN:-npx vercel}"
+
 source ~/.nvm/nvm.sh
 
 # ── .vercel/project.json zorunlu ────────────────────────────────────────────
@@ -194,7 +197,7 @@ mkdir -p "$DEPLOY_DIR/.vercel"
 cp "$PROJECT_JSON" "$DEPLOY_DIR/.vercel/project.json"
 
 cd "$DEPLOY_DIR"
-DEPLOY_OUTPUT=$(npx vercel --prod --meta "gitCommitSha=$TARGET_SHA" 2>&1)
+DEPLOY_OUTPUT=$($VERCEL_BIN --prod --meta "gitCommitSha=$TARGET_SHA" 2>&1)
 echo "$DEPLOY_OUTPUT"
 
 # ── Deploy sonrası özet ─────────────────────────────────────────────────────
@@ -215,7 +218,7 @@ d=json.load(sys.stdin)
 deps=d.get('deployments',[])
 print(deps[0].get('meta',{}).get('gitCommitSha','') if deps else '')
 " 2>/dev/null || echo "")
-  ALIASES=$(cd "$SCRIPT_DIR" && npx vercel alias ls 2>/dev/null \
+  ALIASES=$(cd "$SCRIPT_DIR" && $VERCEL_BIN alias ls 2>/dev/null \
     | grep "audiob2b\.com\.tr" | awk '{print $1}' | head -3 | tr '\n' ' ' || echo "")
   echo " Alias: ${ALIASES:-<alınamadı>}"
   if [[ "$META_SHA" == "$TARGET_SHA" ]]; then

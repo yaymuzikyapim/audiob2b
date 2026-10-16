@@ -8,7 +8,7 @@
     "postinstall": "prisma generate",
     "start": "next start",
     "test": "TZ=UTC npx tsx src/lib/metrics.test.ts",
-    "test:guards": "TZ=UTC node scripts/lib/prod-guard.test.mjs && TZ=UTC node scripts/lib/dev-env-guard.test.mjs && TZ=UTC node scripts/lib/s3-delete.test.mjs && TZ=UTC AWS_REGION=eu-central-1 AWS_S3_BUCKET=audiob2b-audio-files AWS_ACCESS_KEY_ID=x AWS_SECRET_ACCESS_KEY=x npx tsx src/lib/s3.test.ts && TZ=UTC npx tsx src/lib/seats.test.ts",
+    "test:guards": "TZ=UTC node scripts/lib/prod-guard.test.mjs && TZ=UTC node scripts/lib/dev-env-guard.test.mjs && TZ=UTC node scripts/lib/s3-delete.test.mjs && TZ=UTC AWS_REGION=eu-central-1 AWS_S3_BUCKET=audiob2b-audio-files AWS_ACCESS_KEY_ID=x AWS_SECRET_ACCESS_KEY=x npx tsx src/lib/s3.test.ts && TZ=UTC npx tsx src/lib/seats.test.ts && VERCEL_BIN=scripts/test/fake-vercel.sh bash scripts/test/deploy-gate.test.sh",
     "lint": "eslint",
     "seed": "node scripts/lib/dev-env-guard.mjs && TZ=UTC dotenvx run -f .env.dev --quiet -- npx tsx prisma/seed.ts",
     "seed:categories": "node scripts/lib/dev-env-guard.mjs && TZ=UTC dotenvx run -f .env.dev --quiet -- npx tsx prisma/seed-categories.ts",
