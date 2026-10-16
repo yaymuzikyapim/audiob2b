@@ -9,9 +9,11 @@
 import { prisma } from "./prisma";
 import { kullaniciAktiflestirKoltukKontrollu, topluAktiflestirKoltukKontrollu, koltukKapisiIleOlustur } from "./seats";
 
+// Canlı koruması: yalnızca localhost:5433 kabul edilir (prod-guard'ın canliMi kontrolünden daha dar),
+// ayrıca canlı proje ref'inin son 5 karakteri (hoxkr) reddedilir. Komut: npm run tsx:devdb (dev-env-guard çalışır).
 const url = process.env.DATABASE_URL ?? "";
-if (!/localhost:5433\//.test(url)) {
-  console.error("⛔ Bu test yalnızca localhost:5433 geliştirme DB'sinde çalışır. Durdu.");
+if (!/localhost:5433\//.test(url) || /hoxkr/.test(url)) {
+  console.error("⛔ Bu test yalnızca localhost:5433 geliştirme DB'sinde çalışır. Canlı/bilinmeyen hedefte durdu.");
   process.exit(1);
 }
 

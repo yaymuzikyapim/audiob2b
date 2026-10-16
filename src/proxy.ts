@@ -8,7 +8,7 @@ const PUBLIC_PREFIXES = [
   "/login", "/invite",
   "/forgot-password", "/reset-password",
   "/api/auth/login", "/api/auth/forgot-password", "/api/auth/reset-password",
-  "/api/cron/cleanup",
+  "/api/cron/cleanup", "/api/health",
   "/api/invite", "/api/mobile/auth/login", "/api/covers", "/api/demo-request",
   "/tpao-teklif", "/p/", "/api/p/",
 ];
