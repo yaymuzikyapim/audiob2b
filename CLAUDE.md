@@ -37,9 +37,21 @@ Push yapmadan önce her iki koşul sağlanmalı:
 1. **`npm run build` yerelde temiz olmalı** — Vercel'de build'i kıran dosyalar (import edilip commit edilmemiş bileşenler vb.) yerelde de hata verir.
 2. **`git status` temiz olmalı** — takip edilmeyen (untracked) dosya bırakılmamalı; her dosya ya commit edilmeli, ya silinmeli, ya da `.gitignore`'a eklenmeli.
 
-**`npx vercel --prod` doğrudan çalıştırılmaz.** Deploy yalnızca `./deploy.sh origin/main` ile yapılır; bu script `git archive` kullanarak yalnızca commit edilmiş dosyaları yükler. Doğrudan `npx vercel --prod` çalıştırmak uncommitted dosyaları da Vercel'e yükler.
+## Deploy Kuralları
 
-**Deploy onaya bağlıdır.** "Commit + push" talimatı yalnızca `git commit` + `git push` anlamına gelir; `./deploy.sh` çalıştırılmaz. Deploy, değişiklik hangi dosyada olursa olsun, yalnızca kullanıcı açıkça "deploy et" dediğinde yapılır.
+**Tek yol:** `DEPLOY_CONFIRM=<sha7> ./deploy.sh origin/main [--from <canlı-sha>]`
+
+- `npx vercel --prod`, `vercel deploy`, Vercel panelinden Redeploy **YASAK**.
+- Deploy talimatı hedef SHA'yı açıkça içermelidir. "Deploy et" yetmez; şu biçimde verilir:
+  `DEPLOY_CONFIRM=abc1234 ./deploy.sh origin/main --from <canlı-sha>`
+- `./deploy.sh` yalnızca `git archive` kullanır — uncommitted dosyalar asla Vercel'e gitmez.
+- "Commit + push" talimatı yalnızca `git commit` + `git push` anlamına gelir; `./deploy.sh` çalıştırılmaz.
+- Deploy, değişiklik hangi dosyada olursa olsun, yalnızca kullanıcı açıkça SHA içeren talimat verdiğinde yapılır.
+- Aynı anda tek oturum `main`'e merge/deploy yapar — birden fazla paralel oturum asla.
+- Canlı SHA'yı taşımayan eski deployment'lar için `--from <sha>` zorunludur.
+  Güncel canlı değer: `6b79e8f` (`px94xrabg`, 2026-10-16).
+
+**Dry-run:** `./deploy.sh origin/main --dry-run --from <sha>` → özet yazdırır, deploy yapmaz.
 
 ## Canlı Ortam Doğrulaması
 
