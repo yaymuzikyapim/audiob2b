@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
+import { topluAktiflestirKoltukKontrollu } from "@/lib/seats";
 
 export const dynamic = "force-dynamic";
 
@@ -39,10 +40,22 @@ export async function POST(req: Request) {
     }
   }
 
-  await prisma.user.updateMany({
-    where: { id: { in: targetIds }, companyId },
-    data: { isActive: action === "activate" },
-  });
+  if (action === "activate") {
+    // Pasiften aktife geçen kullanıcılar koltuk harcar; kota aşılırsa hiçbiri aktifleşmez.
+    try {
+      await topluAktiflestirKoltukKontrollu(companyId, targetIds);
+    } catch (e: unknown) {
+      const code = (e as { code?: string } | null)?.code;
+      if (code === "SEATS_FULL" && e instanceof Error) return NextResponse.json({ error: e.message }, { status: 400 });
+      if (code === "NOT_FOUND") return NextResponse.json({ error: "Şirket bulunamadı." }, { status: 404 });
+      throw e;
+    }
+  } else {
+    await prisma.user.updateMany({
+      where: { id: { in: targetIds }, companyId },
+      data: { isActive: false },
+    });
+  }
 
   return NextResponse.json({ ok: true, updated: targetIds.length, selfExcluded });
 }
