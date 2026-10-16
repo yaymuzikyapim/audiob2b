@@ -20,10 +20,51 @@ tutmazsa `ROLLBACK`.
 **Geri alma hedefi:** `nwy457mi8` (15 Ekim 23:20, `source: redeploy`). `npx vercel rollback audiob2b-nwy457mi8-yay20.vercel.app` ile dönülür.
 **Geri alınmadı:** içerik test edilmiş ve planlanan paketle aynı; canlı kontrol sonuçları aşağıda.
 
-**Kontrol sonuçları (16 Ekim 2026, salt okuma, canlıda kullanıcı/şirket/davet oluşturma yok):**
-- Ana sayfa `<title>`: "Kurumsal Sesli Kitap ve Çalışan Yan Hakkı | AudioB2B" — önceki sürümle **aynı** (layout'taki `SITE_TITLE` sabiti zaten aynı metni taşıyor). `<meta name="description">` da aynı. Değişen: `og:image` artık `https://www.audiob2b.com.tr/og-image.png`, `twitter:card` = `summary_large_image`.
-- HTTP: `/` 200, `/login` 200, `/api/health` 200, `/og-image.png` 200, `/api/cron/cleanup` (auth'suz) 401.
-- Runtime log: 30 dk penceresinde (11:57–12:27) 0 kayıt (üç deployment için). CDN/request log (`lpj9215tx`, 30 dk): 52 istek — 48×200, 206×2, 308×1, 401×1 (cron, beklenen). **5xx: 0.**
+**Kontrol sonuçları (16 Ekim 2026, salt okuma, canlıda hiçbir şey oluşturulmadı):**
+
+**1. Deployment source + creator (Vercel REST API, takım kapsamı):**
+
+| Deployment | Saat (yerel) | source | creator |
+|---|---|---|---|
+| `4w6gqvgrp` | 11:59:22 | cli | yaymuzikyapim-9750 |
+| `iipdc4kif` | 12:01:26 | cli | yaymuzikyapim-9750 |
+| `lpj9215tx` | 12:04:14 | cli | yaymuzikyapim-9750 |
+
+**2. Canlı kod = `6c88ab3` SHA1 doğrulaması (`lpj9215tx` dosya ağacı ↔ git):**
+
+| Dosya | Vercel SHA1 | git `6c88ab3` SHA1 | Eşleşme |
+|---|---|---|---|
+| `src/lib/seats.ts` | `e21a46d0…a83bb` | `e21a46d0…a83bb` | ✓ |
+| `src/proxy.ts` | `1ae2a91b…dc68` | `1ae2a91b…dc68` | ✓ |
+| `src/app/page.tsx` | `46ad2744…b2` | `46ad2744…b2` | ✓ |
+
+**3. `page.tsx`'ten kaldırılan 8 satır (`6c88ab3` diff):**
+```diff
+-  title: "Kurumsal Sesli Kitap ve Çalışan Yan Hakkı | AudioB2B",
+-  description:
+-    "Çalışanlarınıza 1.000'i aşkın sesli kitaptan oluşan kurumsal bir kütüphane sunun. iOS ve Android uygulaması, çevrimdışı dinleme, yönetim paneli ve Excel/PDF raporlar.",
+-  openGraph: {
+-    title: "Kurumsal Sesli Kitap ve Çalışan Yan Hakkı | AudioB2B",
+-    description:
+-      "Çalışanlarınıza 1.000'i aşkın sesli kitaptan oluşan kurumsal bir kütüphane sunun. iOS ve Android uygulaması, çevrimdışı dinleme, yönetim paneli ve Excel/PDF raporlar.",
+-  },
+```
+Canlı `<title>`: "Kurumsal Sesli Kitap ve Çalışan Yan Hakkı | AudioB2B" — `layout.tsx` `SITE_TITLE` sabitiyle **aynı** (kaldırılan satırlar yedek kopya olduğundan değer değişmedi). `<meta name="description">` da aynı.
+
+**4. HTTP durum kontrolleri:**
+
+| URL | Beklenen | Gerçek |
+|---|---|---|
+| `/` | 200 | **200** ✓ |
+| `/login` | 200 | **200** ✓ |
+| `/api/health` | 200 | **200** ✓ |
+| `/og-image.png` | 200 | **200** ✓ |
+| `/api/cron/cleanup` (auth'suz) | 401 | **401** ✓ |
+
+**5. Runtime 5xx / exception (son 30 dk, `lpj9215tx`):**
+- Entries: 1 · Level dağılımı: warn×1, error×0, fatal×0
+- Warn: `[10:21:04 UTC] Error: The Server Reference ID did not match the expected format. Received "y".` — Next.js Server Action format hatası (olası bot isteği), 5xx değil, uygulama hatası yok.
+- **5xx: 0, exception: 0.**
 
 ---
 
