@@ -10,6 +10,15 @@ tutmazsa `ROLLBACK`.
 
 ---
 
+## 2026-10-16 — Beklenmedik production deployment (deploy-gate test kazası)
+
+**Ne oldu:** `px94xrabg` (12:…, kesin saat Vercel'den alınacak) — `source: cli`. `chore/deploy-gate` dalında yeni `deploy.sh` commit edilmeden Test C'deki `git reset --hard HEAD~1` çalıştırıldı; bu işlem yeni `deploy.sh`'yi geri alarak eski (kapısız) sürümü geri getirdi. Test D sonraki adımda eski script'i çalıştırdı ve canlıya deploy etti.
+**İçerik:** `6b79e8f` — yalnızca docs değişiklikleri (canli-islem-kaydi.md, urun-backlog.md). Kod, API, DB değişikliği yok.
+**Geri alınmadı:** Dağıtılan commit `6b79e8f` zaten `main` HEAD ile aynı içeriği taşıyor; bu deployment daha önceki durumun üzerine yazmadı.
+**Önlem:** `chore/deploy-gate` tamamlandığında bu tür kazalar `DEPLOY_CONFIRM` kapısıyla önlenir.
+
+---
+
 ## 2026-10-16 — 3 production deployment, og:image talimatıyla ONAYLI deploy.sh
 
 **Gerekçe:** og:image talimatı `deploy.sh` çalıştırılmasına onay verdi (ONAYLI).
