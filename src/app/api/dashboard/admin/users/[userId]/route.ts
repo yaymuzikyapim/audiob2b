@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { guardLastAdmin } from "@/lib/admin-guards";
+import { kullaniciAktiflestirKoltukKontrollu } from "@/lib/seats";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userId
   if (isActive !== undefined) updateData.isActive = isActive;
   if (role !== undefined) updateData.role = role as "EMPLOYEE" | "COMPANY_ADMIN";
 
-  const updated = await prisma.user.update({ where: { id: userId }, data: updateData, select: { id: true, isActive: true, role: true } });
-  return NextResponse.json({ ok: true, user: updated });
+  // Pasif kullanıcıyı yeniden aktifleştirmek koltuk kullanır; davet akışıyla aynı kota kontrolünden geçer.
+  const reactivating = isActive === true && !target.isActive;
+  try {
+    const updated = reactivating
+      ? await kullaniciAktiflestirKoltukKontrollu(companyId, userId, updateData)
+      : await prisma.user.update({ where: { id: userId }, data: updateData, select: { id: true, isActive: true, role: true } });
+    return NextResponse.json({ ok: true, user: updated });
+  } catch (e: unknown) {
+    const code = (e as { code?: string } | null)?.code;
+    if (code === "SEATS_FULL" && e instanceof Error) return NextResponse.json({ error: e.message }, { status: 400 });
+    if (code === "NOT_FOUND") return NextResponse.json({ error: "Şirket bulunamadı." }, { status: 404 });
+    throw e;
+  }
 }
