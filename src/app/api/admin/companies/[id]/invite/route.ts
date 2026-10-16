@@ -7,6 +7,7 @@ import { getBaseUrl } from "@/lib/base-url";
 import { sendEmail } from "@/lib/mailer";
 import { inviteEmailHtml, inviteEmailText } from "@/lib/emails/invite";
 import { randomBytes } from "crypto";
+import { koltukKapisiIleOlustur } from "@/lib/seats";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireUser({ roles: ["SUPER_ADMIN"] });
@@ -40,7 +41,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    await prisma.inviteToken.create({ data: { token, email, role, companyId, expiresAt } });
+    // Bekleyen davet de koltuk sayılır; kota doluysa davet oluşturulmaz.
+    try {
+      await koltukKapisiIleOlustur(companyId, (tx) =>
+        tx.inviteToken.create({ data: { token, email, role, companyId, expiresAt } })
+      );
+    } catch (e: unknown) {
+      const code = (e as { code?: string } | null)?.code;
+      if (code === "SEATS_FULL" && e instanceof Error) return NextResponse.json({ error: e.message }, { status: 400 });
+      throw e;
+    }
 
     const inviteUrl = `${getBaseUrl()}/invite/${token}`;
 
