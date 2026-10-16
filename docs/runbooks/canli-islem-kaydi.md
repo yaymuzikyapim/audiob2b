@@ -14,11 +14,11 @@ tutmazsa `ROLLBACK`.
 
 **Gerekçe:** og:image talimatı `deploy.sh` çalıştırılmasına onay verdi (ONAYLI).
 **Ne oldu:** 11:59–12:04 arasında 3 production deployment oluştu: `4w6gqvgrp` (11:59:22), `iipdc4kif` (12:01:26), `lpj9215tx` (12:04:14). Üçü de `source: cli`, `creator: yaymuzikyapim-9750` (Vercel API ile doğrulandı).
-**Kapsam notu:** Talimat koltuk düzeltmesini hariç tutuyordu; ancak `370bc9d` 11:52'de zaten `main`'e girmişti — bu yüzden koltuk kotası, U8 (`/api/health`), mailer ve S3 değişiklikleri de canlıya çıktı.
+**Kapsam notu:** Talimat koltuk düzeltmesini hariç tutuyordu; `370bc9d` 11:52'de `main`'e zaten girmişti — koltuk kotası, U8 (`/api/health`), mailer ve S3 değişiklikleri **istem dışı** dahil oldu.
 **Canlı içerik:** `lpj9215tx` canlı alias'larda (`www.audiob2b.com.tr`, `audiob2b.com.tr`). Dosya hash'leri commit `6c88ab3` ile birebir eşleşti (`src/lib/seats.ts`, `src/proxy.ts`, `src/app/page.tsx`, `src/app/layout.tsx`, `public/og-image.png` — Vercel sha1 = içerik sha1).
 **Commit listesi (95ee407 → 6c88ab3):** `370bc9d` (merge seat-limit), `7f27915`, `38dddea`, `ab60936` (koltuk kotası), `51bf352` (/api/health public, test guard), `b77bfb3` (backlog U1/U8/U9), `bc6d65a` (merge fix/og-image), `b889198` (og:image 1200×630, summary_large_image), `6c88ab3` (page.tsx openGraph override kaldırıldı).
 **Geri alma hedefi:** `nwy457mi8` (15 Ekim 23:20, `source: redeploy`). `npx vercel rollback audiob2b-nwy457mi8-yay20.vercel.app` ile dönülür.
-**Geri alınmadı:** içerik test edilmiş ve planlanan paketle aynı; canlı kontrol sonuçları aşağıda.
+**Geri alınmadı:** içerik test edilmiş ve planlanan paketle aynı; canlı kontrol **temiz** (aşağıda).
 
 **Kontrol sonuçları (16 Ekim 2026, salt okuma, canlıda hiçbir şey oluşturulmadı):**
 
