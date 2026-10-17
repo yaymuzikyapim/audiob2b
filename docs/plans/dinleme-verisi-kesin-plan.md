@@ -46,7 +46,7 @@
 | Adım | İçerik | Dağıtım | Çıkış kapısı |
 |---|---|---|---|
 | **0** | Geliştirme DB'si (şema + katalog + sentetik) · yerel `.env` → geliştirme · S3 salt okuma + silme kapalı · prod koruması · canlı yedek (repo dışı, chmod 600, şifreli) · yerel geçici Postgres'te geri yükleme testi | — | Geri yükleme: 21 tablonun sayımları + FK / unique / index doğrulaması + uygulama yerel kopyada açılıyor; süre kaydedildi; geçici kopya silindi (kayıt). Geliştirme: yerel uygulama dev'e bağlı, canlı kişisel veri yok, S3 silme denemesi engellendi, prod koruması bir yıkıcı scripti durdurdu |
-| **1** | 18 sentetik kaydın kanıt listesi · beş şirketin sınıflandırma kararı (ürün sahibi) | — (karar) | Liste ve sınıflandırma yazılı |
+| **1** ✅ | 18 sentetik kaydın kanıt listesi · beş şirketin sınıflandırma kararı (ürün sahibi) | — (karar) | **GEÇTİ 2026-10-17.** Liste ve sınıflandırma yazılı (bkz. §6 Adım 1 Kapatma Kaydı) |
 | **2** | A1 + A3: nullable `receivedAt`, `companyId` (FK RESTRICT) + `companyIdSource`, sürüm alanları, `validationStatus`, `PlayHistoryReject`, `Book.inactiveSince`; K6 / K7 / K8 / K17 sunucu davranışı; sentetik ve v1 kayıtların durum işaretlemesi | WEB | Dev'de test listesinin "zaman ve sınır" + "idempotency" bölümleri geçiyor; eski kayıtlar `receivedAt` NULL; yeni kayıtlarda NULL yok; 18 kayıt SYNTHETIC; raporların öncesi/sonrası farkı kayıtlı |
 | **3** | companyId geri doldurma (watermark kümesi) + satır düzeyinde uyuşmazlık sorgusu | Script (onaylı) | Aday kümenin tamamı dolu ve `BACKFILL_CURRENT_USER`; uyuşmazlık 0 ya da her biri sınıflandırılmış |
 | **4** | Erişim: `canStartPlayback` ve `canSubmitPlayHistory` (K12) | WEB | Pasif kitap: yeni oynatma tüm uçlarda reddediliyor; pasife alınmadan önceki tarihli geç kayıt `VALID`, sonrası `QUARANTINED_ACCESS`; aktif kitap etkilenmiyor |
@@ -85,8 +85,35 @@ Commit / ref · migration adı · onaylayan · ön sayım sorguları ve sonuçla
 
 ## 5. Karar bekleyen konular (ürün sahibi)
 
-1. Beş şirketin iki eksenli sınıflandırması (özellikle YAY Deneme'nin amacı; AudioB2B Demo'daki farklı kurum kullanıcılarının ayrı şirketlere bölünme zamanı).
+1. ~~Beş şirketin iki eksenli sınıflandırması~~ → **Karara bağlandı 2026-10-17 (bkz. §6).**
 2. Çevrimdışı izin süresi (taslak 30 gün) ve geç kayıt kabul penceresi (taslak 45 gün).
 3. Lease bitişinde: yalnızca kilit mi, X gün sonra silme mi?
 4. Kullanıcı silme talebi politikası ve saklama süreleri (avukat).
 5. A4 sonrası rapor değişikliği müşteriye bildirilecek mi?
+
+---
+
+## 6. Adım 1 Kapatma Kaydı (2026-10-17)
+
+### 18 Sentetik kayıt — tanımlayıcı özellikler (canlıdan doğrulandı)
+
+Koşul: `clientId IS NULL AND chapterId IS NULL AND listenedSec % 100 = 0`
+→ 18 satır (aynı 18 satır saat 19:23 UTC'de `clientId IS NULL` koşuluyla da bulundu).
+`validationStatus = SYNTHETIC` olarak işaretlenecek; silinmeyecek (K10).
+
+### Şirket sınıflandırma kararları (ürün sahibi, 2026-10-17)
+
+| Şirket | id (kısaltılmış) | commercialStatus | tenantPurpose | Not |
+|---|---|---|---|---|
+| TPAO Sunum (Demo) | cmss0ak… | `FREE` | `DEMO` | Sunum ortamı |
+| AudioB2B Demo | review-company-001 | `FREE` | `REVIEW` | App Store inceleme + karışık kullanıcılar; ayrıştırma U11 (gerçek demo talebi gelince) |
+| TPAO A.Ş. | cmbyjva… | `FREE` | `DEMO` | isDemo=true kararla tutarlı; sözleşme imzalanınca `PAID`/`CUSTOMER` — geçiş tarihi o an kaydedilecek |
+| AudioB2B QA | cmbqr6l… | `FREE` | `QA` | İç test ortamı |
+
+YAY Deneme 2026-10-16'da silindi; şirket sayısı 4. `UNKNOWN` değerli satır kalmadı.
+
+**isDemo türetme kuralı (Adım 6'da uygulanacak):** `tenantPurpose IN ('DEMO', 'REVIEW')` → `isDemo = true`; geri kalanlar `false`. Mevcut değerlerle tutarlı.
+
+### Adım 0 durumu
+
+Adım 0 çıkış kapısı bu planda ayrıca belgelenmemiş; Adım 1'in doğrulanabilir olması Adım 0'ın fiilen geçildiğini gösteriyor.
