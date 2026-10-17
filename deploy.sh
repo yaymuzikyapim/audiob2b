@@ -147,11 +147,30 @@ OTH_F=$(echo "$CHANGED"   | grep -vE "^src/|^prisma/|^package|^vercel\.json|^nex
 [[ -z "$CHANGED" ]] && echo "  (değişen dosya yok)"
 echo ""
 
-# ── UYARI satırları ─────────────────────────────────────────────────────────
+# ── Migration kapısı ─────────────────────────────────────────────────────────
+# Dry-run: statik uyarı (DB bağlantısı gerekmez).
+# Gerçek deploy: prisma migrate status (canlı DB) → bekleyen varsa DUR, yoksa geç.
+# Test ortamı için: PRISMA_MIGRATE_STATUS_OVERRIDE env var ile çıktıyı taklit et.
 if echo "$CHANGED" | grep -qE "^prisma/schema\.prisma|^prisma/migrations"; then
-  echo "⚠️  UYARI: prisma/schema.prisma veya prisma/migrations değişti."
-  echo "   MİGRASYON — DEPLOY ETME. Önce 'prisma migrate deploy' çalıştır (DIRECT_URL, port 5432)."
-  echo ""
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "⚠️  UYARI: prisma/schema.prisma veya prisma/migrations değişti."
+    echo "   Gerçek deploy'dan önce 'prisma migrate deploy' uygula (DIRECT_URL, port 5432)."
+    echo ""
+  else
+    if [[ -n "${PRISMA_MIGRATE_STATUS_OVERRIDE:-}" ]]; then
+      MIGRATE_OUT="$PRISMA_MIGRATE_STATUS_OVERRIDE"
+    else
+      MIGRATE_OUT=$(cd "$SCRIPT_DIR" && npx dotenvx run -f .env.prod --quiet -- npx prisma migrate status 2>&1 || true)
+    fi
+    if echo "$MIGRATE_OUT" | grep -q "Database schema is up to date"; then
+      echo "ℹ️  Şema/migrasyon değişti; canlı DB güncel — deploy devam ediyor."
+      echo ""
+    else
+      echo "HATA: Canlı DB'de bekleyen migrasyon var — deploy durduruldu." >&2
+      echo "   Önce canlı DB'ye 'prisma migrate deploy' uygula (DIRECT_URL gerekir)." >&2
+      exit 1
+    fi
+  fi
 fi
 if echo "$CHANGED" | grep -q "^package.json"; then
   if git diff "${LIVE_SHA}..${TARGET_SHA}" -- package.json 2>/dev/null \
