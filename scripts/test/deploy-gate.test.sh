@@ -38,11 +38,11 @@ run_deploy() {
   set -e
 }
 
-# Bilinen sabit SHA çifti (her ikisi de origin'de mevcut):
-#   LIVE_SHA  = 6b79e8f (px94xrabg — gerçek canlı SHA)
-#   TARGET_SHA = 857875f (origin/main HEAD — 2026-10-17 Adım 1 kapanış commit)
+# Bilinen sabit SHA:
+#   LIVE_SHA   = 6b79e8f (px94xrabg — gerçek canlı SHA)
+#   TARGET_SHA = origin/main'in güncel kısa SHA'sı (push sonrası otomatik güncellenir)
 LIVE_SHA="6b79e8f"
-TARGET_SHA="857875f"
+TARGET_SHA=$(git -C "$SCRIPT_DIR" rev-parse --short origin/main)
 
 echo ""
 echo "══════════════════════════════════════════════════════"
@@ -70,7 +70,8 @@ fi
 echo ""
 echo "B) DEPLOY_CONFIRM olmadan çıkış 1"
 > "$LOG_FILE"
-DEPLOY_CONFIRM="" run_deploy origin/main --from "$LIVE_SHA"
+PRISMA_MIGRATE_STATUS_OVERRIDE="Database schema is up to date!" \
+  DEPLOY_CONFIRM="" run_deploy origin/main --from "$LIVE_SHA"
 OUT=$(cat "$TMP_OUT")
 if [[ $OUT_CODE -ne 0 ]] && echo "$OUT" | grep -q "DEPLOY_CONFIRM"; then
   pass "DEPLOY_CONFIRM olmadan çıkış 1, hata mesajı var"
@@ -87,7 +88,8 @@ fi
 echo ""
 echo "C) Yanlış DEPLOY_CONFIRM ile çıkış 1"
 > "$LOG_FILE"
-DEPLOY_CONFIRM="0000000" run_deploy origin/main --from "$LIVE_SHA"
+PRISMA_MIGRATE_STATUS_OVERRIDE="Database schema is up to date!" \
+  DEPLOY_CONFIRM="0000000" run_deploy origin/main --from "$LIVE_SHA"
 OUT=$(cat "$TMP_OUT")
 if [[ $OUT_CODE -ne 0 ]] && echo "$OUT" | grep -q "DEPLOY_CONFIRM"; then
   pass "Yanlış DEPLOY_CONFIRM çıkış 1, hata mesajı var"
@@ -119,12 +121,13 @@ else
   fail "fake-vercel çağrıldı! İçerik: $(cat "$LOG_FILE")"
 fi
 
-# ── Test E: Doğru DEPLOY_CONFIRM → fake-vercel'e --prod --meta gönderilir ────
+# ── Test E: Doğru DEPLOY_CONFIRM + migration uygulandı → fake-vercel çağrılır ─
 echo ""
-echo "E) Doğru DEPLOY_CONFIRM → fake-vercel --prod --meta gitCommitSha="
+echo "E) Doğru DEPLOY_CONFIRM + migration DB'de uygulandı → fake-vercel --prod"
 > "$LOG_FILE"
 FULL_TARGET=$(git -C "$SCRIPT_DIR" rev-parse origin/main)
-DEPLOY_CONFIRM="$TARGET_SHA" run_deploy origin/main --from "$LIVE_SHA"
+PRISMA_MIGRATE_STATUS_OVERRIDE="Database schema is up to date!" \
+  DEPLOY_CONFIRM="$TARGET_SHA" run_deploy origin/main --from "$LIVE_SHA"
 OUT=$(cat "$TMP_OUT")
 if [[ $OUT_CODE -eq 0 ]]; then
   pass "Çıkış kodu 0"
@@ -141,6 +144,49 @@ if [[ -s "$LOG_FILE" ]]; then
   fi
 else
   fail "fake-vercel hiç çağrılmadı"
+fi
+
+# ── Test F: Migration beklemede → gerçek deploy'da exit 1 ────────────────────
+echo ""
+echo "F) Bekleyen migrasyon → gerçek deploy exit 1, fake-vercel çağrılmaz"
+> "$LOG_FILE"
+PRISMA_MIGRATE_STATUS_OVERRIDE="Following migration have not yet been applied:
+20261017000001_adim2_play_history" \
+  DEPLOY_CONFIRM="$TARGET_SHA" run_deploy origin/main --from "$LIVE_SHA"
+OUT=$(cat "$TMP_OUT")
+if [[ $OUT_CODE -ne 0 ]] && echo "$OUT" | grep -qi "bekleyen migrasyon"; then
+  pass "Bekleyen migrasyon → deploy exit 1, mesaj var"
+else
+  fail "Bekleyen migrasyon; çıkış=$OUT_CODE, çıktı='${OUT:0:200}'"
+fi
+if [[ ! -s "$LOG_FILE" ]]; then
+  pass "fake-vercel çağrılmadı (migration blokladı) ✓"
+else
+  fail "fake-vercel çağrıldı! İçerik: $(cat "$LOG_FILE")"
+fi
+
+# ── Test G: Dry-run + bekleyen migrasyon → UYARI var, çıkış 0 ────────────────
+echo ""
+echo "G) Dry-run + bekleyen migrasyon → UYARI satırı, çıkış 0"
+> "$LOG_FILE"
+PRISMA_MIGRATE_STATUS_OVERRIDE="Following migration have not yet been applied:
+20261017000001_adim2_play_history" \
+  run_deploy origin/main --dry-run --from "$LIVE_SHA"
+OUT=$(cat "$TMP_OUT")
+if [[ $OUT_CODE -eq 0 ]] && echo "$OUT" | grep -q "DRY-RUN"; then
+  pass "Dry-run çıkış 0, 'DRY-RUN' satırı var"
+else
+  fail "Dry-run; çıkış=$OUT_CODE, çıktı='${OUT:0:120}'"
+fi
+if echo "$OUT" | grep -q "UYARI"; then
+  pass "Dry-run'da UYARI satırı gösterildi ✓"
+else
+  fail "UYARI satırı bulunamadı; çıktı='${OUT:0:200}'"
+fi
+if [[ ! -s "$LOG_FILE" ]]; then
+  pass "fake-vercel çağrılmadı (dry-run)"
+else
+  fail "fake-vercel çağrıldı! İçerik: $(cat "$LOG_FILE")"
 fi
 
 # ── Sonuç ────────────────────────────────────────────────────────────────────
