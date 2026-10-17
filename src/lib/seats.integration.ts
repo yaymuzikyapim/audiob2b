@@ -115,8 +115,9 @@ main()
     failed++;
   })
   .finally(async () => {
-    // Temizlik: test kullanıcılarını sil, sonra şirketleri (davetler cascade ile gider).
+    // Temizlik: PlayHistory (ON DELETE RESTRICT) → kullanıcılar → davetler → şirketler.
     for (const id of sirketIdler) {
+      await prisma.playHistory.deleteMany({ where: { companyId: id } });
       await prisma.user.deleteMany({ where: { companyId: id } });
       await prisma.inviteToken.deleteMany({ where: { companyId: id } });
       await prisma.company.deleteMany({ where: { id } });

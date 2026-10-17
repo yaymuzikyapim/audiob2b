@@ -86,7 +86,7 @@ Commit / ref · migration adı · onaylayan · ön sayım sorguları ve sonuçla
 ## 5. Karar bekleyen konular (ürün sahibi)
 
 1. ~~Beş şirketin iki eksenli sınıflandırması~~ → **Karara bağlandı 2026-10-17 (bkz. §6).**
-2. Çevrimdışı izin süresi (taslak 30 gün) ve geç kayıt kabul penceresi (taslak 45 gün).
+2. ~~Çevrimdışı izin süresi (taslak 30 gün) ve geç kayıt kabul penceresi (taslak 45 gün).~~ → **Karara bağlandı 2026-10-17:** kabul penceresi = **45 gün** (`ACCEPTANCE_WINDOW_DAYS`); K19 lease taslağı = **30 gün**.
 3. Lease bitişinde: yalnızca kilit mi, X gün sonra silme mi?
 4. Kullanıcı silme talebi politikası ve saklama süreleri (avukat).
 5. A4 sonrası rapor değişikliği müşteriye bildirilecek mi?
@@ -95,11 +95,34 @@ Commit / ref · migration adı · onaylayan · ön sayım sorguları ve sonuçla
 
 ## 6. Adım 1 Kapatma Kaydı (2026-10-17)
 
-### 18 Sentetik kayıt — tanımlayıcı özellikler (canlıdan doğrulandı)
+### 18 Sentetik kayıt — kanıt listesi (canlıdan doğrulandı, 2026-10-17)
 
-Koşul: `clientId IS NULL AND chapterId IS NULL AND listenedSec % 100 = 0`
-→ 18 satır (aynı 18 satır saat 19:23 UTC'de `clientId IS NULL` koşuluyla da bulundu).
+Koşul: `clientId IS NULL AND chapterId IS NULL AND listenedSec % 100 = 0` → 18 satır.
+Tamamı AudioB2B QA kullanıcılarına ait; saat 19:23:53 UTC (22 Eylül'de iki kayıt aynı saniyede).
 `validationStatus = SYNTHETIC` olarak işaretlenecek; silinmeyecek (K10).
+
+**Açık ID listesi (backfill betiği bu listeden çalışır; heuristic yalnızca çapraz kontrol):**
+
+| id | listenedSec | playedAt (UTC) |
+|---|---|---|
+| `cmibnq56l98rah7m0h37m5i5g` | 1000 | 2026-09-12 19:23:53 |
+| `cm2divbe2yj8j2zs79mdx6rc1` | 900  | 2026-09-14 19:23:53 |
+| `cmlta5wqr3gxbxglorpkf8ncn` | 800  | 2026-09-16 19:23:53 |
+| `cmbec7o07hhl00lydaknvstsl` | 1000 | 2026-09-17 19:23:53 |
+| `cmve9paxh2lskfr4ob93fg2xb` | 700  | 2026-09-18 19:23:53 |
+| `cmwaq6hf0kd2g0r9twimv8g0r` | 900  | 2026-09-19 19:23:53 |
+| `cm9v2u0nxvuv07gzi0nrojenb` | 600  | 2026-09-20 19:23:53 |
+| `cmph65sds0qc1cp5eh1zs67fy` | 800  | 2026-09-21 19:23:53 |
+| `cmo21kky3bhavhsea9it4ru3h` | 500  | 2026-09-22 19:23:53 |
+| `cmdss86y9jzfvfrzxh2k5oxmz` | 1000 | 2026-09-22 19:23:53 |
+| `cmx4yrlob5xo9rx4vy7wn2lp0` | 700  | 2026-09-23 19:23:53 |
+| `cm4u3z8y5e8mratfpdy2vchnm` | 900  | 2026-09-24 19:23:53 |
+| `cm52gj657cn6ou2razbn9aos2` | 600  | 2026-09-25 19:23:53 |
+| `cma3vm7z4ulfolkzu0whf294t` | 800  | 2026-09-26 19:23:53 |
+| `cma6e3qc19zimdn4kouu8qg4l` | 500  | 2026-09-27 19:23:53 |
+| `cmdwd84idejdvxmlzqi1v21n3` | 700  | 2026-09-28 19:23:53 |
+| `cmf62jwlli1cofaymhup6soqc` | 600  | 2026-09-30 19:23:53 |
+| `cmnmxg6b8zq78nxcur8cj5lys` | 500  | 2026-10-02 19:23:53 |
 
 ### Şirket sınıflandırma kararları (ürün sahibi, 2026-10-17)
 
