@@ -40,9 +40,9 @@ run_deploy() {
 
 # Bilinen sabit SHA çifti (her ikisi de origin'de mevcut):
 #   LIVE_SHA  = 6b79e8f (px94xrabg — gerçek canlı SHA)
-#   TARGET_SHA = f12084c (origin/main HEAD)
+#   TARGET_SHA = 857875f (origin/main HEAD — 2026-10-17 Adım 1 kapanış commit)
 LIVE_SHA="6b79e8f"
-TARGET_SHA="f12084c"
+TARGET_SHA="857875f"
 
 echo ""
 echo "══════════════════════════════════════════════════════"
@@ -104,9 +104,9 @@ fi
 echo ""
 echo "D) Push edilmemiş ref ile çıkış 1"
 > "$LOG_FILE"
-# chore/deploy-gate origin'e push edilmemiş yerel dal
-UNPUSHED_SHA=$(git -C "$SCRIPT_DIR" rev-parse --short chore/deploy-gate 2>/dev/null || echo "notfound")
-DEPLOY_CONFIRM="$UNPUSHED_SHA" run_deploy chore/deploy-gate --from "$LIVE_SHA"
+# _test/local-only: hiçbir zaman origin'e push edilmeyecek yerel dal (bu test için saklı)
+UNPUSHED_SHA=$(git -C "$SCRIPT_DIR" rev-parse --short _test/local-only 2>/dev/null || echo "notfound")
+DEPLOY_CONFIRM="$UNPUSHED_SHA" run_deploy _test/local-only --from "$LIVE_SHA"
 OUT=$(cat "$TMP_OUT")
 if [[ $OUT_CODE -ne 0 ]] && echo "$OUT" | grep -qi "origin\|push"; then
   pass "Push edilmemiş ref çıkış 1, 'origin/push' mesajı var"

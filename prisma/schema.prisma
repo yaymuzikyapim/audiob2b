@@ -61,9 +61,10 @@ model Company {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  package      Package?      @relation(fields: [packageId], references: [id])
-  users        User[]
-  inviteTokens InviteToken[]
+  package       Package?      @relation(fields: [packageId], references: [id])
+  users         User[]
+  inviteTokens  InviteToken[]
+  playHistories PlayHistory[]
 }
 
 enum LicenseType {
@@ -105,18 +106,19 @@ model Package {
 }
 
 model Book {
-  id          String    @id @default(cuid())
-  title       String
-  author      String
-  narrator    String?
-  duration    Int // toplam süre (saniye)
-  coverUrl    String?
-  description String?
-  isbn        String?
-  isActive    Boolean   @default(true)
-  publishedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  title         String
+  author        String
+  narrator      String?
+  duration      Int // toplam süre (saniye)
+  coverUrl      String?
+  description   String?
+  isbn          String?
+  isActive      Boolean   @default(true)
+  inactiveSince DateTime? // K13: pasife alındığı an (canSubmitPlayHistory için)
+  publishedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
@@ -176,23 +178,66 @@ model PlayerState {
   @@unique([userId, bookId])
 }
 
-model PlayHistory {
-  id            String   @id @default(cuid())
-  clientId      String?  @unique // istemci UUID; çift kayıt önleme
-  userId        String
-  bookId        String
-  chapterId     String?  // hangi bölümde kaydedildi; NULL = eski/bölümsüz kayıt
-  listenedSec   Int      @default(0) // bu oturumda gerçekten dinlenen süre (delta, saniye)
-  contentSec    Int      @default(0) // tüketilen içerik süresi (listenedSec × hız)
-  completedPct  Float    @default(0) // bölüm tamamlanma yüzdesi (0-100); chapterId varsa bölüme, yoksa kitaba göre
-  clientVersion Int      @default(1) // 1=eski (pozisyon), 2=yeni (delta); rapor filtrelemesi için
-  playedAt      DateTime @default(now())
+enum ValidationStatus {
+  VALID
+  SYNTHETIC
+  INVALID_V2_NO_CONTENT
+  QUARANTINED_LATE
+  QUARANTINED_ACCESS
+  LEGACY_V1
+  LEGACY_V2
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+enum CompanyIdSource {
+  SERVER_AT_EVENT
+  BACKFILL_CURRENT_USER
+}
+
+model PlayHistory {
+  id               String            @id @default(cuid())
+  clientId         String?           @unique // istemci UUID; çift kayıt önleme
+  userId           String
+  bookId           String
+  chapterId        String?           // hangi bölümde kaydedildi; NULL = eski/bölümsüz kayıt
+  listenedSec      Int               @default(0) // bu oturumda gerçekten dinlenen süre (delta, saniye)
+  contentSec       Int               @default(0) // tüketilen içerik süresi (listenedSec × hız)
+  completedPct     Float             @default(0) // bölüm tamamlanma yüzdesi (0-100)
+  clientVersion    Int               @default(1) // 1=eski (pozisyon), 2=yeni (delta)
+  playedAt         DateTime          @default(now())
+
+  // Adım 2 — A1 + A3
+  receivedAt       DateTime?         // sunucu ulaşma zamanı; NULL = eski kayıt
+  companyId        String?           // nullable; FK yalnızca dolu değerleri denetler (K5)
+  companyIdSource  CompanyIdSource?  // SERVER_AT_EVENT | BACKFILL_CURRENT_USER
+  platform         String?
+  appVersion       String?
+  buildNumber      String?
+  runtimeVersion   String?
+  updateId         String?
+  validationStatus ValidationStatus? // nullable; NOT NULL ayrı migration'da
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book    Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
   @@index([userId, playedAt])
   @@index([bookId])
+  @@index([companyId, playedAt])
+  @@index([validationStatus])
+}
+
+model PlayHistoryReject {
+  id            String   @id @default(cuid())
+  reason        String
+  day           DateTime @db.Date
+  platform      String   @default("unknown")
+  clientVersion Int      @default(0)
+  count         Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([reason, day, platform, clientVersion])
+  @@index([day])
 }
 
 model Bookmark {
