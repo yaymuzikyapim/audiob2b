@@ -81,6 +81,27 @@ COMMIT;
 -- DİKKAT: Bu SQL backfill yapıldıktan sonra çalıştırılırsa validationStatus verileri de silinir.
 ```
 
+### Backfill
+
+**Onay:** kullanıcı, `[ANA] ADIM 2 — AŞAMA 2: BACKFILL` talimatıyla onayladı.
+
+| | |
+|---|---|
+| Komut | `ALLOW_PROD=1 ENV_FILE=.env.prod node scripts/lib/prod-komut.mjs node scripts/ops/2026-10-17-adim2-backfill.mjs` |
+| Yedek sha256 (önceden alınmış) | `f673e3ad928adeef09c9be090585e40e9263437fe39dc1360d53c03be66da1ae` |
+
+**Önce:** `NULL=225` (LEGACY_V1=137, LEGACY_V2=70, SYNTHETIC=18)  
+**Sonra:** `VALID=2, SYNTHETIC=18, LEGACY_V1=137, LEGACY_V2=70, NULL=0` ✓
+
+**Geri alma SQL:**
+```sql
+UPDATE "PlayHistory"
+SET "validationStatus" = NULL
+WHERE "validationStatus" IN ('LEGACY_V1', 'LEGACY_V2', 'SYNTHETIC')
+  AND "receivedAt" IS NULL;
+-- Beklenen: 225 satır
+```
+
 ---
 
 ## 2026-10-16 — Beklenmedik production deployment (deploy-gate test kazası)
