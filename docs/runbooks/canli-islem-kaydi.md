@@ -10,6 +10,79 @@ tutmazsa `ROLLBACK`.
 
 ---
 
+## 2026-10-17 — Adım 2 canlı geçişi (PlayHistory şema + deploy)
+
+**Gerekçe:** Adım 2 kapsamı: PlayHistory şema genişletme (ValidationStatus, companyId, receivedAt vb.), PlayHistoryReject tablosu, route yeniden yazımı (ACCEPTANCE_WINDOW_DAYS=45, SERVER_AT_EVENT), backfill betiği.
+**Onay:** kullanıcı, `[ANA] ADIM 2 — CANLI GEÇİŞ, AŞAMA 1` talimatıyla onayladı.
+
+### Yedek
+
+- Dosya: `/Users/aliye/Backups/audiob2b/audiob2b-prod-public-20261017-1326.dump`
+- Boyut: 756 068 bayt
+- sha256: `f673e3ad928adeef09c9be090585e40e9263437fe39dc1360d53c03be66da1ae`
+
+### Migration
+
+- `20261017000001_adim2_play_history` uygulandı (tek bekleyen migrasyon)
+- Komut: `ALLOW_PROD=1 node scripts/lib/prod-komut.mjs prisma migrate deploy`
+- Durum sonrası: `Database schema is up to date!`
+- Yapısal doğrulama: 9 yeni kolon ✓, PlayHistoryReject tablosu ✓, Book.inactiveSince ✓, PlayHistory_companyId_fkey (RESTRICT) ✓, satır sayısı değişmedi (225), validationStatus NULL = 225 ✓
+
+### Deploy
+
+- Komut: `DEPLOY_CONFIRM=7b5f1cd ./deploy.sh origin/main --from 6b79e8f`
+- Deployment URL: `https://audiob2b-pkw27t63m-yay20.vercel.app`
+- Production alias: `https://www.audiob2b.com.tr`
+- meta.gitCommitSha: `7b5f1cda0029b1a033a7161ab6e568827a666716` ✓
+- Saat: 2026-10-17 13:29
+
+### Duman Testi
+
+| URL | Beklenen | Gerçek |
+|---|---|---|
+| `/` | 200 | **200** ✓ |
+| `/login` | 200 | **200** ✓ |
+| `/api/health` | 200 | **200** ✓ |
+| `/api/cron/cleanup` (auth'suz) | 401 | **401** ✓ |
+| `/og-image.png` | 200 | **200** ✓ |
+
+### Rollback
+
+**Kod rollback'i:**
+```bash
+npx vercel rollback px94xrabg
+```
+(Vercel deployment alias adı `px94xrabg` = SHA `6b79e8f`. NOT: deploy.sh bu adımdan sonra `6b79e8f`'i `--from` olarak kabul etmez çünkü `7b5f1cd` artık onun torunu; doğrudan `vercel rollback` kullanılır.)
+
+**Migration geri alma SQL'i (şema değişiklikleri — zorunlu değil, kod uyumludur):**
+```sql
+BEGIN;
+-- PlayHistory yeni kolonları kaldır
+ALTER TABLE "PlayHistory"
+  DROP COLUMN IF EXISTS "receivedAt",
+  DROP COLUMN IF EXISTS "companyId",
+  DROP COLUMN IF EXISTS "companyIdSource",
+  DROP COLUMN IF EXISTS "platform",
+  DROP COLUMN IF EXISTS "appVersion",
+  DROP COLUMN IF EXISTS "buildNumber",
+  DROP COLUMN IF EXISTS "runtimeVersion",
+  DROP COLUMN IF EXISTS "updateId",
+  DROP COLUMN IF EXISTS "validationStatus";
+-- PlayHistoryReject tablosunu kaldır
+DROP TABLE IF EXISTS "PlayHistoryReject";
+-- Book.inactiveSince kaldır
+ALTER TABLE "Book" DROP COLUMN IF EXISTS "inactiveSince";
+-- Enum'ları kaldır
+DROP TYPE IF EXISTS "ValidationStatus";
+DROP TYPE IF EXISTS "CompanyIdSource";
+-- migration kaydını sil
+DELETE FROM "_prisma_migrations" WHERE migration_name = '20261017000001_adim2_play_history';
+COMMIT;
+-- DİKKAT: Bu SQL backfill yapıldıktan sonra çalıştırılırsa validationStatus verileri de silinir.
+```
+
+---
+
 ## 2026-10-16 — Beklenmedik production deployment (deploy-gate test kazası)
 
 **Ne oldu:** `px94xrabg` (12:…) — `source: cli`. Test C'de geçici commit için `git reset --hard HEAD~1` ana çalışma klasöründe çalıştırıldı; yeni (kapılı) `deploy.sh` henüz commit edilmemişti, reset eski (kapısız) sürümü geri getirdi. Test D eski script'i gerçek Vercel'e karşı çalıştırdı → onaysız deploy.

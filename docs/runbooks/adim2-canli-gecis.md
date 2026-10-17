@@ -3,7 +3,7 @@
 **Tarih:** 2026-10-17  
 **Hazırlayan:** Adım 2 kapsamı (PlayHistory şema genişletme + validationStatus backfill)  
 **Canlı SHA (geçiş öncesi):** `6b79e8f` (px94xrabg)  
-**Hedef SHA:** `066f82a` (origin/main, merge commit)  
+**Hedef SHA:** `7b5f1cd` (origin/main, migration kapısı fix dahil)  
 **Bekleyen migrasyon:** `20261017000001_adim2_play_history` (tek migrasyon)
 
 ---
@@ -59,10 +59,10 @@ node scripts/lib/prod-komut.mjs prisma migrate status
 ## c) Deploy
 
 ```bash
-DEPLOY_CONFIRM=066f82a ./deploy.sh origin/main --from 6b79e8f
+DEPLOY_CONFIRM=7b5f1cd ./deploy.sh origin/main --from 6b79e8f
 ```
 
-`DEPLOY_CONFIRM` tam 7 karakterdir (`066f82a`). Vercel çıktısında `✅ Production deployment complete` benzeri bir satır bekle.
+`DEPLOY_CONFIRM` tam 7 karakterdir (`7b5f1cd`). Vercel çıktısında `✅ Production deployment complete` benzeri bir satır bekle.
 
 ---
 
@@ -168,10 +168,10 @@ Prisma `migrate deploy` geri alınamaz. Şema değişikliği (`ALTER TABLE`, yen
 **Kod rollback'i** (şema uyumlu):
 
 ```bash
-DEPLOY_CONFIRM=857875f ./deploy.sh origin/main --from 066f82a
+npx vercel rollback px94xrabg
 ```
 
-Not: `route.ts`'nin eski sürümü `validationStatus` alanını doldurmaz ama alanın var olması bir sorun yaratmaz (NULL kabul eder).
+`px94xrabg` = `6b79e8f` — geçiş öncesi canlı deployment. Not: `route.ts`'nin eski sürümü `validationStatus` alanını doldurmaz ama alanın var olması bir sorun yaratmaz (NULL kabul eder).
 
 **Veri rollback'i** (backfill geri alma, sadece gerekirse):
 
@@ -224,7 +224,7 @@ EOF
 |------|-------|-----------------|
 | a | Backup | — |
 | b | `prisma migrate deploy` | Hayır (şema kalıcı) |
-| c | Deploy `066f82a` | Evet (önceki SHA ile) |
+| c | Deploy `7b5f1cd` | Evet (`npx vercel rollback px94xrabg`) |
 | d | Smoke test | — |
 | e | Backfill (225 satır) | Evet (g adımı ile) |
 | f | Doğrulama | — |
