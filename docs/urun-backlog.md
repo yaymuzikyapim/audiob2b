@@ -2,7 +2,7 @@
 
 Telif / dinleme verisi planı dışında kalan ürün riskleri ve işleri. Plana bağlı maddeler `docs/plans/dinleme-verisi-kesin-plan.md` içinde; içerik (katalog) işleri `docs/icerik-backlog.md` içinde.
 
-Son güncelleme: 15 Ekim 2026
+Son güncelleme: 17 Ekim 2026
 
 | # | Konu | Risk / etki | Durum | Not |
 |---|---|---|---|---|
@@ -16,3 +16,4 @@ Son güncelleme: 15 Ekim 2026
 | U8 | **`/api/health` middleware'de PUBLIC_PREFIXES'te yok; cron her gün 401** | Health cron 06:00 UTC'de 401 dönüyor — Vercel log'unda hata görünür, cold-start önleme işlevi çalışmıyor | **Canlıda** (lpj9215tx, 2026-10-16) | `src/proxy.ts` PUBLIC_PREFIXES'e `/api/health` eklendi. Canlı kontrol: `/api/health` → **200** ✓ |
 | U9 | **Süper admin `maxSeats`'i aktif kullanıcı sayısının altına düşürebiliyor** | Şirket taşmış duruma düşer; yeni aktifleştirmeler engellenir ama mevcut kullanıcılar etkilenmez | Açık | Panelde uyarı ve onay gerekir (düşürme, aktif + bekleyen sayısının altındaysa açık onay). `PATCH admin/companies/[id]` içinde `maxSeats` alanı kontrolsüz yazılıyor |
 | U10 | **`deploy.sh` onay kapsamını doğrulamıyor** | Talimat tek bir özelliği kapsarken aynı anda `main`'e girmiş başka commitler fark edilmeden canlıya çıkabiliyor (bkz. 16 Eki 2026 og:image deploy — koltuk kotası, U8, mailer, S3 değişiklikleri de dahil oldu) | **main'de** (9b16934, 2026-10-16) | `DEPLOY_CONFIRM=<sha7>` kapısı, commit listesi özeti, `--dry-run`, `--from`, push + ancestor kontrolü, VERCEL_BIN test desteği; `scripts/test/deploy-gate.test.sh` 10/10 |
+| U11 | **AudioB2B Demo şirketinde karışık kurumlu kullanıcılar (51/10 koltuk)** | Farklı kurumların çalışanları aynı demo şirketinde; App Store inceleme hesabı, potansiyel müşteri ve test kullanıcıları karışık; `tenantPurpose` sınıflandırması belirsiz | Açık — ilk gerçek demo talebi geldiğinde ele alınacak (karar 2026-10-17) | AudioB2B Demo (review-company-001) ayrı `DEMO` ve `REVIEW` şirketlerine bölünecek; bölünme zamanlaması ve koltuk planı ürün sahibiyle belirlenecek |
